@@ -1,0 +1,5 @@
+# ninja log v5
+0	6844	1673940404994799718	/opt/ml/BoT-SORT/build/temp.linux-x86_64-cpython-37/opt/ml/BoT-SORT/yolox/layers/csrc/cocoeval/cocoeval.o	b135e2781af254d7
+0	8540	1673940406690794712	/opt/ml/BoT-SORT/build/temp.linux-x86_64-cpython-37/opt/ml/BoT-SORT/yolox/layers/csrc/vision.o	23fab01ad80bb6c6
+0	7185	1674121366823376048	/opt/ml/project/models/track/build/temp.linux-x86_64-cpython-37/opt/ml/project/models/track/yolox/layers/csrc/cocoeval/cocoeval.o	c17723691664c0a3
+0	8894	1674121368531376354	/opt/ml/project/models/track/build/temp.linux-x86_64-cpython-37/opt/ml/project/models/track/yolox/layers/csrc/vision.o	f893a3c2f50d92c0

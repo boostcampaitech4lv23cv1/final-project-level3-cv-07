@@ -1,0 +1,13 @@
+**/.ipynb*
+
+# frontend
+
+# backend
+
+# track
+models/track/pretrained/*
+models/track/assets/
+models/track/runs
+
+# cartoonize
+models/cartoonize/test_code/save_models/*
