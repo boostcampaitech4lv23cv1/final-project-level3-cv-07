@@ -4,8 +4,6 @@ setup.cfg
 setup.py
 /opt/ml/final-project-level3-cv-07/models/track/yolox/layers/csrc/vision.cpp
 /opt/ml/final-project-level3-cv-07/models/track/yolox/layers/csrc/cocoeval/cocoeval.cpp
-/opt/ml/project/models/track/yolox/layers/csrc/vision.cpp
-/opt/ml/project/models/track/yolox/layers/csrc/cocoeval/cocoeval.cpp
 fast_reid/fast_reid_interfece.py
 fast_reid/datasets/generate_mot_patches.py
 fast_reid/demo/demo.py
