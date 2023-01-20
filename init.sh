@@ -1,9 +1,9 @@
 apt-get update
 apt-get -y install libgl1-mesa-glx
-apt-get install g++
+apt-get install g++ -y
 
 # Mongo DB
-apt-get install mongodb
+apt-get install mongodb -y
 
 # Backend
 cd backend/
