@@ -13,3 +13,10 @@ models/track/runs
 
 # cartoonize
 models/cartoonize/test_code/save_models/*
+
+#
+#models/code/BoT-SORT/exp*
+#models/code/BoT-SORT/exp*
+*.png
+exp*/
+*.mov
