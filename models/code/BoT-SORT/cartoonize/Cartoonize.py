@@ -72,10 +72,10 @@ def cartoonize(load_folder, save_folder, model_path):
     
 
 if __name__ == '__main__':
-    model_path = '/opt/ml/BoT-SORT/cartoonize/saved_models'
-    load_folder = '/opt/ml/BoT-SORT/cartoonize/image_orig'
-    save_folder = '/opt/ml/BoT-SORT/cartoonize/image_cart'
-    input_video = '/opt/ml/BoT-SORT/assets/chim.mp4'
+    model_path = '/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/saved_models'
+    load_folder = '/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig'
+    save_folder = '/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart'
+    input_video = '/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/assets/chim.mp4'
     
     if not os.path.exists(load_folder):
         os.mkdir(load_folder)

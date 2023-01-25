@@ -321,16 +321,16 @@ def detect(save_img=False):
     frame_array = []
     
     ## FIXME 
-    img = cv2.imread(f'/opt/ml/BoT-SORT/cartoonize/image_cart/frame_1.png')
+    img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_1.png')
     height, width, layers = img.shape
     size = (width,height)
     
     # face swap per frame
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
-        frame_idx = line[0] # Image Index starts from 0 
-        orig_img = cv2.imread(f'/opt/ml/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
-        cart_img = cv2.imread(f'/opt/ml/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
+        frame_idx = line[0] # Image Index starts from 1
+        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
+        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
 
         for i in range(((len(line)-1) // 4)-1):
