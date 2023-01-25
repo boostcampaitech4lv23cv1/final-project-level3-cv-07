@@ -1,7 +1,0 @@
-VideoCameraCorrection
-build
-fast_reid
-tools
-tracker
-yolov7
-yolox
