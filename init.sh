@@ -16,10 +16,10 @@ bash set_env.sh
 
 # Cartoonize
 cd ..
-cd models/cartoonize/
+cd models/track/cartoonize/
 bash set_env.sh
 
 # Tracker
-cd ../../
+cd ../../../
 cd models/track/
 bash set_env.sh

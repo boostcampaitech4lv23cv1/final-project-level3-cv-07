@@ -1,4 +1,6 @@
-conda env remove -n backend
-conda env remove -n frontend
-conda env remove -n track
-conda env remove -n cartoonize
+envs="backend frontend cartoonize track"
+
+for env in $envs
+do
+    conda env remove -n $env
+done

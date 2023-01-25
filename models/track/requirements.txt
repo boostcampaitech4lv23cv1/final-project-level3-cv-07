@@ -26,5 +26,4 @@ gdown
 onnx==1.8.1
 onnxruntime==1.8.0
 onnx-simplifier==0.3.5
-
-
+seaborn
