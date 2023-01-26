@@ -396,7 +396,7 @@ def detect(save_img=False):
     frame_array = []
     
     ## FIXME 
-    img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_1.png')
+    img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_1.png')
     height, width, layers = img.shape
     size = (width,height)
     
@@ -405,8 +405,8 @@ def detect(save_img=False):
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
         frame_idx = line[0] # Image Index starts from 1
-        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
-        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
+        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_{frame_idx}.png')
+        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
         for i in range(((len(line)-1) // 4)-1):
             x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
@@ -449,10 +449,10 @@ def detect(save_img=False):
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='/opt/ml/BoT-SORT/pretrained/yolov7-tiny.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='/opt/ml/BoT-SORT/assets/chim.mp4', help='source')  # file/folder, 0 for webcam
-    parser.add_argument('--target',default="/opt/ml/BoT-SORT/target/chim.jpeg",help='path of the target image')
-    parser.add_argument('--cartoon',default="/opt/ml/BoT-SORT/assets/chim_cartoonized.mp4",help='path of the target image')
+    parser.add_argument('--weights', nargs='+', type=str, default='/opt/ml/final-project-level3-cv-07/models/track/pretrained/yolov7-tiny.pt', help='model.pt path(s)')
+    parser.add_argument('--source', type=str, default='/opt/ml/final-project-level3-cv-07/models/track/assets/chim.mp4', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--target',default="/opt/ml/final-project-level3-cv-07/models/track/target/chim.jpeg",help='path of the target image')
+    parser.add_argument('--cartoon',default="/opt/ml/final-project-level3-cv-07/models/track/assets/chim_cartoonized.mp4",help='path of the target image')
     parser.add_argument('--img-size', type=int, default=1920, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.09, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.7, help='IOU threshold for NMS')
