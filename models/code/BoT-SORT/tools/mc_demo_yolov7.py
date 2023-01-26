@@ -410,15 +410,15 @@ def detect(save_img=False):
         face_swapped_img = orig_img
         for i in range(((len(line)-1) // 4)-1):
             x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox
+            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox ('s' means scaled)
             
-            ##################################### SELECT MAKS GENERATION FUNCTION VERSION #####################################
+            ##################################### SELECT MASK GENERATION FUNCTION #####################################
             """
-            Select mask generator version among below
-            mask generator v0 - same as not using mask
-            mask generator v1 - using Euclidean distance (L2 distance) and thresholding
-            mask generator v2 - using Manhattan distance (L1 distance) and thresholding
-            mask generator v3 - using padding
+            Select mask generator function
+            - mask generator v0: same as not using mask
+            - mask generator v1: using Euclidean distance (L2 distance) and thresholding
+            - mask generator v2: using Manhattan distance (L1 distance) and thresholding
+            - mask generator v3: using padding
             """
             
             # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
