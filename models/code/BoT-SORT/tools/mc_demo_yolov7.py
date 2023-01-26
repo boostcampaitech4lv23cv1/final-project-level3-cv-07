@@ -62,6 +62,16 @@ def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx-x)**2 + (cy-y)**2)
 
+def calc_manhattan_dist(x, y, cx, cy):
+    return abs(cx-x) + abs(cy-y)
+
+def mask_generator_v0(y_min, x_min, y_max, x_max):
+    h = y_max - y_min
+    w = x_max - x_min
+    mask = np.ones(shape=(w, h), dtype=np.float16) 
+    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    return mask, 1 - mask
+
 def mask_generator_v1(y_min, x_min, y_max, x_max):
     h = y_max - y_min
     w = x_max - x_min
@@ -69,11 +79,11 @@ def mask_generator_v1(y_min, x_min, y_max, x_max):
     cx = h // 2
     mask = np.zeros(shape=(w, h), dtype=np.float16) 
     max_dist = calc_euclidean_dist(0, 0, cx, cy)
-    # FIXME
-    # fill mask with L2 distance (each pixel to center pixel)
-    for y in range(len(mask)):
-        for x in range(len(mask[0])):
-            mask[y, x] = calc_euclidean_dist(x, y, cx, cy) 
+    
+    # fill mask with L2 distance (from each pixel to center pixel)
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i, j] = calc_euclidean_dist(j, i, cx, cy) 
     mask /= max_dist # normalize
     mask = 1 - mask
     mask[mask>=0.7] = 1
@@ -96,6 +106,24 @@ def mask_generator_v2(y_min, x_min, y_max, x_max, level=10, step=3):
     for i in range(level):
         const = 1- (1/level*(i+1))
         mask = np.pad(mask, ((step, step), (step, step)), 'constant', constant_values=const) 
+    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    return mask, 1 - mask
+
+def mask_generator_v3(y_min, x_min, y_max, x_max):
+    h = y_max - y_min
+    w = x_max - x_min
+    cy = w // 2
+    cx = h // 2
+    mask = np.zeros(shape=(w, h), dtype=np.float16) 
+    max_dist = calc_manhattan_dist(0, 0, cx, cy)
+    
+    # fill mask with L1 distance (from each pixel to center pixel)
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i, j] = calc_manhattan_dist(j, i, cx, cy) 
+    mask /= max_dist # normalize
+    mask = 1 - mask
+    mask[mask>=0.7] = 1
     mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
     return mask, 1 - mask
 
@@ -375,21 +403,28 @@ def detect(save_img=False):
         cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
         for i in range(((len(line)-1) // 4)-1):
-            y_min, x_min, y_max, x_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
-            sy_min, sx_min, sy_max, sx_max = bbox_scale_up(y_min, x_min, y_max, x_max, height, width, 2) # scaled bbox
+            x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
+            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox
             
             ##################################### SELECT MAKS GENERATION FUNCTION VERSION #####################################
-            # mask generator v1 (using euclidean distance and thresholding)
-            # mask, inv_mask = mask_generator_v1(sy_min, sx_min, sy_max, sx_max)
+            # mask generator v0 (same as not using mask)
+            # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
+            
+            # mask generator v1 (using Euclidean distance and thresholding)
+            # mask, inv_mask = mask_generator_v1(sx_min, sy_min, sx_max, sy_max)
 
             # mask generator v2 (using padding)
-            mask, inv_mask = mask_generator_v2(sy_min, sx_min, sy_max, sx_max)            
+            # mask, inv_mask = mask_generator_v2(sx_min, sy_min, sx_max, sy_max)            
+
+            # mask generator v3 (using Manhattan distance)
+            mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
+
             ###################################################################################################################
 
-            orig_face = orig_img[sx_min:sx_max, sy_min:sy_max]
-            cart_face = cart_img[sx_min:sx_max, sy_min:sy_max]
+            orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
+            cart_face = cart_img[sy_min:sy_max, sx_min:sx_max]
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
-            face_swapped_img[sx_min:sx_max, sy_min:sy_max] = swap_face
+            face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
         
         frame_array.append(face_swapped_img)
     swap_e = time.time()
