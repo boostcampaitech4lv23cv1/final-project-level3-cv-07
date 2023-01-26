@@ -7,6 +7,14 @@ import guided_filter
 from tqdm import tqdm
 import time
 import cv2
+import argparse
+
+def createDirectory(dir):
+    try:
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+    except OSError:
+        print("Error: Failed to create the directory.")
 
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
@@ -72,19 +80,23 @@ def cartoonize(load_folder, save_folder, model_path):
     
 
 if __name__ == '__main__':
-    model_path = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/saved_models'
-    load_folder = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig'
-    save_folder = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_cart'
-    input_video = '/opt/ml/final-project-level3-cv-07/models/track/assets/chim.mp4'
-    
-    if not os.path.exists(load_folder):
-        os.mkdir(load_folder)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--project', type=str, default='chim', help='name of video project')
 
-    if not os.path.exists(save_folder):
-        os.mkdir(save_folder)
-    save_vid_2_img(input_video,load_folder)
+    opt = parser.parse_args()
+
+    model_path = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/saved_models'
+    load_dir = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/' + opt.project + '/image_orig'
+    save_dir = '/opt/ml/final-project-level3-cv-07/models/track/cartoonize/' + opt.project + '/image_cart'
+    input_video = '/opt/ml/final-project-level3-cv-07/models/track/assets/' + opt.project + '.mp4'
+    
+    
+    createDirectory(load_dir)
+    createDirectory(save_dir)
+
+    save_vid_2_img(input_video,load_dir)
 
     s = time.time()
-    cartoonize(load_folder, save_folder, model_path)
+    cartoonize(load_dir, save_dir, model_path)
     e = time.time()
-    print(f"Total elapsed time: {e-s}") 
+    print(f"Total elapsed time: {e-s}")

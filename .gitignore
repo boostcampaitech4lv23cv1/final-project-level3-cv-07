@@ -1,6 +1,13 @@
 **/.ipynb*
 **/__pycache__/
+.vscode/launch.json
+
 *.mp4
+*.mov
+
+*.png
+*.jpg
+*.jpeg
 
 # frontend
 
@@ -10,13 +17,7 @@
 models/track/pretrained/*
 models/track/assets/
 models/track/runs
+exp*/
 
 # cartoonize
 models/cartoonize/test_code/save_models/*
-
-#
-#models/code/BoT-SORT/exp*
-#models/code/BoT-SORT/exp*
-*.png
-exp*/
-*.mov
