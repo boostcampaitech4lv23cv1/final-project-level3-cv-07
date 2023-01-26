@@ -37,27 +37,27 @@ def write_results(filename, results):
     with open(filename, 'a') as f:
             f.writelines(results)
 
-def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
-    w = x_max - x_min
-    h = y_max - y_min
-    y_min -= h//scale
-    x_min -= w//scale
-    y_max += h//scale
-    x_max += w//scale
-
-    if y_min < 0:
-        y_min = 0
+def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
+    w = y_max - y_min
+    h = x_max - x_min
+    x_min -= h//scale
+    y_min -= w//scale
+    x_max += h//scale
+    y_max += w//scale
 
     if x_min < 0:
         x_min = 0
 
-    if y_max > width:
-        y_max = width
+    if y_min < 0:
+        y_min = 0
 
-    if x_max > height:
-        x_max = height
+    if x_max > width:
+        x_max = width
+
+    if y_max > height:
+        y_max = height
     
-    return int(y_min), int(x_min), int(y_max), int(x_max)    
+    return int(x_min), int(y_min), int(x_max), int(y_max)    
 
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx-x)**2 + (cy-y)**2)
@@ -65,40 +65,64 @@ def calc_euclidean_dist(x, y, cx, cy):
 def calc_manhattan_dist(x, y, cx, cy):
     return abs(cx-x) + abs(cy-y)
 
-def mask_generator_v0(y_min, x_min, y_max, x_max):
-    h = y_max - y_min
+# mask generator v0 (exactly same as not using mask)
+def mask_generator_v0(x_min, y_min, x_max, y_max):
     w = x_max - x_min
-    mask = np.ones(shape=(w, h), dtype=np.float16) 
-    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    h = y_max - y_min
+    mask = np.ones(shape=(h, w), dtype=np.float16) 
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
-def mask_generator_v1(y_min, x_min, y_max, x_max):
-    h = y_max - y_min
+
+# mask generator v1 (using Euclidean distance and thresholding)
+def mask_generator_v1(x_min, y_min, x_max, y_max, thr=0.7):
     w = x_max - x_min
-    cy = w // 2
-    cx = h // 2
-    mask = np.zeros(shape=(w, h), dtype=np.float16) 
+    h = y_max - y_min
+    cx = w // 2
+    cy = h // 2
+    mask = np.zeros(shape=(h, w), dtype=np.float16) 
     max_dist = calc_euclidean_dist(0, 0, cx, cy)
     
     # fill mask with L2 distance (from each pixel to center pixel)
     for i in range(len(mask)):
         for j in range(len(mask[0])):
             mask[i, j] = calc_euclidean_dist(j, i, cx, cy) 
-    mask /= max_dist # normalize
+    mask /= max_dist # normalize all dist
     mask = 1 - mask
-    mask[mask>=0.7] = 1
-    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    mask[mask>=thr] = 1
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
-def mask_generator_v2(y_min, x_min, y_max, x_max, level=10, step=3):
-    h = y_max - y_min
+# mask generator v2 (using Manhattan distance)
+def mask_generator_v2(x_min, y_min, x_max, y_max, thr=0.7):
     w = x_max - x_min
+    h = y_max - y_min
+    cx = w // 2
+    cy = h // 2
+    mask = np.zeros(shape=(h, w), dtype=np.float16) 
+    max_dist = calc_manhattan_dist(0, 0, cx, cy)
+    
+    # fill mask with L1 distance (from each pixel to center pixel)
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i, j] = calc_manhattan_dist(j, i, cx, cy) 
+    mask /= max_dist # normalize all dist
+    mask = 1 - mask
+    mask[mask>=thr] = 1
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+    return mask, 1 - mask
+
+# mask generator v3 (using padding)
+def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
+    w = x_max - x_min
+    h = y_max - y_min
+    
     n_w = w-level*2*step
     n_h = h-level*2*step
     
     if n_w <= 0 or n_h <= 0:
-        mask = np.ones(shape=(w, h), dtype=np.float16)
-        mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+        mask = np.ones(shape=(h, w), dtype=np.float16)
+        mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
         return mask, 1-mask
     
     mask = np.ones(shape=(n_w, n_h), dtype=np.float16)
@@ -106,25 +130,7 @@ def mask_generator_v2(y_min, x_min, y_max, x_max, level=10, step=3):
     for i in range(level):
         const = 1- (1/level*(i+1))
         mask = np.pad(mask, ((step, step), (step, step)), 'constant', constant_values=const) 
-    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
-    return mask, 1 - mask
-
-def mask_generator_v3(y_min, x_min, y_max, x_max):
-    h = y_max - y_min
-    w = x_max - x_min
-    cy = w // 2
-    cx = h // 2
-    mask = np.zeros(shape=(w, h), dtype=np.float16) 
-    max_dist = calc_manhattan_dist(0, 0, cx, cy)
-    
-    # fill mask with L1 distance (from each pixel to center pixel)
-    for i in range(len(mask)):
-        for j in range(len(mask[0])):
-            mask[i, j] = calc_manhattan_dist(j, i, cx, cy) 
-    mask /= max_dist # normalize
-    mask = 1 - mask
-    mask[mask>=0.7] = 1
-    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
 def detect(save_img=False):
@@ -407,17 +413,18 @@ def detect(save_img=False):
             sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox
             
             ##################################### SELECT MAKS GENERATION FUNCTION VERSION #####################################
-            # mask generator v0 (same as not using mask)
-            # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
+            """
+            Select mask generator version among below
+            mask generator v0 - same as not using mask
+            mask generator v1 - using Euclidean distance (L2 distance) and thresholding
+            mask generator v2 - using Manhattan distance (L1 distance) and thresholding
+            mask generator v3 - using padding
+            """
             
-            # mask generator v1 (using Euclidean distance and thresholding)
+            # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
             # mask, inv_mask = mask_generator_v1(sx_min, sy_min, sx_max, sy_max)
-
-            # mask generator v2 (using padding)
-            # mask, inv_mask = mask_generator_v2(sx_min, sy_min, sx_max, sy_max)            
-
-            # mask generator v3 (using Manhattan distance)
-            mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
+            mask, inv_mask = mask_generator_v2(sx_min, sy_min, sx_max, sy_max)            
+            # mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
 
             ###################################################################################################################
 
