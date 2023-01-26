@@ -62,7 +62,7 @@ def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx-x)**2 + (cy-y)**2)
 
-def mask_generate_v1(y_min, x_min, y_max, x_max):
+def mask_generator_v1(y_min, x_min, y_max, x_max):
     h = y_max - y_min
     w = x_max - x_min
     cy = w // 2
@@ -80,7 +80,7 @@ def mask_generate_v1(y_min, x_min, y_max, x_max):
     mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
     return mask, 1 - mask
 
-def mask_generate_v2(y_min, x_min, y_max, x_max, level=10, step=3):
+def mask_generator_v2(y_min, x_min, y_max, x_max, level=10, step=3):
     h = y_max - y_min
     w = x_max - x_min
     n_w = w-level*2*step
@@ -378,11 +378,13 @@ def detect(save_img=False):
             y_min, x_min, y_max, x_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
             sy_min, sx_min, sy_max, sx_max = bbox_scale_up(y_min, x_min, y_max, x_max, height, width, 2) # scaled bbox
             
+            ##################################### SELECT MAKS GENERATION FUNCTION VERSION #####################################
             # mask generator v1 (using euclidean distance and thresholding)
-            # mask, inv_mask = mask_generate_v1(sy_min, sx_min, sy_max, sx_max)
+            # mask, inv_mask = mask_generator_v1(sy_min, sx_min, sy_max, sx_max)
 
             # mask generator v2 (using padding)
-            mask, inv_mask = mask_generate_v2(sy_min, sx_min, sy_max, sx_max)            
+            mask, inv_mask = mask_generator_v2(sy_min, sx_min, sy_max, sx_max)            
+            ###################################################################################################################
 
             orig_face = orig_img[sx_min:sx_max, sy_min:sy_max]
             cart_face = cart_img[sx_min:sx_max, sy_min:sy_max]
