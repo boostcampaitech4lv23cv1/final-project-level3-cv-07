@@ -469,8 +469,8 @@ def detect(save_img=False):
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
         frame_idx = line[0] # Image Index starts from 1
-        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
-        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
+        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_{frame_idx}.png')
+        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
         for i in range(((len(line)-1) // 4)-1):
             x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
