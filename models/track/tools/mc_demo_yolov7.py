@@ -3,6 +3,9 @@ import time
 from pathlib import Path
 import sys
 import os
+from collections import defaultdict
+import glob 
+import re
 
 import cv2
 from tqdm import tqdm
@@ -12,6 +15,8 @@ from numpy import random
 import numpy as np
 from scipy.spatial.distance import cdist
 from collections import defaultdict
+from PIL import Image
+from facenet_pytorch import InceptionResnetV1, MTCNN
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadStreams, LoadImages
@@ -30,39 +35,194 @@ from deepface import DeepFace
 sys.path.insert(0, './yolov7')
 sys.path.append('.')
 
+def get_frame(source):
+    
+    cap = cv2.VideoCapture(source)
+    frame_list = []
+
+    while(True):
+        ret, cur_frame = cap.read()
+        if cur_frame is None: break
+
+        frame_list.append(cur_frame)
+        
+    return frame_list
+
+def calculate_similarity(target_feature,tracker_feat,sim_thres):
+    print("Similairties(cosine) list: ")        
+    print(cdist(target_feature.reshape(1,target_feature.size), list(tracker_feat.values()), metric="cosine"))
+    print("Similairties(Euclidean) list: ")        
+    print(cdist(target_feature.reshape(1,target_feature.size), list(tracker_feat.values()), metric="euclidean"))
+    print(f"Similarity Threshold : {opt.sim_thres}")
+    sim = cdist(target_feature.reshape(1,target_feature.size), list(tracker_feat.values()), metric="cosine") > sim_thres # distance가 1 이상인 (즉, 비슷하지 않은) tracker 찾기
+    t_ids = np.asarray(list(tracker_feat.keys())) 
+    valid_ids = t_ids[sim[0]] # key에 넣어서 해당 tracker ID만을 뽑아내기
+    return valid_ids
+
+
+def get_valid_tids(tracker,results,frame_list,tracklet_dir,target_dir):
+    
+    ''' 
+    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
+    1. tracker status에 대한 설명
+    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
+    - tracker.removed_stracks : tracking이 종료된 tracker instance 
+    2. TODO 
+    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
+    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
+    3. FIXME
+    - frame_list에 모든 프레임 정보 저장하지 않고, 뒤에서 필요한 frame만 cv.imread로 불러오기
+    '''
+    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
+    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다. 
+    t_ids = []
+    
+    # 과거 종료된 tracker들 중에서
+    for i in tracker.removed_stracks:
+        if i.tracklet_len > 5 : # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다. 
+            middle_frame = (i.start_frame + i.end_frame)//2
+            x1,y1,x2,y2 = results[i.track_id][middle_frame]
+            cv2.imwrite(f"{tracklet_dir}/{i.track_id}.png",np.array(frame_list[middle_frame-1][int(y1):int(y2),int(x1):int(x2),:]))
+            t_ids.append(i.track_id)
+            
+    # 영상이 끝난 시점에 살아있던 tracker에 대해서 
+    for i in tracker.tracked_stracks:
+        if i.tracklet_len > 5 : # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
+            # test[i.track_id] = i.smooth_feat
+            middle_frame = (i.start_frame + i.end_frame)//2
+            x1,y1,x2,y2 = results[i.track_id][middle_frame]
+            cv2.imwrite(f"{tracklet_dir}/{i.track_id}.png",np.array(frame_list[middle_frame-1][int(y1):int(y2),int(x1):int(x2),:]))
+            t_ids.append(i.track_id)
+
+    for i in tracker.lost_stracks:
+        if i.tracklet_len > 5 : # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
+            # test[i.track_id] = i.smooth_feat
+            middle_frame = (i.start_frame + i.end_frame)//2
+            x1,y1,x2,y2 = results[i.track_id][i.start_frame]
+            cv2.imwrite(f"{tracklet_dir}/{i.track_id}.png",np.array(frame_list[middle_frame-1][int(y1):int(y2),int(x1):int(x2),:]))
+            t_ids.append(i.track_id)
+
+    valid_ids =list(set(t_ids))
+    dfs = DeepFace.find(img_path=target_dir,db_path=tracklet_dir,enforce_detection=False)
+    for i in range(len(dfs)) : 
+        valid_ids.remove(int(dfs.iloc[i].identity.split('/')[-1].split('.')[0]))
+    
+    return valid_ids
+
+def face_swap(frame_list, final_lines, save_dir):
+    
+    fps = 30
+    
+    ## FIXME 
+    img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_1.png')
+    height, width, layers = img.shape
+    size = (width,height)
+
+    frame_array = frame_list
+    
+    # face swap per frame
+    for line in tqdm(final_lines):
+        assert (len(line)-1) % 4 == 0
+        frame_idx = line[0] # Image Index starts from 1
+        # orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_{frame_idx}.png')
+        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_cart/frame_{frame_idx}.png')
+        resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
+        #face_swapped_img = orig_img
+
+        for i in range(((len(line)-1) // 4)-1):
+            x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4]
+            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2)
+            # face_swapped_img = cv2.rectangle(face_swapped_img,(sx_min,sy_min),(sx_max,sy_max),(0,0,0),3)
+            frame_array[frame_idx-1][sy_min:sy_max, sx_min:sx_max] = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
+        
+        #frame_array.append(face_swapped_img)
+
+    out = cv2.VideoWriter(os.path.join(save_dir,'face_swapped_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
+    for i in tqdm(range(len(frame_array))):
+        # writing to a image array
+        out.write(frame_array[i])
+    out.release()
+
+def parsing_results(valid_ids,save_dir):
+    
+    with open(os.path.join(save_dir,'results.txt'), 'r') as f:
+        lines = f.readlines()
+
+        parsed_lines = [] 
+        
+        # Remove unnecessary info and casting data type (str -> int)
+        for line in lines:
+            line = line.split(",")[:-3]
+            line = list(map(int, list(map(float, line))))
+            parsed_lines.append(line)    
+
+        # Remove redundant info and soted by frame > obj_id
+        parsed_lines = sorted(list(map(list, set(list(map(tuple, parsed_lines))))), key=lambda x : (x[0], x[1]))
+
+        # Summary info (per frame)
+        final_lines = []
+        for line in parsed_lines:
+            frame, obj_id, x, y, w, h, conf = line
+            if obj_id in valid_ids:
+                if not final_lines or frame != final_lines[-1][0]:
+                    final_lines.append([frame, x, y, x+w, y+h])
+                else:
+                    final_lines[-1] = final_lines[-1]+[x, y, x+w, y+h]
+    return final_lines
+
+def get_frame(source):
+    
+    cap = cv2.VideoCapture(source)
+    frame_list = []
+
+    while(True):
+        ret, cur_frame = cap.read()
+        if cur_frame is None: break
+
+        frame_list.append(cur_frame)
+        
+    return frame_list
+
 def write_results(filename, results):
 
     with open(filename, 'a') as f:
             f.writelines(results)
 
-def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
-    w = x_max - x_min
+def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
+    w = y_max - y_min
     h = x_max - x_min
-    y_min -= h//scale
-    x_min -= w//scale
-    y_max += h//scale
-    x_max += w//scale
-
-    if y_min < 0:
-        y_min = 0
+    x_min -= h//scale
+    y_min -= w//scale
+    x_max += h//scale
+    y_max += w//scale
 
     if x_min < 0:
         x_min = 0
 
-    if y_max > height:
-        y_max = height
+    if y_min < 0:
+        y_min = 0
 
     if x_max > width:
         x_max = width
+
+    if y_max > height:
+        y_max = height
     
-    return int(y_min), int(x_min), int(y_max), int(x_max)
+    return int(x_min), int(y_min), int(x_max), int(y_max)    
 
-
+def extract_feature(target_path,save_dir):
+    
+    mtcnn = MTCNN()
+    img = Image.open(target_path)
+    resnet= InceptionResnetV1(pretrained='vggface2').eval()
+    img_cropped = mtcnn(img,save_path = str(save_dir) + '/target_detect.png')
+    img_embedding = resnet(img_cropped.unsqueeze(0))
+    
 def detect(save_img=False):
 
     start_time_total = time.time()
     
-    target_feature = np.asarray(DeepFace.represent(opt.target)) # yolov7/detect_temp.py의 함수를 그대로 사용하였음
+    # target_feature = np.asarray(DeepFace.represent(opt.target)) # yolov7/detect_temp.py의 함수를 그대로 사용하였음
 
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
@@ -73,7 +233,10 @@ def detect(save_img=False):
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=False))  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
-        
+    
+    extract_feature(opt.target,save_dir)
+    # target_feature = target_feature2
+    
     # Initialize
     set_logging()
     device = select_device(opt.device)
@@ -117,6 +280,7 @@ def detect(save_img=False):
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     
     t0 = time.time()
+    results_temp = defaultdict(dict)
     for frame, path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -138,7 +302,6 @@ def detect(save_img=False):
 
         # Process detections
         results = []
-
         for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), dataset.count
@@ -173,6 +336,7 @@ def detect(save_img=False):
                     results.append(
                         f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                     )
+                    results_temp[tid][frame]=tlbr
                     if save_results:
                         write_results(os.path.join(save_dir,'results.txt'),results)
                     
@@ -218,132 +382,11 @@ def detect(save_img=False):
         
     print(f'Done. ({time.time() - t0:.3f}s)')
 
-    cap = cv2.VideoCapture(opt.source)
+    frame_list = get_frame(opt.source)
+    valid_ids = get_valid_tids(tracker,results_temp,frame_list,opt.tracklet,str(save_dir) + '/target_detect.png')
+    final_lines = parsing_results(valid_ids,save_dir)
+    face_swap(frame_list,final_lines,save_dir)
     
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)    
-    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-
-    frame_list = []
-
-    while(True):
-        ret, cur_frame = cap.read()
-        if cur_frame is None: break
-
-        frame_list.append(cur_frame)
-    ''' 
-    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
-    1. tracker status에 대한 설명
-    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
-    - tracker.removed_stracks : tracking이 종료된 tracker instance 
-    2. TODO 
-    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
-    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
-        - tracker.curr_feat : 가장 최근 bbox의 feature  
-        - tracker.smooth_feat : 매 frame moving average한 feature
-        - DeepFace.represent("crop img") : 각 tracker마다 대표 bbox를 선정하고 api를 호출 
-    3. FIXME
-    - frame_list에 모든 프레임 정보 저장하지 않고, 뒤에서 필요한 frame만 cv.imread로 불러오기
-    '''
-
-    test = {} # 딕셔너리 생성 --> {t_id : feature vector, t_id : feature_vector...}
-
-    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
-    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다. 
-
-    # 과거 종료된 tracker들 중에서
-    for i in tracker.removed_stracks:
-        if i.tracklet_len > 5 : # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다. 
-            xywh = i.xywh
-            x1,y1,x2,y2 = float(xywh[0]),float(xywh[1]),float(xywh[0])+float(xywh[2]),float(xywh[1])+float(xywh[3]) # [x,y,w,h]--> [x1,y1,x2,y2]
-            # test[i.track_id] = i.smooth_feat
-            test[i.track_id] = np.array(DeepFace.represent(frame_list[i.end_frame-1][int(y1):int(y2),int(x1):int(x2),:], enforce_detection=False))
-    
-    # 영상이 끝난 시점에 살아있던 tracker에 대해서 
-    for i in tracker.tracked_stracks:
-        if i.tracklet_len > 5 : # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            xywh = i.xywh
-            x1,y1,x2,y2 = float(xywh[0]),float(xywh[1]),float(xywh[0])+float(xywh[2]),float(xywh[1])+float(xywh[3]) # [x,y,w,h]--> [x1,y1,x2,y2]
-            # test[i.track_id] = i.smooth_feat
-            test[i.track_id] = np.array(DeepFace.represent(frame_list[i.end_frame-1][int(y1):int(y2),int(x1):int(x2),:], enforce_detection=False))
-    
-    print("Similairties list: ")        
-    print(cdist(target_feature.reshape(1,target_feature.size), list(test.values()), metric="euclidean"))
-    print(f"Similarity Threshold : {opt.sim_thres}")
-    sim = cdist(target_feature.reshape(1,target_feature.size), list(test.values()), metric="euclidean") > opt.sim_thres # distance가 1 이상인 (즉, 비슷하지 않은) tracker 찾기
-    t_ids = np.asarray(list(test.keys())) 
-    valid_ids = t_ids[sim[0]] # key에 넣어서 해당 tracker ID만을 뽑아내기
-    
-    # frame_bbox = defaultdict(set)
-    # with open(f"{save_dir}/results.txt", "r") as f: # 프레임 단위로 저장된 t_id, bbox 정보
-    #     lines = f.readlines()
-    #     for line in lines:
-    #         line = line.split(',')
-    #         if int(line[1]) in valid_ids: # 만약 위에서 선정한 tracker에 포함된다면
-    #             frame_bbox[int(line[0])].add(line[2:6]) # frame_bbox라는 dictionary에 bbox들을 저장
-    #             # frame_bbox --> frame : [[bbox1],[bbox2],[bbox3]...]
-    #     for k,v in frame_bbox.items() :
-    #         frame_bbox[k] = list(v)    
-    
-    ''' 
-    앞 단계에서 넘어오는 정보 
-    1. Similarity 계산이 끝난 후, 우리가 cartoonize해야 할 bbox들이 선정되어 frame_bbox 라는 dictionary로 넘어옴
-    2. frame_bbox --> {frame : [[bbox1],[bbox2],[bbox3]...], frame : [[bbox1],[bbox2],[bbox3]...]}
-    3. bbox = [x,y,w,h] 
-    '''
-    
-    with open(os.path.join(save_dir,'results.txt'), 'r') as f:
-        lines = f.readlines()
-
-        parsed_lines = [] 
-        
-        # Remove unnecessary info and casting data type (str -> int)
-        for line in lines:
-            line = line.split(",")[:-3]
-            line = list(map(int, list(map(float, line))))
-            parsed_lines.append(line)    
-
-        # Remove redundant info and soted by frame > obj_id
-        parsed_lines = sorted(list(map(list, set(list(map(tuple, parsed_lines))))), key=lambda x : (x[0], x[1]))
-
-        # Summary info (per frame)
-        final_lines = []
-        for line in parsed_lines:
-            frame, obj_id, x, y, w, h, conf = line
-            if obj_id in valid_ids:
-                if not final_lines or frame != final_lines[-1][0]:
-                    final_lines.append([frame, x, y, x+w, y+h])
-                else:
-                    final_lines[-1] = final_lines[-1]+[x, y, x+w, y+h]
-
-        # ===========================================================================
-    
-    frame_array = []
-    
-    ## FIXME 
-    img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_1.png')
-    height, width, layers = img.shape
-    size = (width,height)
-    
-    # face swap per frame
-    for line in tqdm(final_lines):
-        assert (len(line)-1) % 4 == 0
-        frame_idx = line[0] # Image Index starts from 1
-        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
-        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
-        face_swapped_img = orig_img
-
-        for i in range(((len(line)-1) // 4)-1):
-            y_min, x_min, y_max, x_max = bbox_scale_up(line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4], height, width, 2)
-            face_swapped_img[x_min:x_max, y_min:y_max] = cart_img[x_min:x_max, y_min:y_max]
-        
-        frame_array.append(face_swapped_img)
-
-    out = cv2.VideoWriter(os.path.join(save_dir,'face_swapped_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
-    for i in tqdm(range(len(frame_array))):
-        # writing to a image array
-        out.write(frame_array[i])
-    out.release()
     end_time_total = time.time()
 
     print(f"Total Time Elapsed : {end_time_total - start_time_total}")
@@ -351,14 +394,15 @@ def detect(save_img=False):
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='/opt/ml/BoT-SORT/pretrained/yolov7-tiny.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='/opt/ml/BoT-SORT/assets/chim.mp4', help='source')  # file/folder, 0 for webcam
-    parser.add_argument('--target',default="/opt/ml/BoT-SORT/target/chim.jpeg",help='path of the target image')
+    parser.add_argument('--weights', nargs='+', type=str, default='/opt/ml/final-project-level3-cv-07/models/track/pretrained/yolov7-tiny.pt', help='model.pt path(s)')
+    parser.add_argument('--source', type=str, default='/opt/ml/final-project-level3-cv-07/models/track/assets/njeans.mp4', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--target',default="/opt/ml/final-project-level3-cv-07/models/track/target/haerin.jpg",help='path of the target image')
     parser.add_argument('--cartoon',default="/opt/ml/BoT-SORT/assets/chim_cartoonized.mp4",help='path of the target image')
+    parser.add_argument('--tracklet',default="/opt/ml/final-project-level3-cv-07/models/track/tracklet")
     parser.add_argument('--img-size', type=int, default=1920, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.09, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.7, help='IOU threshold for NMS')
-    parser.add_argument('--sim-thres', type=float, default=0.35, help='Similarity threshold for face matching')
+    parser.add_argument('--sim-thres', type=float, default=0.39, help='Similarity threshold for face matching')
     parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
