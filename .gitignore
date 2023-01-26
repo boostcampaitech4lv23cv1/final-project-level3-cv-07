@@ -17,6 +17,7 @@
 models/track/pretrained/*
 models/track/assets/
 models/track/runs
+models/track/target
 exp*/
 
 # cartoonize

@@ -181,31 +181,6 @@ def face_swap(frame_array, final_lines, save_dir):
         out.write(frame_array[i])
     out.release()
 
-    '''
-    # face swap per frame
-    for line in tqdm(final_lines):
-        assert (len(line)-1) % 4 == 0
-        frame_idx = line[0] # Image Index starts from 1
-        # orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_{frame_idx}.png')
-        cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_cart/frame_{frame_idx}.png')
-        resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
-        #face_swapped_img = orig_img
-
-        for i in range(((len(line)-1) // 4)-1):
-            x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4]
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2)
-            # face_swapped_img = cv2.rectangle(face_swapped_img,(sx_min,sy_min),(sx_max,sy_max),(0,0,0),3)
-            frame_array[frame_idx-1][sy_min:sy_max, sx_min:sx_max] = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
-        
-        #frame_array.append(face_swapped_img)
-
-    out = cv2.VideoWriter(os.path.join(save_dir,'face_swapped_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
-    for i in tqdm(range(len(frame_array))):
-        # writing to a image array
-        out.write(frame_array[i])
-    out.release()
-    '''
-
 def parsing_results(valid_ids, save_dir):
     
     with open(os.path.join(save_dir,'results.txt'), 'r') as f:
