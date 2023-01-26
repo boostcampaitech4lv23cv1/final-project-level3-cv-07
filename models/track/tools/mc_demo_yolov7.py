@@ -1,17 +1,19 @@
 import argparse
 import time
-from pathlib import Path
 import sys
 import os
-
 import cv2
-from tqdm import tqdm
+import math
 import torch
 import torch.backends.cudnn as cudnn
-from numpy import random
 import numpy as np
-from scipy.spatial.distance import cdist
+
+from tqdm import tqdm
+from pathlib import Path
+from deepface import DeepFace
+from numpy import random
 from collections import defaultdict
+from scipy.spatial.distance import cdist
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadStreams, LoadImages
@@ -21,11 +23,11 @@ from yolov7.utils.general import check_img_size, check_requirements, check_imsho
 from yolov7.utils.plots import plot_one_box
 from yolov7.utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 from yolov7.detect_temp import detect_image
-from fast_reid.fast_reid_interfece import FastReIDInterface
 
 from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
-from deepface import DeepFace
+
+from fast_reid.fast_reid_interfece import FastReIDInterface
 
 sys.path.insert(0, './yolov7')
 sys.path.append('.')
@@ -35,28 +37,101 @@ def write_results(filename, results):
     with open(filename, 'a') as f:
             f.writelines(results)
 
-def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
-    w = x_max - x_min
+def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
+    w = y_max - y_min
     h = x_max - x_min
-    y_min -= h//scale
-    x_min -= w//scale
-    y_max += h//scale
-    x_max += w//scale
-
-    if y_min < 0:
-        y_min = 0
+    x_min -= h//scale
+    y_min -= w//scale
+    x_max += h//scale
+    y_max += w//scale
 
     if x_min < 0:
         x_min = 0
 
-    if y_max > height:
-        y_max = height
+    if y_min < 0:
+        y_min = 0
 
     if x_max > width:
         x_max = width
-    
-    return int(y_min), int(x_min), int(y_max), int(x_max)
 
+    if y_max > height:
+        y_max = height
+    
+    return int(x_min), int(y_min), int(x_max), int(y_max)    
+
+def calc_euclidean_dist(x, y, cx, cy):
+    return math.sqrt((cx-x)**2 + (cy-y)**2)
+
+def calc_manhattan_dist(x, y, cx, cy):
+    return abs(cx-x) + abs(cy-y)
+
+# mask generator v0 (exactly same as not using mask)
+def mask_generator_v0(x_min, y_min, x_max, y_max):
+    w = x_max - x_min
+    h = y_max - y_min
+    mask = np.ones(shape=(h, w), dtype=np.float16) 
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+    return mask, 1 - mask
+
+
+# mask generator v1 (using Euclidean distance and thresholding)
+def mask_generator_v1(x_min, y_min, x_max, y_max, thr=0.7):
+    w = x_max - x_min
+    h = y_max - y_min
+    cx = w // 2
+    cy = h // 2
+    mask = np.zeros(shape=(h, w), dtype=np.float16) 
+    max_dist = calc_euclidean_dist(0, 0, cx, cy)
+    
+    # fill mask with L2 distance (from each pixel to center pixel)
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i, j] = calc_euclidean_dist(j, i, cx, cy) 
+    mask /= max_dist # normalize all dist
+    mask = 1 - mask
+    mask[mask>=thr] = 1
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+    return mask, 1 - mask
+
+# mask generator v2 (using Manhattan distance)
+def mask_generator_v2(x_min, y_min, x_max, y_max, thr=0.7):
+    w = x_max - x_min
+    h = y_max - y_min
+    cx = w // 2
+    cy = h // 2
+    mask = np.zeros(shape=(h, w), dtype=np.float16) 
+    max_dist = calc_manhattan_dist(0, 0, cx, cy)
+    
+    # fill mask with L1 distance (from each pixel to center pixel)
+    for i in range(len(mask)):
+        for j in range(len(mask[0])):
+            mask[i, j] = calc_manhattan_dist(j, i, cx, cy) 
+    mask /= max_dist # normalize all dist
+    mask = 1 - mask
+    mask[mask>=thr] = 1
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+    return mask, 1 - mask
+
+# mask generator v3 (using padding)
+def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
+    w = x_max - x_min
+    h = y_max - y_min
+    
+    n_w = w-level*2*step
+    n_h = h-level*2*step
+    
+    if n_w <= 0 or n_h <= 0:
+        mask = np.ones(shape=(h, w), dtype=np.float16)
+        mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+        return mask, 1-mask
+    
+    mask = np.ones(shape=(n_w, n_h), dtype=np.float16)
+
+    for i in range(level):
+        const = 1- (1/level*(i+1))
+        mask = np.pad(mask, ((step, step), (step, step)), 'constant', constant_values=const) 
+    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
+    return mask, 1 - mask
 
 def detect(save_img=False):
 
@@ -326,18 +401,41 @@ def detect(save_img=False):
     size = (width,height)
     
     # face swap per frame
+    swap_s = time.time()
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
         frame_idx = line[0] # Image Index starts from 1
         orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
         cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
-
         for i in range(((len(line)-1) // 4)-1):
-            y_min, x_min, y_max, x_max = bbox_scale_up(line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4], height, width, 2)
-            face_swapped_img[x_min:x_max, y_min:y_max] = cart_img[x_min:x_max, y_min:y_max]
+            x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
+            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox ('s' means scaled)
+            
+            ##################################### SELECT MASK GENERATION FUNCTION #####################################
+            """
+            Select mask generator function
+            - mask generator v0: same as not using mask
+            - mask generator v1: using Euclidean distance (L2 distance) and thresholding
+            - mask generator v2: using Manhattan distance (L1 distance) and thresholding
+            - mask generator v3: using padding
+            """
+            
+            # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
+            # mask, inv_mask = mask_generator_v1(sx_min, sy_min, sx_max, sy_max)
+            mask, inv_mask = mask_generator_v2(sx_min, sy_min, sx_max, sy_max)            
+            # mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
+
+            ###################################################################################################################
+
+            orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
+            cart_face = cart_img[sy_min:sy_max, sx_min:sx_max]
+            swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
+            face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
         
         frame_array.append(face_swapped_img)
+    swap_e = time.time()
+    print(f"Time Elapsed for face swap: {swap_e - swap_s}")
 
     out = cv2.VideoWriter(os.path.join(save_dir,'face_swapped_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
     for i in tqdm(range(len(frame_array))):
