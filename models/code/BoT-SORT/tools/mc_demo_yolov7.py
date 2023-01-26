@@ -80,6 +80,25 @@ def mask_generate_v1(y_min, x_min, y_max, x_max):
     mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
     return mask, 1 - mask
 
+def mask_generate_v2(y_min, x_min, y_max, x_max, level=10, step=3):
+    h = y_max - y_min
+    w = x_max - x_min
+    n_w = w-level*2*step
+    n_h = h-level*2*step
+    
+    if n_w <= 0 or n_h <= 0:
+        mask = np.ones(shape=(w, h), dtype=np.float16)
+        mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+        return mask, 1-mask
+    
+    mask = np.ones(shape=(n_w, n_h), dtype=np.float16)
+
+    for i in range(level):
+        const = 1- (1/level*(i+1))
+        mask = np.pad(mask, ((step, step), (step, step)), 'constant', constant_values=const) 
+    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    return mask, 1 - mask
+
 def detect(save_img=False):
 
     start_time_total = time.time()
@@ -348,6 +367,7 @@ def detect(save_img=False):
     size = (width,height)
     
     # face swap per frame
+    swap_s = time.time()
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
         frame_idx = line[0] # Image Index starts from 1
@@ -355,14 +375,23 @@ def detect(save_img=False):
         cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
         for i in range(((len(line)-1) // 4)-1):
-            y_min, x_min, y_max, x_max = bbox_scale_up(line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4], height, width, 0.5)
-            orig_face = orig_img[x_min:x_max, y_min:y_max]
-            cart_face = cart_img[x_min:x_max, y_min:y_max]
-            mask, inv_mask = mask_generate_v1(y_min, x_min, y_max, x_max)
+            y_min, x_min, y_max, x_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
+            sy_min, sx_min, sy_max, sx_max = bbox_scale_up(y_min, x_min, y_max, x_max, height, width, 2) # scaled bbox
+            
+            # mask generator v1 (using euclidean distance and thresholding)
+            # mask, inv_mask = mask_generate_v1(sy_min, sx_min, sy_max, sx_max)
+
+            # mask generator v2 (using padding)
+            mask, inv_mask = mask_generate_v2(sy_min, sx_min, sy_max, sx_max)            
+
+            orig_face = orig_img[sx_min:sx_max, sy_min:sy_max]
+            cart_face = cart_img[sx_min:sx_max, sy_min:sy_max]
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
-            face_swapped_img[x_min:x_max, y_min:y_max] = swap_face
+            face_swapped_img[sx_min:sx_max, sy_min:sy_max] = swap_face
         
         frame_array.append(face_swapped_img)
+    swap_e = time.time()
+    print(f"Time Elapsed for face swap: {swap_e - swap_s}")
 
     out = cv2.VideoWriter(os.path.join(save_dir,'face_swapped_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
     for i in tqdm(range(len(frame_array))):
