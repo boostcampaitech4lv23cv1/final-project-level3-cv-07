@@ -1,17 +1,19 @@
 import argparse
 import time
-from pathlib import Path
 import sys
 import os
-
 import cv2
-from tqdm import tqdm
+import math
 import torch
 import torch.backends.cudnn as cudnn
-from numpy import random
 import numpy as np
-from scipy.spatial.distance import cdist
+
+from tqdm import tqdm
+from pathlib import Path
+from deepface import DeepFace
+from numpy import random
 from collections import defaultdict
+from scipy.spatial.distance import cdist
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadStreams, LoadImages
@@ -21,11 +23,11 @@ from yolov7.utils.general import check_img_size, check_requirements, check_imsho
 from yolov7.utils.plots import plot_one_box
 from yolov7.utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 from yolov7.detect_temp import detect_image
-from fast_reid.fast_reid_interfece import FastReIDInterface
 
 from tracker.mc_bot_sort import BoTSORT
 from tracker.tracking_utils.timer import Timer
-from deepface import DeepFace
+
+from fast_reid.fast_reid_interfece import FastReIDInterface
 
 sys.path.insert(0, './yolov7')
 sys.path.append('.')
@@ -37,7 +39,7 @@ def write_results(filename, results):
 
 def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
     w = x_max - x_min
-    h = x_max - x_min
+    h = y_max - y_min
     y_min -= h//scale
     x_min -= w//scale
     y_max += h//scale
@@ -49,14 +51,34 @@ def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
     if x_min < 0:
         x_min = 0
 
-    if y_max > height:
-        y_max = height
+    if y_max > width:
+        y_max = width
 
-    if x_max > width:
-        x_max = width
+    if x_max > height:
+        x_max = height
     
-    return y_min, x_min, y_max, x_max
+    return int(y_min), int(x_min), int(y_max), int(x_max)    
 
+def calc_euclidean_dist(x, y, cx, cy):
+    return math.sqrt((cx-x)**2 + (cy-y)**2)
+
+def mask_generate_v1(y_min, x_min, y_max, x_max):
+    h = y_max - y_min
+    w = x_max - x_min
+    cy = w // 2
+    cx = h // 2
+    mask = np.zeros(shape=(w, h), dtype=np.float16) 
+    max_dist = calc_euclidean_dist(0, 0, cx, cy)
+    # FIXME
+    # fill mask with L2 distance (each pixel to center pixel)
+    for y in range(len(mask)):
+        for x in range(len(mask[0])):
+            mask[y, x] = calc_euclidean_dist(x, y, cx, cy) 
+    mask /= max_dist # normalize
+    mask = 1 - mask
+    mask[mask>=0.7] = 1
+    mask = np.reshape(np.repeat(mask, 3), (w, h, 3))
+    return mask, 1 - mask
 
 def detect(save_img=False):
 
@@ -332,10 +354,13 @@ def detect(save_img=False):
         orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_orig/frame_{frame_idx}.png')
         cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/code/BoT-SORT/cartoonize/image_cart/frame_{frame_idx}.png')
         face_swapped_img = orig_img
-
         for i in range(((len(line)-1) // 4)-1):
-            y_min, x_min, y_max, x_max = bbox_scale_up(line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4], height, width, 2)
-            face_swapped_img[x_min:x_max, y_min:y_max] = cart_img[x_min:x_max, y_min:y_max]
+            y_min, x_min, y_max, x_max = bbox_scale_up(line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4], height, width, 0.5)
+            orig_face = orig_img[x_min:x_max, y_min:y_max]
+            cart_face = cart_img[x_min:x_max, y_min:y_max]
+            mask, inv_mask = mask_generate_v1(y_min, x_min, y_max, x_max)
+            swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
+            face_swapped_img[x_min:x_max, y_min:y_max] = swap_face
         
         frame_array.append(face_swapped_img)
 
