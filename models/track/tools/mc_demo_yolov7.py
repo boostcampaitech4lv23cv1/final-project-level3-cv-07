@@ -55,7 +55,7 @@ def bbox_scale_up(y_min, x_min, y_max, x_max, height, width, scale):
     if x_max > width:
         x_max = width
     
-    return y_min, x_min, y_max, x_max
+    return int(y_min), int(x_min), int(y_max), int(x_max)
 
 
 def detect(save_img=False):
