@@ -300,7 +300,7 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
         mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
         return mask, 1-mask
     
-    mask = np.ones(shape=(n_w, n_h), dtype=np.float16)
+    mask = np.ones(shape=(n_h, n_w), dtype=np.float16)
 
     for i in range(level):
         const = 1- (1/level*(i+1))
