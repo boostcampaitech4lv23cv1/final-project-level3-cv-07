@@ -293,26 +293,13 @@ def write_results(filename, results):
 
 
 def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
-    w = y_max - y_min
-    h = x_max - x_min
-    x_min -= h // scale
-    y_min -= w // scale
-    x_max += h // scale
-    y_max += w // scale
-
-    if x_min < 0:
-        x_min = 0
-
-    if y_min < 0:
-        y_min = 0
-
-    if x_max > width:
-        x_max = width
-
-    if y_max > height:
-        y_max = height
-
-    return int(x_min), int(y_min), int(x_max), int(y_max)
+    h = y_max - y_min
+    w = x_max - x_min
+    x_min = int(max(0, x_min - w // scale)) 
+    y_min = int(max(0, y_min - h // scale))
+    x_max = int(min(width, x_max + w // scale)) 
+    y_max = int(min(height, y_max + h // scale))
+    return x_min, y_min, x_max, y_max
 
 
 def calc_euclidean_dist(x, y, cx, cy):
