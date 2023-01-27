@@ -28,3 +28,5 @@ onnxruntime==1.8.0
 onnx-simplifier==0.3.5
 seaborn
 deepface==0.0.75
+fastapi
+uvicorn
