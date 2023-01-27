@@ -77,6 +77,19 @@ def get_frame(source):
     return frame_list
 
 
+def get_frame_num(source):
+    cap = cv2.VideoCapture(source)
+    frame_list = []
+    i = 0
+    while True:
+        ret, cur_frame = cap.read()
+        if cur_frame is None:
+            break
+        i += 1
+
+    return i
+
+
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
     print(
@@ -197,7 +210,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
     ## FIXME
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_orig/frame_1.png"
     )
     height, width, layers = img.shape
     size = (width, height)
@@ -209,14 +222,14 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
         orig_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_orig/frame_{frame_idx}.png"
         )
         cart_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_cart/frame_{frame_idx}.png"
         )
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
-        for i in range(((len(line) - 1) // 4) - 1):
+        for i in range(((len(line) - 1) // 4)):
             x_min, y_min, x_max, y_max = (
                 line[4 * i + 1],
                 line[4 * i + 2],
@@ -256,7 +269,7 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
     out.release()
 
 
-def parsing_results(valid_ids, save_dir):
+def parsing_results(valid_ids, save_dir, num_frames):
 
     with open(os.path.join(save_dir, "results.txt"), "r") as f:
         lines = f.readlines()
@@ -277,14 +290,45 @@ def parsing_results(valid_ids, save_dir):
 
         # Summary info (per frame)
         final_lines = []
+        i = 1
         for line in parsed_lines:
             frame, obj_id, x, y, w, h, conf = line
+            
+            ### save valid face
             if obj_id in valid_ids:
                 if not final_lines or frame != final_lines[-1][0]:
                     final_lines.append([frame, x, y, x + w, y + h])
                 else:
                     final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
-    return final_lines
+
+            ### save all face (for debugging)
+            # if not final_lines or frame != final_lines[-1][0]:
+            #     final_lines.append([frame, x, y, x + w, y + h])
+            # else:
+            #     final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
+
+                
+        total_lines = []
+        
+        idx = 1
+        for i in range(len(final_lines)):
+            if idx < final_lines[i][0]:
+                while idx < final_lines[i][0]:
+                    total_lines.append([idx+1])
+                    idx += 1
+            total_lines.append(final_lines[i])
+            idx += 1
+            
+        while len(total_lines) < num_frames:
+            total_lines.append([total_lines[-1][0] + 1])
+                
+        # for debugging            
+        for line in total_lines:
+            print(line[0], end=" / ")
+            print(num_frames, end = " : ")
+            print(line)
+            
+    return total_lines
 
 
 def write_results(filename, results):
@@ -396,10 +440,10 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        "/opt/ml/final-project-level3-cv-07/models/track/assets/" + opt.project + ".mp4"
+        "/opt/ml/final-project-level3-cv-07/models/track/assets/HanniPham.mp4"
     )
     target_path = (
-        "/opt/ml/final-project-level3-cv-07/models/track/target/" + opt.target + ".jpeg"
+        "/opt/ml/final-project-level3-cv-07/models/track/target/HanniPham.jpg"
     )
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
@@ -616,7 +660,8 @@ def detect(opt, save_img=False):
                 write_results(os.path.join(save_dir, "valid_ids.txt"), "\n")
             write_results(os.path.join(save_dir, "valid_ids.txt"), str(id) + " ")
 
-    final_lines = parsing_results(valid_ids, save_dir)
+    num_frames = get_frame_num(source)
+    final_lines = parsing_results(valid_ids, save_dir, num_frames)
     save_face_swapped_vid(final_lines, save_dir, fps, opt)
 
     end_time_total = time.time()
@@ -632,7 +677,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"chim"
+        target = f"HanniPham"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -646,7 +691,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"chim"
+        project= f"HanniPham"
         name= "exp"
         exist_ok= None
         trace= None
