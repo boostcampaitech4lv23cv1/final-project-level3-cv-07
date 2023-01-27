@@ -121,7 +121,7 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     return valid_ids
 
 
-def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir,min_length):
+def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_length, conf_thresh):
 
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
@@ -146,15 +146,16 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir,min_le
         ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
             frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
             x1,y1,x2,y2,conf = value
-            cv2.imwrite(
-                f"{tracklet_dir}/{i.track_id}.png",
-                np.array(
-                    frame_list[frame][
-                        int(y1) : int(y2), int(x1) : int(x2), :
-                    ]
-                ),
-            )
-            t_ids[i.track_id]=conf
+            if conf > conf_thresh : 
+                cv2.imwrite(
+                    f"{tracklet_dir}/{i.track_id}.png",
+                    np.array(
+                        frame_list[frame][
+                            int(y1) : int(y2), int(x1) : int(x2), :
+                        ]
+                    ),
+                )
+                t_ids[i.track_id]=conf
 
     dfs = DeepFace.find(
         img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
@@ -608,6 +609,7 @@ def detect(opt, save_img=False):
         tracklet_dir,
         str(save_dir) + "/target_detect.png",
         opt.min_frame,
+        opt.conf_thresh
     )
 
     if save_results:
@@ -672,6 +674,7 @@ if __name__ == "__main__":
         new_track_thresh = 0.4
         track_buffer = 30
         match_thresh = 0.7
+        conf_thresh = 0.7 # added
         aspect_ratio_thresh = 1.6
         min_box_area = 10
         min_frame = 5 # added
