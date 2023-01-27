@@ -55,7 +55,7 @@ _C.MODEL.BACKBONE.ATT_DROP_RATE = 0.0
 # If use ImageNet pretrain model
 _C.MODEL.BACKBONE.PRETRAIN = False
 # Pretrain model path
-_C.MODEL.BACKBONE.PRETRAIN_PATH = ''
+_C.MODEL.BACKBONE.PRETRAIN_PATH = ""
 
 # ---------------------------------------------------------------------------- #
 # REID HEADS options
@@ -79,7 +79,7 @@ _C.MODEL.HEADS.POOL_LAYER = "GlobalAvgPool"
 _C.MODEL.HEADS.CLS_LAYER = "Linear"  # ArcSoftmax" or "CircleSoftmax"
 
 # Margin and Scale for margin-based classification layer
-_C.MODEL.HEADS.MARGIN = 0.
+_C.MODEL.HEADS.MARGIN = 0.0
 _C.MODEL.HEADS.SCALE = 1
 
 # ---------------------------------------------------------------------------- #
@@ -125,9 +125,9 @@ _C.MODEL.LOSSES.COSFACE.SCALE = 1.0
 _C.MODEL.WEIGHTS = ""
 
 # Values to be used for image normalization
-_C.MODEL.PIXEL_MEAN = [0.485*255, 0.456*255, 0.406*255]
+_C.MODEL.PIXEL_MEAN = [0.485 * 255, 0.456 * 255, 0.406 * 255]
 # Values to be used for image normalization
-_C.MODEL.PIXEL_STD = [0.229*255, 0.224*255, 0.225*255]
+_C.MODEL.PIXEL_STD = [0.229 * 255, 0.224 * 255, 0.225 * 255]
 
 # -----------------------------------------------------------------------------
 # KNOWLEDGE DISTILLATION
@@ -155,7 +155,7 @@ _C.INPUT.CROP.SIZE = [224, 224]
 # Size of the origin size cropped
 _C.INPUT.CROP.SCALE = [0.16, 1]
 # Aspect ratio of the origin aspect ratio cropped
-_C.INPUT.CROP.RATIO = [3./4., 4./3.]
+_C.INPUT.CROP.RATIO = [3.0 / 4.0, 4.0 / 3.0]
 
 # Random probability for image horizontal flip
 _C.INPUT.FLIP = CN({"ENABLED": False})
@@ -163,7 +163,7 @@ _C.INPUT.FLIP.PROB = 0.5
 
 # Value of padding size
 _C.INPUT.PADDING = CN({"ENABLED": False})
-_C.INPUT.PADDING.MODE = 'constant'
+_C.INPUT.PADDING.MODE = "constant"
 _C.INPUT.PADDING.SIZE = 10
 
 # Random color jitter
@@ -188,7 +188,7 @@ _C.INPUT.AUGMIX.PROB = 0.0
 # Random Erasing
 _C.INPUT.REA = CN({"ENABLED": False})
 _C.INPUT.REA.PROB = 0.5
-_C.INPUT.REA.VALUE = [0.485*255, 0.456*255, 0.406*255]
+_C.INPUT.REA.VALUE = [0.485 * 255, 0.456 * 255, 0.406 * 255]
 # Random Patch
 _C.INPUT.RPT = CN({"ENABLED": False})
 _C.INPUT.RPT.PROB = 0.5
@@ -234,7 +234,7 @@ _C.SOLVER.BASE_LR = 3e-4
 
 # This LR is applied to the last classification layer if
 # you want to 10x higher than BASE_LR.
-_C.SOLVER.HEADS_LR_FACTOR = 1.
+_C.SOLVER.HEADS_LR_FACTOR = 1.0
 
 _C.SOLVER.MOMENTUM = 0.9
 _C.SOLVER.NESTEROV = False
@@ -314,7 +314,7 @@ _C.TEST.RERANK.LAMBDA = 0.3
 
 # Precise batchnorm
 _C.TEST.PRECISE_BN = CN({"ENABLED": False})
-_C.TEST.PRECISE_BN.DATASET = 'Market1501'
+_C.TEST.PRECISE_BN.DATASET = "Market1501"
 _C.TEST.PRECISE_BN.NUM_ITER = 300
 
 # ---------------------------------------------------------------------------- #

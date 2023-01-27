@@ -7,12 +7,18 @@
 
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 from fast_reid.fastreid.config import get_cfg
-from fast_reid.fastreid.engine import default_argument_parser, default_setup, DefaultTrainer, launch
+from fast_reid.fastreid.engine import (
+    default_argument_parser,
+    default_setup,
+    DefaultTrainer,
+    launch,
+)
 from fast_reid.fastreid.utils.checkpoint import Checkpointer
 
 from fastdistill import *
+
 
 def setup(args):
     """

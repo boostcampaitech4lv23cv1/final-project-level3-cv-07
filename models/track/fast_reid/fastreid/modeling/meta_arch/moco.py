@@ -19,8 +19,11 @@ class MoCo(Baseline):
     def __init__(self, cfg):
         super().__init__(cfg)
 
-        dim = cfg.MODEL.HEADS.EMBEDDING_DIM if cfg.MODEL.HEADS.EMBEDDING_DIM \
+        dim = (
+            cfg.MODEL.HEADS.EMBEDDING_DIM
+            if cfg.MODEL.HEADS.EMBEDDING_DIM
             else cfg.MODEL.BACKBONE.FEAT_DIM
+        )
         size = cfg.MODEL.QUEUE_SIZE
         self.memory = Memory(dim, size)
 
@@ -33,9 +36,9 @@ class MoCo(Baseline):
         loss_dict = super().losses(outputs, gt_labels)
 
         # memory loss
-        pred_features = outputs['features']
+        pred_features = outputs["features"]
         loss_mb = self.memory(pred_features, gt_labels)
-        loss_dict['loss_mb'] = loss_mb
+        loss_dict["loss_mb"] = loss_mb
         return loss_dict
 
 
@@ -79,8 +82,8 @@ class Memory(nn.Module):
         assert self.K % batch_size == 0  # for simplicity
 
         # replace the keys at ptr (dequeue and enqueue)
-        self.queue[:, ptr:ptr + batch_size] = keys.T
-        self.queue_label[:, ptr:ptr + batch_size] = targets
+        self.queue[:, ptr : ptr + batch_size] = keys.T
+        self.queue_label[:, ptr : ptr + batch_size] = targets
         ptr = (ptr + batch_size) % self.K  # move pointer
 
         self.queue_ptr[0] = ptr
@@ -106,8 +109,12 @@ class Memory(nn.Module):
         dist_mat = torch.matmul(feat_q, self.queue)
 
         N, M = dist_mat.size()  # (bsz, memory)
-        is_pos = targets.view(N, 1).expand(N, M).eq(self.queue_label.expand(N, M)).float()
-        is_neg = targets.view(N, 1).expand(N, M).ne(self.queue_label.expand(N, M)).float()
+        is_pos = (
+            targets.view(N, 1).expand(N, M).eq(self.queue_label.expand(N, M)).float()
+        )
+        is_neg = (
+            targets.view(N, 1).expand(N, M).ne(self.queue_label.expand(N, M)).float()
+        )
 
         # Mask scores related to themselves
         same_indx = torch.eye(N, N, device=is_pos.device)
@@ -118,9 +125,11 @@ class Memory(nn.Module):
         s_p = dist_mat * is_pos
         s_n = dist_mat * is_neg
 
-        logit_p = -self.gamma * s_p + (-99999999.) * (1 - is_pos)
-        logit_n = self.gamma * (s_n + self.margin) + (-99999999.) * (1 - is_neg)
+        logit_p = -self.gamma * s_p + (-99999999.0) * (1 - is_pos)
+        logit_n = self.gamma * (s_n + self.margin) + (-99999999.0) * (1 - is_neg)
 
-        loss = F.softplus(torch.logsumexp(logit_p, dim=1) + torch.logsumexp(logit_n, dim=1)).mean()
+        loss = F.softplus(
+            torch.logsumexp(logit_p, dim=1) + torch.logsumexp(logit_n, dim=1)
+        ).mean()
 
         return loss

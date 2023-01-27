@@ -7,7 +7,7 @@
 
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.engine import default_argument_parser, default_setup, launch
@@ -18,7 +18,6 @@ from fastretri import *
 
 
 class Trainer(DefaultTrainer):
-
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_dir=None):
         data_loader, num_query = cls.build_test_loader(cfg, dataset_name)

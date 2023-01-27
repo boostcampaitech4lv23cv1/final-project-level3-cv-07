@@ -13,7 +13,9 @@ from .utils import euclidean_dist, cosine_dist
 def softmax_weights(dist, mask):
     max_v = torch.max(dist * mask, dim=1, keepdim=True)[0]
     diff = dist - max_v
-    Z = torch.sum(torch.exp(diff) * mask, dim=1, keepdim=True) + 1e-6  # avoid division by zero
+    Z = (
+        torch.sum(torch.exp(diff) * mask, dim=1, keepdim=True) + 1e-6
+    )  # avoid division by zero
     W = torch.exp(diff) * mask / Z
     return W
 
@@ -92,8 +94,12 @@ def triplet_loss(embedding, targets, margin, norm_feat, hard_mining):
     #     all_targets = targets
 
     N = dist_mat.size(0)
-    is_pos = targets.view(N, 1).expand(N, N).eq(targets.view(N, 1).expand(N, N).t()).float()
-    is_neg = targets.view(N, 1).expand(N, N).ne(targets.view(N, 1).expand(N, N).t()).float()
+    is_pos = (
+        targets.view(N, 1).expand(N, N).eq(targets.view(N, 1).expand(N, N).t()).float()
+    )
+    is_neg = (
+        targets.view(N, 1).expand(N, N).ne(targets.view(N, 1).expand(N, N).t()).float()
+    )
 
     if hard_mining:
         dist_ap, dist_an = hard_example_mining(dist_mat, is_pos, is_neg)

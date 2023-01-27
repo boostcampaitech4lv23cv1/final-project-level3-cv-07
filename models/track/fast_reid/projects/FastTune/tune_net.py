@@ -20,12 +20,16 @@ from ray.tune.schedulers.hb_bohb import HyperBandForBOHB
 from ray.tune.suggest.bohb import TuneBOHB
 from ray.tune.suggest.hyperopt import HyperOptSearch
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg, CfgNode
 from fast_reid.fastreid.engine import hooks
 from fast_reid.fastreid.modeling import build_model
-from fast_reid.fastreid.engine import DefaultTrainer, default_argument_parser, default_setup
+from fast_reid.fastreid.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+)
 from fast_reid.fastreid.utils.events import CommonMetricPrinter
 from fast_reid.fastreid.utils import comm
 from fast_reid.fastreid.utils.file_io import PathManager
@@ -34,7 +38,7 @@ from autotuner import *
 
 logger = logging.getLogger("fastreid.auto_tuner")
 
-ray.init(dashboard_host='127.0.0.1')
+ray.init(dashboard_host="127.0.0.1")
 
 
 class AutoTuner(DefaultTrainer):
@@ -53,12 +57,14 @@ class AutoTuner(DefaultTrainer):
             hooks.LRScheduler(self.optimizer, self.scheduler),
         ]
 
-        ret.append(hooks.LayerFreeze(
-            self.model,
-            cfg.MODEL.FREEZE_LAYERS,
-            cfg.SOLVER.FREEZE_ITERS,
-            cfg.SOLVER.FREEZE_FC_ITERS,
-        ))
+        ret.append(
+            hooks.LayerFreeze(
+                self.model,
+                cfg.MODEL.FREEZE_LAYERS,
+                cfg.SOLVER.FREEZE_ITERS,
+                cfg.SOLVER.FREEZE_FC_ITERS,
+            )
+        )
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
@@ -107,7 +113,8 @@ def update_config(cfg, config):
     cfg.SOLVER.IMS_PER_BATCH = config["bsz"]
     cfg.DATALOADER.NUM_INSTANCE = config["num_inst"]
 
-    if frozen: cfg.freeze()
+    if frozen:
+        cfg.freeze()
 
     return cfg
 
@@ -145,15 +152,16 @@ def main(args):
             # "circle_margin": hp.uniform("circle_margin", 0, 1) * 0.4 + 0.1,
         }
 
-        current_best_params = [{
-            "bsz": 0,  # index of hp.choice list
-            "num_inst": 3,
-        }]
+        current_best_params = [
+            {
+                "bsz": 0,  # index of hp.choice list
+                "num_inst": 3,
+            }
+        ]
 
         search_algo = HyperOptSearch(
-            search_space,
-            points_to_evaluate=current_best_params,
-            **exp_metrics)
+            search_space, points_to_evaluate=current_best_params, **exp_metrics
+        )
 
         if args.pbt:
             scheduler = PopulationBasedTraining(
@@ -163,33 +171,36 @@ def main(args):
                 hyperparam_mutations={
                     "bsz": [64, 96, 128, 160, 224, 256],
                     "num_inst": [2, 4, 8, 16, 32],
-                }
+                },
             )
         else:
             scheduler = ASHAScheduler(
-                grace_period=2,
-                reduction_factor=3,
-                max_t=7,
-                **exp_metrics)
+                grace_period=2, reduction_factor=3, max_t=7, **exp_metrics
+            )
 
     elif args.srch_algo == "bohb":
         search_space = CS.ConfigurationSpace()
-        search_space.add_hyperparameters([
-            # CS.UniformFloatHyperparameter(name="lr", lower=1e-6, upper=1e-3, log=True),
-            # CS.UniformIntegerHyperparameter(name="delay_epochs", lower=20, upper=60),
-            # CS.UniformFloatHyperparameter(name="ce_scale", lower=0.1, upper=1.0),
-            # CS.UniformIntegerHyperparameter(name="circle_scale", lower=8, upper=128),
-            # CS.UniformFloatHyperparameter(name="circle_margin", lower=0.1, upper=0.5),
-            # CS.UniformFloatHyperparameter(name="wd", lower=0, upper=1e-3),
-            # CS.UniformFloatHyperparameter(name="wd_bias", lower=0, upper=1e-3),
-            CS.CategoricalHyperparameter(name="bsz", choices=[64, 96, 128, 160, 224, 256]),
-            CS.CategoricalHyperparameter(name="num_inst", choices=[2, 4, 8, 16, 32]),
-            # CS.CategoricalHyperparameter(name="autoaug_enabled", choices=[True, False]),
-            # CS.CategoricalHyperparameter(name="cj_enabled", choices=[True, False]),
-        ])
+        search_space.add_hyperparameters(
+            [
+                # CS.UniformFloatHyperparameter(name="lr", lower=1e-6, upper=1e-3, log=True),
+                # CS.UniformIntegerHyperparameter(name="delay_epochs", lower=20, upper=60),
+                # CS.UniformFloatHyperparameter(name="ce_scale", lower=0.1, upper=1.0),
+                # CS.UniformIntegerHyperparameter(name="circle_scale", lower=8, upper=128),
+                # CS.UniformFloatHyperparameter(name="circle_margin", lower=0.1, upper=0.5),
+                # CS.UniformFloatHyperparameter(name="wd", lower=0, upper=1e-3),
+                # CS.UniformFloatHyperparameter(name="wd_bias", lower=0, upper=1e-3),
+                CS.CategoricalHyperparameter(
+                    name="bsz", choices=[64, 96, 128, 160, 224, 256]
+                ),
+                CS.CategoricalHyperparameter(
+                    name="num_inst", choices=[2, 4, 8, 16, 32]
+                ),
+                # CS.CategoricalHyperparameter(name="autoaug_enabled", choices=[True, False]),
+                # CS.CategoricalHyperparameter(name="cj_enabled", choices=[True, False]),
+            ]
+        )
 
-        search_algo = TuneBOHB(
-            search_space, max_concurrent=4, **exp_metrics)
+        search_algo = TuneBOHB(search_space, max_concurrent=4, **exp_metrics)
 
         scheduler = HyperBandForBOHB(
             time_attr="training_iteration",
@@ -199,16 +210,19 @@ def main(args):
         )
 
     else:
-        raise ValueError("Search algorithm must be chosen from [hyperopt, bohb], but got {}".format(args.srch_algo))
+        raise ValueError(
+            "Search algorithm must be chosen from [hyperopt, bohb], but got {}".format(
+                args.srch_algo
+            )
+        )
 
     reporter = CLIReporter(
         parameter_columns=["bsz", "num_inst"],
-        metric_columns=["r1", "map", "training_iteration"])
+        metric_columns=["r1", "map", "training_iteration"],
+    )
 
     analysis = tune.run(
-        partial(
-            train_tuner,
-            cfg=cfg),
+        partial(train_tuner, cfg=cfg),
         resources_per_trial={"cpu": 4, "gpu": 1},
         search_alg=search_algo,
         num_samples=args.num_trials,
@@ -216,14 +230,20 @@ def main(args):
         progress_reporter=reporter,
         local_dir=cfg.OUTPUT_DIR,
         keep_checkpoints_num=10,
-        name=args.srch_algo)
+        name=args.srch_algo,
+    )
 
     best_trial = analysis.get_best_trial("score", "max", "last")
     logger.info("Best trial config: {}".format(best_trial.config))
-    logger.info("Best trial final validation mAP: {}, Rank-1: {}".format(
-        best_trial.last_result["map"], best_trial.last_result["r1"]))
+    logger.info(
+        "Best trial final validation mAP: {}, Rank-1: {}".format(
+            best_trial.last_result["map"], best_trial.last_result["r1"]
+        )
+    )
 
-    save_dict = dict(R1=best_trial.last_result["r1"].item(), mAP=best_trial.last_result["map"].item())
+    save_dict = dict(
+        R1=best_trial.last_result["r1"].item(), mAP=best_trial.last_result["map"].item()
+    )
     save_dict.update(best_trial.config)
     path = os.path.join(cfg.OUTPUT_DIR, "best_config.yaml")
     with PathManager.open(path, "w") as f:
@@ -233,10 +253,18 @@ def main(args):
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--num-trials", type=int, default=8, help="number of tune trials")
-    parser.add_argument("--srch-algo", type=str, default="hyperopt",
-                        help="search algorithms for hyperparameters search space")
-    parser.add_argument("--pbt", action="store_true", help="use population based training")
+    parser.add_argument(
+        "--num-trials", type=int, default=8, help="number of tune trials"
+    )
+    parser.add_argument(
+        "--srch-algo",
+        type=str,
+        default="hyperopt",
+        help="search algorithms for hyperparameters search space",
+    )
+    parser.add_argument(
+        "--pbt", action="store_true", help="use population based training"
+    )
     args = parser.parse_args()
     print("Command Line Args:", args)
     main(args)

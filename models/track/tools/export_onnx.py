@@ -14,7 +14,10 @@ import os
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX onnx deploy")
     parser.add_argument(
-        "--output-name", type=str, default="bytetrack_s.onnx", help="output name of models"
+        "--output-name",
+        type=str,
+        default="bytetrack_s.onnx",
+        help="output name of models",
     )
     parser.add_argument(
         "--input", default="images", type=str, help="input node name of onnx model"

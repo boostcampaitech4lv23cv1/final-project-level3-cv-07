@@ -6,14 +6,18 @@
 import logging
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.engine import DefaultTrainer
 from fast_reid.fastreid.engine import default_argument_parser, default_setup, launch
 from fast_reid.fastreid.utils.checkpoint import Checkpointer
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
-from fast_reid.fastreid.data.build import _root, build_reid_train_loader, build_reid_test_loader
+from fast_reid.fastreid.data.build import (
+    _root,
+    build_reid_train_loader,
+    build_reid_test_loader,
+)
 from fast_reid.fastreid.data.transforms import build_transforms
 from fast_reid.fastreid.utils import comm
 
@@ -32,9 +36,13 @@ class AttrTrainer(DefaultTrainer):
         Overwrite it if you'd like a different model.
         """
         model = DefaultTrainer.build_model(cfg)
-        if cfg.MODEL.LOSSES.BCE.WEIGHT_ENABLED and \
-                AttrTrainer.sample_weights is not None:
-            setattr(model, "sample_weights", AttrTrainer.sample_weights.to(model.device))
+        if (
+            cfg.MODEL.LOSSES.BCE.WEIGHT_ENABLED
+            and AttrTrainer.sample_weights is not None
+        ):
+            setattr(
+                model, "sample_weights", AttrTrainer.sample_weights.to(model.device)
+            )
         else:
             setattr(model, "sample_weights", None)
         return model
@@ -46,11 +54,15 @@ class AttrTrainer(DefaultTrainer):
         train_items = list()
         attr_dict = None
         for d in cfg.DATASETS.NAMES:
-            dataset = DATASET_REGISTRY.get(d)(root=_root, combineall=cfg.DATASETS.COMBINEALL)
+            dataset = DATASET_REGISTRY.get(d)(
+                root=_root, combineall=cfg.DATASETS.COMBINEALL
+            )
             if comm.is_main_process():
                 dataset.show_train()
             if attr_dict is not None:
-                assert attr_dict == dataset.attr_dict, f"attr_dict in {d} does not match with previous ones"
+                assert (
+                    attr_dict == dataset.attr_dict
+                ), f"attr_dict in {d} does not match with previous ones"
             else:
                 attr_dict = dataset.attr_dict
             train_items.extend(dataset.train)

@@ -5,27 +5,41 @@
 """
 
 import sys
-sys.path.append('.')
+
+sys.path.append(".")
 from data import get_dataloader
 from config import cfg
 import argparse
 from data.datasets import init_dataset
+
 # cfg.DATALOADER.SAMPLER = 'triplet'
-cfg.DATASETS.NAMES = ("market1501", "dukemtmc", "cuhk03", "msmt17", "mot17", "mot20",)
+cfg.DATASETS.NAMES = (
+    "market1501",
+    "dukemtmc",
+    "cuhk03",
+    "msmt17",
+    "mot17",
+    "mot20",
+)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
-        '-cfg', "--config_file",
+        "-cfg",
+        "--config_file",
         default="",
         metavar="FILE",
         help="path to config file",
-        type=str
+        type=str,
     )
     # parser.add_argument("--local_rank", type=int, default=0)
-    parser.add_argument("opts", help="Modify config options using the command-line", default=None,
-                        nargs=argparse.REMAINDER)
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
     args = parser.parse_args()
     cfg.merge_from_list(args.opts)
 

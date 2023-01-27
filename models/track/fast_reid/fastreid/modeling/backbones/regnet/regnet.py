@@ -7,22 +7,25 @@ import torch.nn as nn
 
 from fast_reid.fastreid.layers import get_norm
 from fast_reid.fastreid.utils import comm
-from fast_reid.fastreid.utils.checkpoint import get_missing_parameters_message, get_unexpected_parameters_message
+from fast_reid.fastreid.utils.checkpoint import (
+    get_missing_parameters_message,
+    get_unexpected_parameters_message,
+)
 from .config import cfg as regnet_cfg
 from ..build import BACKBONE_REGISTRY
 
 logger = logging.getLogger(__name__)
 model_urls = {
-    '800x': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160905981/RegNetX-200MF_dds_8gpu.pyth',
-    '800y': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906567/RegNetY-800MF_dds_8gpu.pyth',
-    '1600x': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160990626/RegNetX-1.6GF_dds_8gpu.pyth',
-    '1600y': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906681/RegNetY-1.6GF_dds_8gpu.pyth',
-    '3200x': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906139/RegNetX-3.2GF_dds_8gpu.pyth',
-    '3200y': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906834/RegNetY-3.2GF_dds_8gpu.pyth',
-    '4000x': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906383/RegNetX-4.0GF_dds_8gpu.pyth',
-    '4000y': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906838/RegNetY-4.0GF_dds_8gpu.pyth',
-    '6400x': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161116590/RegNetX-6.4GF_dds_8gpu.pyth',
-    '6400y': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/160907112/RegNetY-6.4GF_dds_8gpu.pyth',
+    "800x": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160905981/RegNetX-200MF_dds_8gpu.pyth",
+    "800y": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906567/RegNetY-800MF_dds_8gpu.pyth",
+    "1600x": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160990626/RegNetX-1.6GF_dds_8gpu.pyth",
+    "1600y": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906681/RegNetY-1.6GF_dds_8gpu.pyth",
+    "3200x": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906139/RegNetX-3.2GF_dds_8gpu.pyth",
+    "3200y": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906834/RegNetY-3.2GF_dds_8gpu.pyth",
+    "4000x": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906383/RegNetX-4.0GF_dds_8gpu.pyth",
+    "4000y": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906838/RegNetY-4.0GF_dds_8gpu.pyth",
+    "6400x": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161116590/RegNetX-6.4GF_dds_8gpu.pyth",
+    "6400y": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160907112/RegNetY-6.4GF_dds_8gpu.pyth",
 }
 
 
@@ -34,7 +37,9 @@ def init_weights(m):
         m.weight.data.normal_(mean=0.0, std=math.sqrt(2.0 / fan_out))
     elif isinstance(m, nn.BatchNorm2d):
         zero_init_gamma = (
-                hasattr(m, "final_bn") and m.final_bn and regnet_cfg.BN.ZERO_INIT_FINAL_GAMMA
+            hasattr(m, "final_bn")
+            and m.final_bn
+            and regnet_cfg.BN.ZERO_INIT_FINAL_GAMMA
         )
         m.weight.data.fill_(0.0 if zero_init_gamma else 1.0)
         m.bias.data.zero_()
@@ -78,6 +83,7 @@ def drop_connect(x, drop_ratio):
     x.mul_(mask)
     return x
 
+
 class AnyHead(nn.Module):
     """AnyNet head."""
 
@@ -98,7 +104,7 @@ class VanillaBlock(nn.Module):
 
     def __init__(self, w_in, w_out, stride, bn_norm, bm=None, gw=None, se_r=None):
         assert (
-                bm is None and gw is None and se_r is None
+            bm is None and gw is None and se_r is None
         ), "Vanilla block does not support bm, gw, and se_r options"
         super(VanillaBlock, self).__init__()
         self.construct(w_in, w_out, stride, bn_norm)
@@ -151,7 +157,7 @@ class ResBasicBlock(nn.Module):
 
     def __init__(self, w_in, w_out, stride, bn_norm, bm=None, gw=None, se_r=None):
         assert (
-                bm is None and gw is None and se_r is None
+            bm is None and gw is None and se_r is None
         ), "Basic transform does not support bm, gw, and se_r options"
         super(ResBasicBlock, self).__init__()
         self.construct(w_in, w_out, stride, bn_norm)
@@ -347,7 +353,8 @@ class AnyStage(nn.Module):
             b_w_in = w_in if i == 0 else w_out
             # Construct the block
             self.add_module(
-                "b{}".format(i + 1), block_fun(b_w_in, w_out, b_stride, bn_norm, bm, gw, se_r)
+                "b{}".format(i + 1),
+                block_fun(b_w_in, w_out, b_stride, bn_norm, bm, gw, se_r),
             )
 
     def forward(self, x):
@@ -389,7 +396,9 @@ class AnyNet(nn.Module):
             )
         self.apply(init_weights)
 
-    def construct(self, stem_type, stem_w, block_type, ds, ws, ss, bn_norm, bms, gws, se_r):
+    def construct(
+        self, stem_type, stem_w, block_type, ds, ws, ss, bn_norm, bms, gws, se_r
+    ):
         # Generate dummy bot muls and gs for models that do not use them
         bms = bms if bms else [1.0 for _d in ds]
         gws = gws if gws else [1 for _d in ds]
@@ -403,7 +412,8 @@ class AnyNet(nn.Module):
         prev_w = stem_w
         for i, (d, w, s, bm, gw) in enumerate(stage_params):
             self.add_module(
-                "s{}".format(i + 1), AnyStage(prev_w, w, s, bn_norm, d, block_fun, bm, gw, se_r)
+                "s{}".format(i + 1),
+                AnyStage(prev_w, w, s, bn_norm, d, block_fun, bm, gw, se_r),
             )
             prev_w = w
         # Construct the head
@@ -457,7 +467,10 @@ class RegNet(AnyNet):
     def __init__(self, last_stride, bn_norm):
         # Generate RegNet ws per block
         b_ws, num_s, _, _ = generate_regnet(
-            regnet_cfg.REGNET.WA, regnet_cfg.REGNET.W0, regnet_cfg.REGNET.WM, regnet_cfg.REGNET.DEPTH
+            regnet_cfg.REGNET.WA,
+            regnet_cfg.REGNET.W0,
+            regnet_cfg.REGNET.WM,
+            regnet_cfg.REGNET.DEPTH,
         )
         # Convert to per stage format
         ws, ds = get_stages_from_blocks(b_ws, b_ws)
@@ -497,21 +510,19 @@ def init_pretrained_weights(key):
     import gdown
 
     def _get_torch_home():
-        ENV_TORCH_HOME = 'TORCH_HOME'
-        ENV_XDG_CACHE_HOME = 'XDG_CACHE_HOME'
-        DEFAULT_CACHE_DIR = '~/.cache'
+        ENV_TORCH_HOME = "TORCH_HOME"
+        ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
+        DEFAULT_CACHE_DIR = "~/.cache"
         torch_home = os.path.expanduser(
             os.getenv(
                 ENV_TORCH_HOME,
-                os.path.join(
-                    os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), 'torch'
-                )
+                os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
             )
         )
         return torch_home
 
     torch_home = _get_torch_home()
-    model_dir = os.path.join(torch_home, 'checkpoints')
+    model_dir = os.path.join(torch_home, "checkpoints")
     try:
         os.makedirs(model_dir)
     except OSError as e:
@@ -522,7 +533,7 @@ def init_pretrained_weights(key):
             # Unexpected OSError, re-raise.
             raise
 
-    filename = model_urls[key].split('/')[-1]
+    filename = model_urls[key].split("/")[-1]
 
     cached_file = os.path.join(model_dir, filename)
 
@@ -533,7 +544,9 @@ def init_pretrained_weights(key):
     comm.synchronize()
 
     logger.info(f"Loading pretrained model from {cached_file}")
-    state_dict = torch.load(cached_file, map_location=torch.device('cpu'))['model_state']
+    state_dict = torch.load(cached_file, map_location=torch.device("cpu"))[
+        "model_state"
+    ]
 
     return state_dict
 
@@ -549,20 +562,20 @@ def build_regnet_backbone(cfg):
     # fmt: on
 
     cfg_files = {
-        '200x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-200MF_dds_8gpu.yaml',
-        '200y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-200MF_dds_8gpu.yaml',
-        '400x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-400MF_dds_8gpu.yaml',
-        '400y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-400MF_dds_8gpu.yaml',
-        '800x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-800MF_dds_8gpu.yaml',
-        '800y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-800MF_dds_8gpu.yaml',
-        '1600x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-1.6GF_dds_8gpu.yaml',
-        '1600y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-1.6GF_dds_8gpu.yaml',
-        '3200x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-3.2GF_dds_8gpu.yaml',
-        '3200y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-3.2GF_dds_8gpu.yaml',
-        '4000x': 'fastreid/modeling/backbones/regnet/regnety/RegNetX-4.0GF_dds_8gpu.yaml',
-        '4000y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-4.0GF_dds_8gpu.yaml',
-        '6400x': 'fastreid/modeling/backbones/regnet/regnetx/RegNetX-6.4GF_dds_8gpu.yaml',
-        '6400y': 'fastreid/modeling/backbones/regnet/regnety/RegNetY-6.4GF_dds_8gpu.yaml',
+        "200x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-200MF_dds_8gpu.yaml",
+        "200y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-200MF_dds_8gpu.yaml",
+        "400x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-400MF_dds_8gpu.yaml",
+        "400y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-400MF_dds_8gpu.yaml",
+        "800x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-800MF_dds_8gpu.yaml",
+        "800y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-800MF_dds_8gpu.yaml",
+        "1600x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-1.6GF_dds_8gpu.yaml",
+        "1600y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-1.6GF_dds_8gpu.yaml",
+        "3200x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-3.2GF_dds_8gpu.yaml",
+        "3200y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-3.2GF_dds_8gpu.yaml",
+        "4000x": "fastreid/modeling/backbones/regnet/regnety/RegNetX-4.0GF_dds_8gpu.yaml",
+        "4000y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-4.0GF_dds_8gpu.yaml",
+        "6400x": "fastreid/modeling/backbones/regnet/regnetx/RegNetX-6.4GF_dds_8gpu.yaml",
+        "6400y": "fastreid/modeling/backbones/regnet/regnety/RegNetY-6.4GF_dds_8gpu.yaml",
     }[depth]
 
     regnet_cfg.merge_from_file(cfg_files)
@@ -572,10 +585,10 @@ def build_regnet_backbone(cfg):
         # Load pretrain path if specifically
         if pretrain_path:
             try:
-                state_dict = torch.load(pretrain_path, map_location=torch.device('cpu'))
+                state_dict = torch.load(pretrain_path, map_location=torch.device("cpu"))
                 logger.info(f"Loading pretrained model from {pretrain_path}")
             except FileNotFoundError as e:
-                logger.info(f'{pretrain_path} is not found! Please check this path.')
+                logger.info(f"{pretrain_path} is not found! Please check this path.")
                 raise e
             except KeyError as e:
                 logger.info("State dict keys error! Please check the state dict.")
@@ -586,11 +599,7 @@ def build_regnet_backbone(cfg):
 
         incompatible = model.load_state_dict(state_dict, strict=False)
         if incompatible.missing_keys:
-            logger.info(
-                get_missing_parameters_message(incompatible.missing_keys)
-            )
+            logger.info(get_missing_parameters_message(incompatible.missing_keys))
         if incompatible.unexpected_keys:
-            logger.info(
-                get_unexpected_parameters_message(incompatible.unexpected_keys)
-            )
+            logger.info(get_unexpected_parameters_message(incompatible.unexpected_keys))
     return model

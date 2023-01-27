@@ -13,27 +13,47 @@ class Non_local(nn.Module):
         self.in_channels = in_channels
         self.inter_channels = reduc_ratio // reduc_ratio
 
-        self.g = nn.Conv2d(in_channels=self.in_channels, out_channels=self.inter_channels,
-                           kernel_size=1, stride=1, padding=0)
+        self.g = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
 
         self.W = nn.Sequential(
-            nn.Conv2d(in_channels=self.inter_channels, out_channels=self.in_channels,
-                      kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(
+                in_channels=self.inter_channels,
+                out_channels=self.in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            ),
             get_norm(bn_norm, self.in_channels),
         )
         nn.init.constant_(self.W[1].weight, 0.0)
         nn.init.constant_(self.W[1].bias, 0.0)
 
-        self.theta = nn.Conv2d(in_channels=self.in_channels, out_channels=self.inter_channels,
-                               kernel_size=1, stride=1, padding=0)
+        self.theta = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
 
-        self.phi = nn.Conv2d(in_channels=self.in_channels, out_channels=self.inter_channels,
-                             kernel_size=1, stride=1, padding=0)
+        self.phi = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
 
     def forward(self, x):
         """
-                :param x: (b, t, h, w)
-                :return x: (b, t, h, w)
+        :param x: (b, t, h, w)
+        :return x: (b, t, h, w)
         """
         batch_size = x.size(0)
         g_x = self.g(x).view(batch_size, self.inter_channels, -1)

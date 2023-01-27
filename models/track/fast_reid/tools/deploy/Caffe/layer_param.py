@@ -4,19 +4,23 @@ from . import caffe_pb2 as pb
 
 
 def pair_process(item, strict_one=True):
-    if hasattr(item, '__iter__'):
+    if hasattr(item, "__iter__"):
         for i in item:
             if i != item[0]:
                 if strict_one:
                     raise ValueError("number in item {} must be the same".format(item))
                 else:
-                    print("IMPORTANT WARNING: number in item {} must be the same".format(item))
+                    print(
+                        "IMPORTANT WARNING: number in item {} must be the same".format(
+                            item
+                        )
+                    )
         return item[0]
     return item
 
 
 def pair_reduce(item):
-    if hasattr(item, '__iter__'):
+    if hasattr(item, "__iter__"):
         for i in item:
             if i != item[0]:
                 return item
@@ -24,8 +28,8 @@ def pair_reduce(item):
     return [item]
 
 
-class Layer_param():
-    def __init__(self, name='', type='', top=(), bottom=()):
+class Layer_param:
+    def __init__(self, name="", type="", top=(), bottom=()):
         self.param = pb.LayerParameter()
         self.name = self.param.name = name
         self.type = self.param.type = type
@@ -35,9 +39,13 @@ class Layer_param():
         self.bottom = self.param.bottom
         self.bottom.extend(bottom)
 
-    def fc_param(self, num_output, weight_filler='xavier', bias_filler='constant', has_bias=True):
-        if self.type != 'InnerProduct':
-            raise TypeError('the layer type must be InnerProduct if you want set fc param')
+    def fc_param(
+        self, num_output, weight_filler="xavier", bias_filler="constant", has_bias=True
+    ):
+        if self.type != "InnerProduct":
+            raise TypeError(
+                "the layer type must be InnerProduct if you want set fc param"
+            )
         fc_param = pb.InnerProductParameter()
         fc_param.num_output = num_output
         fc_param.weight_filler.type = weight_filler
@@ -46,9 +54,18 @@ class Layer_param():
             fc_param.bias_filler.type = bias_filler
         self.param.inner_product_param.CopyFrom(fc_param)
 
-    def conv_param(self, num_output, kernel_size, stride=(1), pad=(0,),
-                   weight_filler_type='xavier', bias_filler_type='constant',
-                   bias_term=True, dilation=None, groups=None):
+    def conv_param(
+        self,
+        num_output,
+        kernel_size,
+        stride=(1),
+        pad=(0,),
+        weight_filler_type="xavier",
+        bias_filler_type="constant",
+        bias_term=True,
+        dilation=None,
+        groups=None,
+    ):
         """
         add a conv_param layer if you spec the layer type "Convolution"
         Args:
@@ -59,8 +76,10 @@ class Layer_param():
             bias_filler_type: the bias filler type
         Returns:
         """
-        if self.type not in ['Convolution', 'Deconvolution']:
-            raise TypeError('the layer type must be Convolution or Deconvolution if you want set conv param')
+        if self.type not in ["Convolution", "Deconvolution"]:
+            raise TypeError(
+                "the layer type must be Convolution or Deconvolution if you want set conv param"
+            )
         conv_param = pb.ConvolutionParameter()
         conv_param.num_output = num_output
         conv_param.kernel_size.extend(pair_reduce(kernel_size))
@@ -76,7 +95,9 @@ class Layer_param():
             conv_param.group = groups
         self.param.convolution_param.CopyFrom(conv_param)
 
-    def pool_param(self, type='MAX', kernel_size=2, stride=2, pad=None, ceil_mode=False):
+    def pool_param(
+        self, type="MAX", kernel_size=2, stride=2, pad=None, ceil_mode=False
+    ):
         pool_param = pb.PoolingParameter()
         pool_param.pool = pool_param.PoolMethod.Value(type)
         pool_param.kernel_size = pair_process(kernel_size)
@@ -90,7 +111,9 @@ class Layer_param():
                 pool_param.pad = pad
         self.param.pooling_param.CopyFrom(pool_param)
 
-    def batch_norm_param(self, use_global_stats=0, moving_average_fraction=None, eps=None):
+    def batch_norm_param(
+        self, use_global_stats=0, moving_average_fraction=None, eps=None
+    ):
         bn_param = pb.BatchNormParameter()
         bn_param.use_global_stats = use_global_stats
         if moving_average_fraction:
@@ -125,14 +148,13 @@ class Layer_param():
                 interp_param.zoom_factor = scale_factor
 
         if size:
-            print('size:', size)
+            print("size:", size)
             interp_param.height = size[0]
             interp_param.width = size[1]
         self.param.interp_param.CopyFrom(interp_param)
 
     def add_data(self, *args):
-        """Args are data numpy array
-        """
+        """Args are data numpy array"""
         del self.param.blobs[:]
         for data in args:
             new_blob = self.param.blobs.add()

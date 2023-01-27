@@ -72,7 +72,9 @@ def collect_env_info():
     if tuple(map(int, torch_version.split(".")[:2])) >= (1, 5):
         from torch.utils.cpp_extension import ROCM_HOME
 
-        if (getattr(torch.version, "hip", None) is not None) and (ROCM_HOME is not None):
+        if (getattr(torch.version, "hip", None) is not None) and (
+            ROCM_HOME is not None
+        ):
             has_rocm = True
     has_cuda = has_gpu and (not has_rocm)
 
@@ -85,7 +87,10 @@ def collect_env_info():
         import fastreid  # noqa
 
         data.append(
-            ("fastreid", fastreid.__version__ + " @" + os.path.dirname(fastreid.__file__))
+            (
+                "fastreid",
+                fastreid.__version__ + " @" + os.path.dirname(fastreid.__file__),
+            )
         )
     except ImportError:
         data.append(("fastreid", "failed to import"))
@@ -116,7 +121,9 @@ def collect_env_info():
         data.append(
             (
                 "torchvision",
-                str(torchvision.__version__) + " @" + os.path.dirname(torchvision.__file__),
+                str(torchvision.__version__)
+                + " @"
+                + os.path.dirname(torchvision.__file__),
             )
         )
         if has_cuda:

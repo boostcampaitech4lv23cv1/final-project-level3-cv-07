@@ -15,5 +15,9 @@ from .non_local import Non_local
 from .se_layer import SELayer
 from .splat import SplAtConv2d, DropBlock2D
 from .weight_init import (
-    trunc_normal_, variance_scaling_, lecun_normal_, weights_init_kaiming, weights_init_classifier
+    trunc_normal_,
+    variance_scaling_,
+    lecun_normal_,
+    weights_init_kaiming,
+    weights_init_classifier,
 )

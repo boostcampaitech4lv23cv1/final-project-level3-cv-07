@@ -48,5 +48,9 @@ class TuneReportHook(EvalHook):
             self.trainer.checkpointer.save_dir = checkpoint_dir
             self.trainer.checkpointer.save(name="checkpoint", **additional_state)
 
-        metrics = dict(r1=results["Rank-1"], map=results["mAP"], score=(results["Rank-1"] + results["mAP"]) / 2)
+        metrics = dict(
+            r1=results["Rank-1"],
+            map=results["mAP"],
+            score=(results["Rank-1"] + results["mAP"]) / 2,
+        )
         tune.report(**metrics)

@@ -16,15 +16,14 @@ from fast_reid.fastreid.utils.file_io import PathManager
 
 
 class PfcPeriodicCheckpointer(PeriodicCheckpointer):
-
     def step(self, epoch: int, **kwargs: Any):
         rank = comm.get_rank()
         if (epoch + 1) % self.period == 0 and epoch < self.max_epoch - 1:
-            self.checkpointer.save(
-                f"softmax_weight_{epoch:04d}_rank_{rank:02d}"
-            )
+            self.checkpointer.save(f"softmax_weight_{epoch:04d}_rank_{rank:02d}")
         if epoch >= self.max_epoch - 1:
-            self.checkpointer.save(f"softmax_weight_{rank:02d}", )
+            self.checkpointer.save(
+                f"softmax_weight_{rank:02d}",
+            )
 
 
 class PfcCheckpointer(Checkpointer):

@@ -30,18 +30,18 @@ class EmbeddingHead(nn.Module):
 
     @configurable
     def __init__(
-            self,
-            *,
-            feat_dim,
-            embedding_dim,
-            num_classes,
-            neck_feat,
-            pool_type,
-            cls_type,
-            scale,
-            margin,
-            with_bnneck,
-            norm_type
+        self,
+        *,
+        feat_dim,
+        embedding_dim,
+        num_classes,
+        neck_feat,
+        pool_type,
+        cls_type,
+        scale,
+        margin,
+        with_bnneck,
+        norm_type,
     ):
         """
         NOTE: this interface is experimental.
@@ -61,8 +61,11 @@ class EmbeddingHead(nn.Module):
         super().__init__()
 
         # Pooling layer
-        assert hasattr(pooling, pool_type), "Expected pool types are {}, " \
-                                            "but got {}".format(pooling.__all__, pool_type)
+        assert hasattr(
+            pooling, pool_type
+        ), "Expected pool types are {}, " "but got {}".format(
+            pooling.__all__, pool_type
+        )
         self.pool_layer = getattr(pooling, pool_type)()
 
         self.neck_feat = neck_feat
@@ -78,8 +81,11 @@ class EmbeddingHead(nn.Module):
         self.bottleneck = nn.Sequential(*neck)
 
         # Classification head
-        assert hasattr(any_softmax, cls_type), "Expected cls types are {}, " \
-                                               "but got {}".format(any_softmax.__all__, cls_type)
+        assert hasattr(
+            any_softmax, cls_type
+        ), "Expected cls types are {}, " "but got {}".format(
+            any_softmax.__all__, cls_type
+        )
         self.weight = nn.Parameter(torch.Tensor(num_classes, feat_dim))
         self.cls_layer = getattr(any_softmax, cls_type)(num_classes, scale, margin)
 
@@ -104,16 +110,16 @@ class EmbeddingHead(nn.Module):
         norm_type     = cfg.MODEL.HEADS.NORM
         # fmt: on
         return {
-            'feat_dim': feat_dim,
-            'embedding_dim': embedding_dim,
-            'num_classes': num_classes,
-            'neck_feat': neck_feat,
-            'pool_type': pool_type,
-            'cls_type': cls_type,
-            'scale': scale,
-            'margin': margin,
-            'with_bnneck': with_bnneck,
-            'norm_type': norm_type
+            "feat_dim": feat_dim,
+            "embedding_dim": embedding_dim,
+            "num_classes": num_classes,
+            "neck_feat": neck_feat,
+            "pool_type": pool_type,
+            "cls_type": cls_type,
+            "scale": scale,
+            "margin": margin,
+            "with_bnneck": with_bnneck,
+            "norm_type": norm_type,
         }
 
     def forward(self, features, targets=None):
@@ -130,7 +136,7 @@ class EmbeddingHead(nn.Module):
         # fmt: on
 
         # Training
-        if self.cls_layer.__class__.__name__ == 'Linear':
+        if self.cls_layer.__class__.__name__ == "Linear":
             logits = F.linear(neck_feat, self.weight)
         else:
             logits = F.linear(F.normalize(neck_feat), F.normalize(self.weight))

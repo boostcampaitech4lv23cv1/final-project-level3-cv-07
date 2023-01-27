@@ -3,12 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
+
 # from torch.backends import cudnn
 
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.modeling.meta_arch import build_model
 from fast_reid.fastreid.utils.checkpoint import Checkpointer
-from fast_reid.fastreid.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from fast_reid.fastreid.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 
 # cudnn.benchmark = True
 
@@ -52,22 +58,22 @@ def preprocess(image, input_size):
 class FastReIDInterface:
     def __init__(self, config_file, weights_path, device, batch_size=8):
         super(FastReIDInterface, self).__init__()
-        if device != 'cpu':
-            self.device = 'cuda'
+        if device != "cpu":
+            self.device = "cuda"
         else:
-            self.device = 'cpu'
+            self.device = "cpu"
 
         self.batch_size = batch_size
 
-        self.cfg = setup_cfg(config_file, ['MODEL.WEIGHTS', weights_path])
+        self.cfg = setup_cfg(config_file, ["MODEL.WEIGHTS", weights_path])
 
         self.model = build_model(self.cfg)
         self.model.eval()
 
         Checkpointer(self.model).load(weights_path)
 
-        if self.device != 'cpu':
-            self.model = self.model.eval().to(device='cuda').half()
+        if self.device != "cpu":
+            self.model = self.model.eval().to(device="cuda").half()
         else:
             self.model = self.model.eval()
 
@@ -88,13 +94,17 @@ class FastReIDInterface:
             tlbr[1] = max(0, tlbr[1])
             tlbr[2] = min(W - 1, tlbr[2])
             tlbr[3] = min(H - 1, tlbr[3])
-            patch = image[tlbr[1]:tlbr[3], tlbr[0]:tlbr[2], :]
+            patch = image[tlbr[1] : tlbr[3], tlbr[0] : tlbr[2], :]
 
             # the model expects RGB inputs
             patch = patch[:, :, ::-1]
 
             # Apply pre-processing to image.
-            patch = cv2.resize(patch, tuple(self.cfg.INPUT.SIZE_TEST[::-1]), interpolation=cv2.INTER_LINEAR)
+            patch = cv2.resize(
+                patch,
+                tuple(self.cfg.INPUT.SIZE_TEST[::-1]),
+                interpolation=cv2.INTER_LINEAR,
+            )
             # patch, scale = preprocess(patch, self.cfg.INPUT.SIZE_TEST[::-1])
 
             # plt.figure()
@@ -148,4 +158,3 @@ class FastReIDInterface:
             features = np.vstack((features, feat))
 
         return features
-

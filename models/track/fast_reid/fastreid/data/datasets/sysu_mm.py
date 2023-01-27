@@ -10,17 +10,19 @@ from glob import glob
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ['SYSU_mm', ]
+__all__ = [
+    "SYSU_mm",
+]
 
 
 @DATASET_REGISTRY.register()
 class SYSU_mm(ImageDataset):
-    """sysu mm
-    """
+    """sysu mm"""
+
     dataset_dir = "SYSU-MM01"
     dataset_name = "sysumm01"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.train_path = os.path.join(self.root, self.dataset_dir)
 
@@ -34,7 +36,7 @@ class SYSU_mm(ImageDataset):
     def process_train(self, train_path):
         data = []
 
-        file_path_list = ['cam1', 'cam2', 'cam4', 'cam5']
+        file_path_list = ["cam1", "cam2", "cam4", "cam5"]
 
         for file_path in file_path_list:
             camid = self.dataset_name + "_" + file_path

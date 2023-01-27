@@ -10,17 +10,19 @@ from glob import glob
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ['iLIDS', ]
+__all__ = [
+    "iLIDS",
+]
 
 
 @DATASET_REGISTRY.register()
 class iLIDS(ImageDataset):
-    """iLIDS
-    """
+    """iLIDS"""
+
     dataset_dir = "iLIDS"
     dataset_name = "ilids"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.train_path = os.path.join(self.root, self.dataset_dir)
 
@@ -38,8 +40,8 @@ class iLIDS(ImageDataset):
             img_file = os.path.join(train_path, pid_dir)
             img_paths = glob(os.path.join(img_file, "*.png"))
             for img_path in img_paths:
-                split_path = img_path.split('/')
+                split_path = img_path.split("/")
                 pid = self.dataset_name + "_" + split_path[-2]
-                camid = self.dataset_name + "_" + split_path[-1].split('_')[0]
+                camid = self.dataset_name + "_" + split_path[-1].split("_")[0]
                 data.append([img_path, pid, camid])
         return data

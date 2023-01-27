@@ -25,8 +25,13 @@ class ImbalancedDatasetSampler(Sampler):
         size: number of samples to draw
     """
 
-    def __init__(self, data_source: List, size: int = None, seed: Optional[int] = None,
-                 callback_get_label: Callable = None):
+    def __init__(
+        self,
+        data_source: List,
+        size: int = None,
+        seed: Optional[int] = None,
+        callback_get_label: Callable = None,
+    ):
         self.data_source = data_source
         # consider all elements in the dataset
         self.indices = list(range(len(data_source)))
@@ -41,7 +46,10 @@ class ImbalancedDatasetSampler(Sampler):
             label_to_count[label] = label_to_count.get(label, 0) + 1
 
         # weight for each sample
-        weights = [1.0 / label_to_count[self._get_label(data_source, idx)] for idx in self.indices]
+        weights = [
+            1.0 / label_to_count[self._get_label(data_source, idx)]
+            for idx in self.indices
+        ]
         self.weights = torch.DoubleTensor(weights)
 
         if seed is None:
@@ -58,7 +66,9 @@ class ImbalancedDatasetSampler(Sampler):
 
     def __iter__(self):
         start = self._rank
-        yield from itertools.islice(self._infinite_indices(), start, None, self._world_size)
+        yield from itertools.islice(
+            self._infinite_indices(), start, None, self._world_size
+        )
 
     def _infinite_indices(self):
         np.random.seed(self._seed)

@@ -15,7 +15,7 @@ import torch.multiprocessing as mp
 from fast_reid.fastreid.engine import DefaultPredictor
 
 try:
-    mp.set_start_method('spawn')
+    mp.set_start_method("spawn")
 except RuntimeError:
     pass
 
@@ -50,7 +50,11 @@ class FeatureExtractionDemo(object):
         # the model expects RGB inputs
         original_image = original_image[:, :, ::-1]
         # Apply pre-processing to image.
-        image = cv2.resize(original_image, tuple(self.cfg.INPUT.SIZE_TEST[::-1]), interpolation=cv2.INTER_CUBIC)
+        image = cv2.resize(
+            original_image,
+            tuple(self.cfg.INPUT.SIZE_TEST[::-1]),
+            interpolation=cv2.INTER_CUBIC,
+        )
         # Make shape with a new batch dimension which is adapted for
         # network input
         image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))[None]
@@ -70,16 +74,22 @@ class FeatureExtractionDemo(object):
                 if cnt >= buffer_size:
                     batch = batch_data.popleft()
                     predictions = self.predictor.get()
-                    yield predictions, batch["targets"].cpu().numpy(), batch["camids"].cpu().numpy()
+                    yield predictions, batch["targets"].cpu().numpy(), batch[
+                        "camids"
+                    ].cpu().numpy()
 
             while len(batch_data):
                 batch = batch_data.popleft()
                 predictions = self.predictor.get()
-                yield predictions, batch["targets"].cpu().numpy(), batch["camids"].cpu().numpy()
+                yield predictions, batch["targets"].cpu().numpy(), batch[
+                    "camids"
+                ].cpu().numpy()
         else:
             for batch in data_loader:
                 predictions = self.predictor(batch["images"])
-                yield predictions, batch["targets"].cpu().numpy(), batch["camids"].cpu().numpy()
+                yield predictions, batch["targets"].cpu().numpy(), batch[
+                    "camids"
+                ].cpu().numpy()
 
 
 class AsyncPredictor:

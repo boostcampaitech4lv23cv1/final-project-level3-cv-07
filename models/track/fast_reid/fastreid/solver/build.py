@@ -49,17 +49,17 @@ def _create_gradient_clipper(cfg: CfgNode) -> _GradientClipper:
 
 
 def _generate_optimizer_class_with_gradient_clipping(
-        optimizer: Type[torch.optim.Optimizer],
-        *,
-        per_param_clipper: Optional[_GradientClipper] = None,
-        global_clipper: Optional[_GradientClipper] = None,
+    optimizer: Type[torch.optim.Optimizer],
+    *,
+    per_param_clipper: Optional[_GradientClipper] = None,
+    global_clipper: Optional[_GradientClipper] = None,
 ) -> Type[torch.optim.Optimizer]:
     """
     Dynamically creates a new type that inherits the type of a given instance
     and overrides the `step` method to add gradient clipping
     """
     assert (
-            per_param_clipper is None or global_clipper is None
+        per_param_clipper is None or global_clipper is None
     ), "Not allowed to use both per-parameter clipping and global clipping"
 
     @torch.no_grad()
@@ -84,7 +84,7 @@ def _generate_optimizer_class_with_gradient_clipping(
 
 
 def maybe_add_gradient_clipping(
-        cfg: CfgNode, optimizer: Type[torch.optim.Optimizer]
+    cfg: CfgNode, optimizer: Type[torch.optim.Optimizer]
 ) -> Type[torch.optim.Optimizer]:
     """
     If gradient clipping is enabled through config options, wraps the existing
@@ -118,13 +118,14 @@ def maybe_add_gradient_clipping(
 
 
 def _generate_optimizer_class_with_freeze_layer(
-        optimizer: Type[torch.optim.Optimizer],
-        *,
-        freeze_iters: int = 0,
+    optimizer: Type[torch.optim.Optimizer],
+    *,
+    freeze_iters: int = 0,
 ) -> Type[torch.optim.Optimizer]:
     assert freeze_iters > 0, "No layers need to be frozen or freeze iterations is 0"
 
     cnt = 0
+
     @torch.no_grad()
     def optimizer_wfl_step(self, closure=None):
         nonlocal cnt
@@ -155,7 +156,7 @@ def _generate_optimizer_class_with_freeze_layer(
 
 
 def maybe_add_freeze_layer(
-        cfg: CfgNode, optimizer: Type[torch.optim.Optimizer]
+    cfg: CfgNode, optimizer: Type[torch.optim.Optimizer]
 ) -> Type[torch.optim.Optimizer]:
     if len(cfg.MODEL.FREEZE_LAYERS) == 0 or cfg.SOLVER.FREEZE_ITERS <= 0:
         return optimizer
@@ -167,8 +168,7 @@ def maybe_add_freeze_layer(
         optimizer_type = optimizer
 
     OptimizerWithFreezeLayer = _generate_optimizer_class_with_freeze_layer(
-        optimizer_type,
-        freeze_iters=cfg.SOLVER.FREEZE_ITERS
+        optimizer_type, freeze_iters=cfg.SOLVER.FREEZE_ITERS
     )
     if isinstance(optimizer, torch.optim.Optimizer):
         optimizer.__class__ = OptimizerWithFreezeLayer  # a bit hacky, not recommended
@@ -193,31 +193,35 @@ def build_optimizer(cfg, model, contiguous=True):
         params = ContiguousParams(params)
     solver_opt = cfg.SOLVER.OPT
     if solver_opt == "SGD":
-        return maybe_add_freeze_layer(
-            cfg,
-            maybe_add_gradient_clipping(cfg, torch.optim.SGD)
-        )(
-            params.contiguous() if contiguous else params,
-            momentum=cfg.SOLVER.MOMENTUM,
-            nesterov=cfg.SOLVER.NESTEROV,
-        ), params
+        return (
+            maybe_add_freeze_layer(
+                cfg, maybe_add_gradient_clipping(cfg, torch.optim.SGD)
+            )(
+                params.contiguous() if contiguous else params,
+                momentum=cfg.SOLVER.MOMENTUM,
+                nesterov=cfg.SOLVER.NESTEROV,
+            ),
+            params,
+        )
     else:
-        return maybe_add_freeze_layer(
-            cfg,
-            maybe_add_gradient_clipping(cfg, getattr(torch.optim, solver_opt))
-        )(params.contiguous() if contiguous else params), params
+        return (
+            maybe_add_freeze_layer(
+                cfg, maybe_add_gradient_clipping(cfg, getattr(torch.optim, solver_opt))
+            )(params.contiguous() if contiguous else params),
+            params,
+        )
 
 
 def get_default_optimizer_params(
-        model: torch.nn.Module,
-        base_lr: Optional[float] = None,
-        weight_decay: Optional[float] = None,
-        weight_decay_norm: Optional[float] = None,
-        bias_lr_factor: Optional[float] = 1.0,
-        heads_lr_factor: Optional[float] = 1.0,
-        weight_decay_bias: Optional[float] = None,
-        overrides: Optional[Dict[str, Dict[str, float]]] = None,
-        freeze_layers: Optional[list] = [],
+    model: torch.nn.Module,
+    base_lr: Optional[float] = None,
+    weight_decay: Optional[float] = None,
+    weight_decay_norm: Optional[float] = None,
+    bias_lr_factor: Optional[float] = 1.0,
+    heads_lr_factor: Optional[float] = 1.0,
+    weight_decay_bias: Optional[float] = None,
+    overrides: Optional[Dict[str, Dict[str, float]]] = None,
+    freeze_layers: Optional[list] = [],
 ):
     """
     Get default param list for optimizer, with support for a few types of
@@ -295,9 +299,11 @@ def get_default_optimizer_params(
             if isinstance(module, norm_module_types) and weight_decay_norm is not None:
                 hyperparams["weight_decay"] = weight_decay_norm
             hyperparams.update(overrides.get(module_param_name, {}))
-            if module_name.split('.')[0] == "heads" and (heads_lr_factor is not None and heads_lr_factor != 1.0):
+            if module_name.split(".")[0] == "heads" and (
+                heads_lr_factor is not None and heads_lr_factor != 1.0
+            ):
                 hyperparams["lr"] = hyperparams.get("lr", base_lr) * heads_lr_factor
-            name = module_name + '.' + module_param_name
+            name = module_name + "." + module_param_name
             freeze_status = "normal"
             # Search freeze layer names, it must match from beginning, so use `match` not `search`
             for pattern in layer_names_pattern:
@@ -305,13 +311,16 @@ def get_default_optimizer_params(
                     freeze_status = "freeze"
                     break
 
-            params.append({"freeze_status": freeze_status, "params": [value], **hyperparams})
+            params.append(
+                {"freeze_status": freeze_status, "params": [value], **hyperparams}
+            )
     return params
 
 
 def build_lr_scheduler(cfg, optimizer, iters_per_epoch):
     max_epoch = cfg.SOLVER.MAX_EPOCH - max(
-        math.ceil(cfg.SOLVER.WARMUP_ITERS / iters_per_epoch), cfg.SOLVER.DELAY_EPOCHS)
+        math.ceil(cfg.SOLVER.WARMUP_ITERS / iters_per_epoch), cfg.SOLVER.DELAY_EPOCHS
+    )
 
     scheduler_dict = {}
 
@@ -328,16 +337,15 @@ def build_lr_scheduler(cfg, optimizer, iters_per_epoch):
             "T_max": max_epoch,
             "eta_min": cfg.SOLVER.ETA_MIN_LR,
         },
-
     }
 
     scheduler_dict["lr_sched"] = getattr(lr_scheduler, cfg.SOLVER.SCHED)(
-        **scheduler_args[cfg.SOLVER.SCHED])
+        **scheduler_args[cfg.SOLVER.SCHED]
+    )
 
     if cfg.SOLVER.WARMUP_ITERS > 0:
         warmup_args = {
             "optimizer": optimizer,
-
             # warmup options
             "warmup_factor": cfg.SOLVER.WARMUP_FACTOR,
             "warmup_iters": cfg.SOLVER.WARMUP_ITERS,
