@@ -8,7 +8,7 @@
 *.png
 *.jpg
 *.jpeg
-
+*.
 # frontend
 
 # backend
@@ -22,3 +22,8 @@ exp*/
 
 # cartoonize
 models/cartoonize/test_code/save_models/*
+
+# yolov7
+models/track/yolox.egg-info/*
+models/track/yolox/*
+models/track/build
