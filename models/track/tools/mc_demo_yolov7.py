@@ -127,19 +127,19 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
     
     return targeted_ids, valid_ids
 
-def save_face_swapped_vid(frame_array, final_lines, save_dir, fps):
+def save_face_swapped_vid(final_lines, save_dir, fps):
     ## FIXME 
     img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/{opt.project}/image_orig/frame_1.png')
     height, width, layers = img.shape
     size = (width, height)
-
     swap_s = time.time()
     
+    frame_array = []
     # face swap per frame
     for line in tqdm(final_lines):
         assert (len(line)-1) % 4 == 0
         frame_idx = line[0] # Image Index starts from 1
-        orig_img = frame_array[frame_idx-1] #cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/image_orig/frame_{frame_idx}.png')
+        orig_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/{opt.project}/image_orig/frame_{frame_idx}.png')
         cart_img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/{opt.project}/image_cart/frame_{frame_idx}.png')
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
@@ -150,25 +150,22 @@ def save_face_swapped_vid(frame_array, final_lines, save_dir, fps):
             ##################################### SELECT MASK GENERATION FUNCTION #####################################
             """
             Select mask generator function
-            - mask generator v0: same as not using mask
-            - mask generator v1: using Euclidean distance (L2 distance) and thresholding
-            - mask generator v2: using Manhattan distance (L1 distance) and thresholding
-            - mask generator v3: using padding
+            - mask_generator_v0: same as not using mask
+            - mask_generator_v1: using Euclidean distance (L2 distance) and thresholding
+            - mask_generator_v2: using Manhattan distance (L1 distance) and thresholding
+            - mask_generator_v3: using padding
             """
             
-            # mask, inv_mask = mask_generator_v0(sx_min, sy_min, sx_max, sy_max)            
-            # mask, inv_mask = mask_generator_v1(sx_min, sy_min, sx_max, sy_max)
-            mask, inv_mask = mask_generator_v2(sx_min, sy_min, sx_max, sy_max)            
-            # mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
+            mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
 
-            ###################################################################################################################
+            ############################################################################################################
 
             orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
             cart_face = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
             face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
         
-        #frame_array.append(face_swapped_img)
+        frame_array.append(face_swapped_img)
     
     swap_e = time.time()
     print(f"Time Elapsed for face swap: {swap_e - swap_s}")
@@ -318,7 +315,7 @@ def detect(save_img=False):
     start_time_total = time.time()
     
     source = '/opt/ml/final-project-level3-cv-07/models/track/assets/' + opt.project + '.mp4'
-    target_path = '/opt/ml/final-project-level3-cv-07/models/track/target/' + opt.target + '.jpg'
+    target_path = '/opt/ml/final-project-level3-cv-07/models/track/target/' + opt.target + '.jpeg'
     weights, view_img, save_txt, imgsz, trace = opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     save_results = opt.save_results
@@ -488,7 +485,7 @@ def detect(save_img=False):
             write_results(os.path.join(save_dir,'valid_ids.txt'), str(id) + ' ')
 
     final_lines = parsing_results(valid_ids,save_dir)
-    save_face_swapped_vid(frame_list,final_lines,save_dir, fps)
+    save_face_swapped_vid(final_lines,save_dir, fps)
     
     end_time_total = time.time()
 
@@ -500,7 +497,7 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='chim', help='name of video project and save results to project/name')
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--weights', nargs='+', type=str, default='/opt/ml/final-project-level3-cv-07/models/track/pretrained/yolov7-tiny.pt', help='model.pt path(s)')
-    parser.add_argument('--target', default='homin' ,help='name of the target image')
+    parser.add_argument('--target', default='chim' ,help='name of the target image')
     parser.add_argument('--img-size', type=int, default=1920, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.09, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.7, help='IOU threshold for NMS')
