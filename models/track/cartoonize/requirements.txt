@@ -1,3 +1,5 @@
 opencv-python==4.2.0.34
 tqdm
-
+fastapi
+uvicorn
+requests
