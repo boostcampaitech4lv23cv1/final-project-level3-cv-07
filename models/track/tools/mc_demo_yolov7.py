@@ -632,7 +632,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"{file_storage}/target/chim.jpeg"
+        target = f"chim"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -646,7 +646,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"{track_dir}/runs/detect"
+        project= f"chim"
         name= "exp"
         exist_ok= None
         trace= None
