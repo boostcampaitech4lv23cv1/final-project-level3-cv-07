@@ -147,7 +147,6 @@ def save_face_swapped_vid(final_lines, save_dir, fps):
             x_min, y_min, x_max, y_max = line[4*i+1], line[4*i+2], line[4*i+3], line[4*i+4] # original bbox
             sx_min, sy_min, sx_max, sy_max = bbox_scale_up(x_min, y_min, x_max, y_max, height, width, 2) # scaled bbox ('s' means scaled)
             
-            ##################################### SELECT MASK GENERATION FUNCTION #####################################
             """
             Select mask generator function
             - mask_generator_v0: same as not using mask
@@ -157,16 +156,11 @@ def save_face_swapped_vid(final_lines, save_dir, fps):
             """
             
             mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)            
-
-            ############################################################################################################
-
             orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
             cart_face = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
             face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
-        
         frame_array.append(face_swapped_img)
-    
     swap_e = time.time()
     print(f"Time Elapsed for face swap: {swap_e - swap_s}")
 
