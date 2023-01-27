@@ -391,7 +391,7 @@ def extract_feature(target_path, save_dir):
     img_embedding = resnet(img_cropped.unsqueeze(0))
 
 
-def detect(save_img=False):
+def detect(opt, save_img=False):
 
     start_time_total = time.time()
 
@@ -625,176 +625,63 @@ def detect(save_img=False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--project",
-        default="chim",
-        help="name of video project and save results to project/name",
-    )
-    parser.add_argument("--name", default="exp", help="save results to project/name")
-    parser.add_argument(
-        "--weights",
-        nargs="+",
-        type=str,
-        default="/opt/ml/final-project-level3-cv-07/models/track/pretrained/yolov7-tiny.pt",
-        help="model.pt path(s)",
-    )
-    parser.add_argument("--target", default="chim", help="name of the target image")
-    parser.add_argument(
-        "--img-size", type=int, default=1920, help="inference size (pixels)"
-    )
-    parser.add_argument(
-        "--conf-thres", type=float, default=0.09, help="object confidence threshold"
-    )
-    parser.add_argument(
-        "--iou-thres", type=float, default=0.7, help="IOU threshold for NMS"
-    )
-    parser.add_argument(
-        "--sim-thres",
-        type=float,
-        default=0.39,
-        help="Similarity threshold for face matching",
-    )
-    parser.add_argument(
-        "--device", default="0", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
-    )
-    parser.add_argument("--view-img", action="store_true", help="display results")
-    parser.add_argument("--save-txt", action="store_true", help="save results to *.txt")
-    parser.add_argument(
-        "--save-conf", action="store_true", help="save confidences in --save-txt labels"
-    )
-    parser.add_argument(
-        "--nosave", action="store_true", help="do not save images/videos"
-    )
-    parser.add_argument(
-        "--classes",
-        nargs="+",
-        type=int,
-        help="filter by class: --class 0, or --class 0 2 3",
-    )
-    parser.add_argument(
-        "--agnostic-nms", action="store_true", help="class-agnostic NMS"
-    )
-    parser.add_argument("--augment", action="store_true", help="augmented inference")
-    parser.add_argument("--update", action="store_true", help="update all models")
-    parser.add_argument(
-        "--exist-ok",
-        action="store_true",
-        help="existing project/name ok, do not increment",
-    )
-    parser.add_argument("--trace", action="store_true", help="trace model")
-    parser.add_argument(
-        "--hide-labels-name", default=False, action="store_true", help="hide labels"
-    )
-    parser.add_argument("--save_results", default=True)
-    parser.add_argument(
-        "--save-txt-tidl",
-        action="store_true",
-        help="save results to *.txt in tidl format",
-    )
-    parser.add_argument("--kpt-label", type=int, default=5, help="number of keypoints")
-    parser.add_argument(
-        "--hide-labels", default=False, action="store_true", help="hide labels"
-    )
-    parser.add_argument(
-        "--hide-conf", default=False, action="store_true", help="hide confidences"
-    )
-    parser.add_argument(
-        "--line-thickness", default=3, type=int, help="bounding box thickness (pixels)"
-    )
-
-    # tracking args
-    parser.add_argument(
-        "--track_high_thresh",
-        type=float,
-        default=0.3,
-        help="tracking confidence threshold",
-    )
-    parser.add_argument(
-        "--track_low_thresh",
-        default=0.05,
-        type=float,
-        help="lowest detection threshold",
-    )
-    parser.add_argument(
-        "--new_track_thresh", default=0.4, type=float, help="new track thresh"
-    )
-    parser.add_argument(
-        "--track_buffer", type=int, default=30, help="the frames for keep lost tracks"
-    )
-    parser.add_argument(
-        "--match_thresh",
-        type=float,
-        default=0.7,
-        help="matching threshold for tracking",
-    )
-    parser.add_argument(
-        "--aspect_ratio_thresh",
-        type=float,
-        default=1.6,
-        help="threshold for filtering out boxes of which aspect ratio are above the given value.",
-    )
-    parser.add_argument(
-        "--min_box_area", type=float, default=10, help="filter out tiny boxes"
-    )
-    parser.add_argument(
-        "--fuse-score",
-        dest="mot20",
-        default=False,
-        action="store_true",
-        help="fuse score and iou for association",
-    )
-    parser.add_argument(
-        "--save-crop", action="store_true", help="save cropped prediction boxes"
-    )
-
-    # CMC
-    parser.add_argument(
-        "--cmc-method",
-        default="sparseOptFlow",
-        type=str,
-        help="cmc method: sparseOptFlow | files (Vidstab GMC) | orb | ecc",
-    )
-
-    # ReID
-    parser.add_argument(
-        "--with-reid",
-        dest="with_reid",
-        default=False,
-        action="store_true",
-        help="with ReID module.",
-    )
-    parser.add_argument(
-        "--fast-reid-config",
-        dest="fast_reid_config",
-        default=r"fast_reid/configs/MOT17/sbs_S50.yml",
-        type=str,
-        help="reid config file path",
-    )
-    parser.add_argument(
-        "--fast-reid-weights",
-        dest="fast_reid_weights",
-        default=r"pretrained/mot17_sbs_S50.pth",
-        type=str,
-        help="reid config file path",
-    )
-    parser.add_argument(
-        "--proximity_thresh",
-        type=float,
-        default=0.5,
-        help="threshold for rejecting low overlap reid matches",
-    )
-    parser.add_argument(
-        "--appearance_thresh",
-        type=float,
-        default=0.25,
-        help="threshold for rejecting low appearance similarity reid matches",
-    )
-
-    opt = parser.parse_args()
-
-    opt.jde = False
-    opt.ablation = False
+    file_storage = "../../database"
+    track_dir = "."
+    cartoonize_dir = f"cartoonize"
+    
+    class Opt:
+        weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
+        source = f"{file_storage}/uploaded_video/video.mp4"
+        target = f"{file_storage}/target/chim.jpeg"
+        cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
+        img_size = 1920
+        conf_thres= 0.09
+        iou_thres= 0.7
+        sim_thres= 0.35
+        device= "0"
+        view_img= None
+        save_txt= None
+        nosave= None
+        classes = None
+        agnostic_nms= True
+        augment= None
+        update= None
+        project= f"{track_dir}/runs/detect"
+        name= "exp"
+        exist_ok= None
+        trace= None
+        hide_labels_name= False
+        save_results = True
+        save_txt_tidl = None
+        kpt_label = 5
+        hide_labels = False
+        hide_conf = False,
+        line_thickness = 3
+        
+        # Tracking args
+        track_high_thresh = 0.3
+        track_low_thresh = 0.05
+        new_track_thresh = 0.4
+        track_buffer = 30
+        match_thresh = 0.7
+        aspect_ratio_thresh = 1.6
+        min_box_area = 10
+        mot20 = True
+        save_crop = None
+        
+        #CMC
+        cmc_method = "sparseOptFlow"
+        
+        #ReID
+        with_reid = False
+        fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
+        fast_reid_weights = r"pretrained/mot17_sbs_S50.pth"
+        proximity_thresh = 0.5
+        appearance_thresh = 0.25
+        jde= False
+        ablation= False
+    
+    opt = Opt
 
     print(opt)
     # check_requirements(exclude=('pycocotools', 'thop'))
@@ -802,7 +689,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ["yolov7.pt"]:
-                detect()
+                detect(opt)
                 strip_optimizer(opt.weights)
         else:
-            detect()
+            detect(opt)
