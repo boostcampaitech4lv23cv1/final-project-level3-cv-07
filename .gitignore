@@ -23,7 +23,7 @@ exp*/
 # cartoonize
 models/cartoonize/test_code/save_models/*
 
-# yolov7
+# yolo build
 models/track/yolox.egg-info/*
 models/track/yolox/*
 models/track/build
