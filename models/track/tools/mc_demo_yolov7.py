@@ -136,7 +136,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir,min_le
     """
     # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
     # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
-    t_ids = []
+    t_ids = {}
 
     createDirectory(tracklet_dir)
     tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
@@ -144,36 +144,36 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir,min_le
         if (
             i.tracklet_len > min_length
         ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            middle_frame = (i.start_frame + i.end_frame) // 2
-            x1, y1, x2, y2 = results[i.track_id][middle_frame]
+            frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
+            x1,y1,x2,y2,conf = value
             cv2.imwrite(
                 f"{tracklet_dir}/{i.track_id}.png",
                 np.array(
-                    frame_list[middle_frame - 1][
+                    frame_list[frame][
                         int(y1) : int(y2), int(x1) : int(x2), :
                     ]
                 ),
             )
-            t_ids.append(i.track_id)
+            t_ids[i.track_id]=conf
 
     dfs = DeepFace.find(
         img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
     )
 
-    targeted_ids = []
+    targeted_ids = {}
 
     for i in range(len(dfs)):
         id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-        t_ids.remove(id)
-        targeted_ids.append(id)
+        id_conf = t_ids.pop(id)
+        targeted_ids[id] = id_conf
 
-    return targeted_ids, t_ids
+    return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
     ## FIXME
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_orig/frame_1.png"
+        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_orig/frame_1.png"
     )
     height, width, layers = img.shape
     size = (width, height)
@@ -185,10 +185,10 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
         orig_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_orig/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_orig/frame_{frame_idx}.png"
         )
         cart_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/HanniPham/image_cart/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_cart/frame_{frame_idx}.png"
         )
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
@@ -286,11 +286,12 @@ def parsing_results(valid_ids, save_dir, num_frames):
             total_lines.append([total_lines[-1][0] + 1])
                 
         # for debugging            
+        '''
         for line in total_lines:
             print(line[0], end=" / ")
             print(num_frames, end = " : ")
             print(line)
-            
+        ''' 
     return total_lines
 
 
@@ -403,10 +404,10 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        "/opt/ml/final-project-level3-cv-07/models/track/assets/HanniPham.mp4"
+        "/opt/ml/final-project-level3-cv-07/models/track/assets/chim.mp4"
     )
     target_path = (
-        "/opt/ml/final-project-level3-cv-07/models/track/target/HanniPham.jpg"
+        "/opt/ml/final-project-level3-cv-07/models/track/target/chim.jpeg"
     )
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
@@ -544,7 +545,7 @@ def detect(opt, save_img=False):
                     results.append(
                         f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                     )
-                    results_temp[tid][frame] = tlbr
+                    results_temp[tid][frame] = np.append(tlbr,t.score)
                     if save_results:
                         write_results(os.path.join(save_dir, "results.txt"), results)
 
@@ -611,18 +612,16 @@ def detect(opt, save_img=False):
 
     if save_results:
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "targeted tracklet ids:\n"
+            os.path.join(save_dir, "valid_ids.txt"), "targeted tracklet ids (id : confidence)\n"
         )
-        for id in targeted_ids:
-            write_results(os.path.join(save_dir, "valid_ids.txt"), str(id) + " ")
+        for id,conf in targeted_ids.items():
+            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
 
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "\n\ncartoonized tracklet ids:"
+            os.path.join(save_dir, "valid_ids.txt"), "\ncartoonized tracklet ids (id : confidence)\n"
         )
-        for i, id in enumerate(valid_ids):
-            if i % 15 == 0:
-                write_results(os.path.join(save_dir, "valid_ids.txt"), "\n")
-            write_results(os.path.join(save_dir, "valid_ids.txt"), str(id) + " ")
+        for id,conf in valid_ids.items():
+            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
 
     num_frames = get_frame_num(source)
     final_lines = parsing_results(valid_ids, save_dir, num_frames)
@@ -641,7 +640,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"HanniPham"
+        target = f"chim"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -655,7 +654,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"HanniPham"
+        project= f"chim"
         name= "exp"
         exist_ok= None
         trace= None
