@@ -108,7 +108,7 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     return valid_ids
 
 
-def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
+def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir,min_length):
 
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
@@ -126,11 +126,10 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
     t_ids = []
 
     createDirectory(tracklet_dir)
-
-    # 과거 종료된 tracker들 중에서
-    for i in tracker.removed_stracks:
+    tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
+    for i in tracks:
         if (
-            i.tracklet_len > 5
+            i.tracklet_len > min_length
         ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
             middle_frame = (i.start_frame + i.end_frame) // 2
             x1, y1, x2, y2 = results[i.track_id][middle_frame]
@@ -144,42 +143,6 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
             )
             t_ids.append(i.track_id)
 
-    # 영상이 끝난 시점에 살아있던 tracker에 대해서
-    for i in tracker.tracked_stracks:
-        if (
-            i.tracklet_len > 5
-        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            # test[i.track_id] = i.smooth_feat
-            middle_frame = (i.start_frame + i.end_frame) // 2
-            x1, y1, x2, y2 = results[i.track_id][middle_frame]
-            cv2.imwrite(
-                f"{tracklet_dir}/{i.track_id}.png",
-                np.array(
-                    frame_list[middle_frame - 1][
-                        int(y1) : int(y2), int(x1) : int(x2), :
-                    ]
-                ),
-            )
-            t_ids.append(i.track_id)
-
-    for i in tracker.lost_stracks:
-        if (
-            i.tracklet_len > 5
-        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            # test[i.track_id] = i.smooth_feat
-            middle_frame = (i.start_frame + i.end_frame) // 2
-            x1, y1, x2, y2 = results[i.track_id][i.start_frame]
-            cv2.imwrite(
-                f"{tracklet_dir}/{i.track_id}.png",
-                np.array(
-                    frame_list[middle_frame - 1][
-                        int(y1) : int(y2), int(x1) : int(x2), :
-                    ]
-                ),
-            )
-            t_ids.append(i.track_id)
-
-    valid_ids = list(set(t_ids))
     dfs = DeepFace.find(
         img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
     )
@@ -188,10 +151,10 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
 
     for i in range(len(dfs)):
         id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-        valid_ids.remove(id)
+        t_ids.remove(id)
         targeted_ids.append(id)
 
-    return targeted_ids, valid_ids
+    return targeted_ids, t_ids
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
@@ -386,9 +349,9 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
 def extract_feature(target_path, save_dir):
     mtcnn = MTCNN()
     img = Image.open(target_path)
-    resnet = InceptionResnetV1(pretrained="vggface2").eval()
     img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
-    img_embedding = resnet(img_cropped.unsqueeze(0))
+    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
+    # img_embedding = resnet(img_cropped.unsqueeze(0))
 
 
 def detect(opt, save_img=False):
@@ -599,6 +562,7 @@ def detect(opt, save_img=False):
         frame_list,
         tracklet_dir,
         str(save_dir) + "/target_detect.png",
+        opt.min_frame,
     )
 
     if save_results:
@@ -666,6 +630,7 @@ if __name__ == "__main__":
         match_thresh = 0.7
         aspect_ratio_thresh = 1.6
         min_box_area = 10
+        min_frame = 5 # added
         mot20 = True
         save_crop = None
         
