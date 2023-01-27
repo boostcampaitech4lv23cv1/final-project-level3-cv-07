@@ -127,7 +127,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir):
     
     return targeted_ids, valid_ids
 
-def face_swap(frame_array, final_lines, save_dir, fps):
+def save_face_swapped_vid(frame_array, final_lines, save_dir, fps):
     ## FIXME 
     img = cv2.imread(f'/opt/ml/final-project-level3-cv-07/models/track/cartoonize/{opt.project}/image_orig/frame_1.png')
     height, width, layers = img.shape
@@ -488,7 +488,7 @@ def detect(save_img=False):
             write_results(os.path.join(save_dir,'valid_ids.txt'), str(id) + ' ')
 
     final_lines = parsing_results(valid_ids,save_dir)
-    face_swap(frame_list,final_lines,save_dir, fps)
+    save_face_swapped_vid(frame_list,final_lines,save_dir, fps)
     
     end_time_total = time.time()
 
