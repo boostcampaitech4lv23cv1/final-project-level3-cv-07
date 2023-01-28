@@ -4,9 +4,8 @@ import requests
 
 backend = "http://115.85.182.51:30002"
 
-
 def apply_model(encoded_video):
-    requests.post(f"{backend}/save_video", encoded_video)
+    requests.post(f"{backend}/req_infer", encoded_video)
 
 
 def app():
