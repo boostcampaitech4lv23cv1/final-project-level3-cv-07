@@ -19,6 +19,7 @@ from deepface import DeepFace
 from numpy import random
 from collections import defaultdict
 from scipy.spatial.distance import cdist
+from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import InceptionResnetV1, MTCNN
 
@@ -120,6 +121,18 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
     return valid_ids
 
+def dbscan(target_dir,tracklet_dir):
+    tracklet_imgs = glob.glob(tracklet_dir+'/*.png') + [target_dir]
+    encodings = [DeepFace.represent(img_path=img,enforce_detection=False) for img in tracklet_imgs]
+    
+    stime = time.time()
+    clt = DBSCAN(metric="cosine")
+    clt.fit(encodings)
+    etime = time.time()
+    print(f"DBSCAN time elapsed :{etime - stime}")
+    label_ids = np.unique(clt.labels_)
+    num_unique_faces = len(np.where(label_ids>-1)[0])
+    return
 
 def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_length, conf_thresh):
 
@@ -155,26 +168,31 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
                         ]
                     ),
                 )
+                
                 t_ids[i.track_id]=conf
+                
+    if opt.dbscan :
+        dbscan(target_dir,tracklet_dir)
+        return True
+    else :
+        dfs = DeepFace.find(
+            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
+        )
 
-    dfs = DeepFace.find(
-        img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
-    )
+        targeted_ids = {}
 
-    targeted_ids = {}
+        for i in range(len(dfs)):
+            id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
+            id_conf = t_ids.pop(id)
+            targeted_ids[id] = id_conf
 
-    for i in range(len(dfs)):
-        id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-        id_conf = t_ids.pop(id)
-        targeted_ids[id] = id_conf
-
-    return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+        return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
     ## FIXME
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_orig/frame_1.png"
+        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
     )
     height, width, layers = img.shape
     size = (width, height)
@@ -186,10 +204,10 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
         orig_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_orig/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame_idx}.png"
         )
         cart_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/chim/image_cart/frame_{frame_idx}.png"
+            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart/frame_{frame_idx}.png"
         )
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
@@ -405,10 +423,10 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        "/opt/ml/final-project-level3-cv-07/models/track/assets/chim.mp4"
+        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
     )
     target_path = (
-        "/opt/ml/final-project-level3-cv-07/models/track/target/chim.jpeg"
+        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
     )
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
@@ -642,7 +660,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"chim"
+        target = f"yjs"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -656,7 +674,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"chim"
+        project= f"mudo"
         name= "exp"
         exist_ok= None
         trace= None
@@ -678,6 +696,7 @@ if __name__ == "__main__":
         aspect_ratio_thresh = 1.6
         min_box_area = 10
         min_frame = 5 # added
+        dbscan = False # added
         mot20 = True
         save_crop = None
         
