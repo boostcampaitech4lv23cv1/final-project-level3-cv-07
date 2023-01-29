@@ -22,6 +22,7 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import InceptionResnetV1, MTCNN
+# import face_recognition
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadStreams, LoadImages
@@ -122,16 +123,29 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     return valid_ids
 
 def dbscan(target_dir,tracklet_dir):
-    tracklet_imgs = glob.glob(tracklet_dir+'/*.png') + [target_dir]
-    encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
-    
+    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+    # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
+    data = []
+    for imagePath in tracklet_imgs : 
+        image = cv2.imread(imagePath)
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
+        boxes = face_recognition.face_locations(rgb,
+		    model="cnn")
+        encodings = face_recognition.face_encodings(rgb, boxes)
+        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
+        for (box, enc) in zip(boxes, encodings)]
+        data.extend(d)
+    encodings = [d["encoding"] for d in data]
+    # dump the facial encodings data to disk
     stime = time.time()
-    clt = DBSCAN(metric="cosine")
+    clt = DBSCAN(metric="euclidean")
     clt.fit(encodings)
     etime = time.time()
     print(f"DBSCAN time elapsed :{etime - stime}")
     label_ids = np.unique(clt.labels_)
-    num_unique_faces = len(np.where(label_ids>-1)[0])
+    numUniqueFaces = len(np.where(label_ids>-1)[0])
+    print("[INFO] # unique faces: {}".format(numUniqueFaces))
+
     return
 
 def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_length, conf_thresh):
@@ -698,7 +712,7 @@ if __name__ == "__main__":
         aspect_ratio_thresh = 1.6
         min_box_area = 10
         min_frame = 5 # added
-        dbscan = False # added
+        dbscan = True # added
         mot20 = True
         save_crop = None
         
