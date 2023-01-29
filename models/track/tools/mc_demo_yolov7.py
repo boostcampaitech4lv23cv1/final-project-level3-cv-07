@@ -123,7 +123,7 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
 
 def dbscan(target_dir,tracklet_dir):
     tracklet_imgs = glob.glob(tracklet_dir+'/*.png') + [target_dir]
-    encodings = [DeepFace.represent(img_path=img,enforce_detection=False) for img in tracklet_imgs]
+    encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
     
     stime = time.time()
     clt = DBSCAN(metric="cosine")
@@ -150,7 +150,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
     # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
     # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
     t_ids = {}
-
+    height,width,channel = frame_list[0].shape
     createDirectory(tracklet_dir)
     tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
     for i in tracks:
@@ -160,23 +160,25 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
             frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
             x1,y1,x2,y2,conf = value
             if conf > conf_thresh : 
+                sx1, sy1, sx2, sy2 = bbox_scale_up(
+                    x1, y1, x2, y2, height, width, 3
+                ) 
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
                     np.array(
                         frame_list[frame][
-                            int(y1) : int(y2), int(x1) : int(x2), :
+                            int(sy1) : int(sy2), int(sx1) : int(sx2), :
                         ]
                     ),
                 )
                 
-                t_ids[i.track_id]=conf
-                
+                t_ids[i.track_id]=conf   
     if opt.dbscan :
         dbscan(target_dir,tracklet_dir)
         return True
     else :
         dfs = DeepFace.find(
-            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False
+            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
         )
 
         targeted_ids = {}
@@ -411,7 +413,7 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
 
 
 def extract_feature(target_path, save_dir):
-    mtcnn = MTCNN()
+    mtcnn = MTCNN(margin=30)
     img = Image.open(target_path)
     img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
     # resnet = InceptionResnetV1(pretrained="vggface2").eval()
@@ -660,7 +662,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"yjs"
+        target = f"haerin"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -674,7 +676,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"mudo"
+        project= f"Newjeans"
         name= "exp"
         exist_ok= None
         trace= None
