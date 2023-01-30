@@ -64,21 +64,6 @@ def createDirectory(dir):
         print("Error: Failed to create the directory.")
 
 
-def get_frame(source):
-
-    cap = cv2.VideoCapture(source)
-    frame_list = []
-
-    while True:
-        ret, cur_frame = cap.read()
-        if cur_frame is None:
-            break
-
-        frame_list.append(cur_frame)
-
-    return frame_list
-
-
 def get_frame_num(source):
     cap = cv2.VideoCapture(source)
     frame_list = []
@@ -148,7 +133,7 @@ def dbscan(target_dir,tracklet_dir):
 
     return
 
-def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_length, conf_thresh):
+def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
 
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
@@ -158,12 +143,15 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
     2. TODO
     - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
     - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
-    3. FIXME
-    - frame_list에 모든 프레임 정보 저장하지 않고, 뒤에서 필요한 frame만 cv.imread로 불러오기
     """
 
     t_ids = {}
-    height,width,channel = frame_list[0].shape
+    img = cv2.imread(
+        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+    )
+    height, width, layers = img.shape
+    size = (width, height)
+    
     createDirectory(tracklet_dir)
     tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
     for i in tracks:
@@ -175,11 +163,14 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
             if conf > conf_thresh : 
                 sx1, sy1, sx2, sy2 = bbox_scale_up(
                     x1, y1, x2, y2, height, width, 3
-                ) 
+                )
+                frame_img = cv2.imread(
+                    f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
+                )
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
                     np.array(
-                        frame_list[frame][
+                        frame_img[
                             int(sy1) : int(sy2), int(sx1) : int(sx2), :
                         ]
                     ),
@@ -191,7 +182,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
         return True
     else :
         dfs = DeepFace.find(
-            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
         )
 
         targeted_ids = {}
@@ -453,7 +444,7 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
+        f"{file_storage}/uploaded_video/{opt.project}.mp4"
     )
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
@@ -648,12 +639,10 @@ def detect(opt, save_img=False):
 
     print(f"Done. ({time.time() - t0:.3f}s)")
 
-    frame_list = get_frame(source)
     tracklet_dir = str(save_dir) + "/tracklet"
     targeted_ids, valid_ids = get_valid_tids(
         tracker,
         results_temp,
-        frame_list,
         tracklet_dir,
         str(save_dir) + "/target_detect.png",
         opt.min_frame,
@@ -704,7 +693,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"SNL"
+        project= f"Newjeans"
         name= "exp"
         exist_ok= None
         trace= None
