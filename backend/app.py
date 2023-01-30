@@ -30,7 +30,7 @@ async def read_root(req: Request):
     file.write(data)
     file.close()
     
-    await inference()
+    asyncio.create_task(inference())
     
     return 200
 
