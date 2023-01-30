@@ -2,6 +2,12 @@ from fastapi import FastAPI, Request
 import uvicorn
 import os
 
+from pymongo import MongoClient
+
+client = MongoClient()
+db = client["track"]
+collection = db["track_info"]
+
 # FastAPI 객체 생성
 app = FastAPI()
 
@@ -10,7 +16,7 @@ file_storage = "database"
 track_dir = "models/track"
 cartoonize_dir = "models/track/cartoonize"
 
-# 라우터 '/'로 접근 시 {Hello: World}를 json 형태로 반환
+
 @app.get("/track")
 async def req_track():
     from tools.mc_demo_yolov7 import detect
@@ -69,7 +75,10 @@ async def req_track():
         ablation= False
     
     opt = Opt
-    detect(opt)
+    track_infos = detect(opt)
+    collection.insert_many(track_infos)
+    
+    
     return 200
 
 if __name__ == "__main__":

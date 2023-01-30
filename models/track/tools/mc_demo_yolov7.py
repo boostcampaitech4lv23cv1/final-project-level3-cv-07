@@ -52,6 +52,7 @@ from tracker.tracking_utils.timer import Timer
 
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
+
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
 
@@ -257,9 +258,7 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         out.write(frame_array[i])
     out.release()
 
-
 def parsing_results(valid_ids, save_dir, num_frames):
-
     with open(os.path.join(save_dir, "results.txt"), "r") as f:
         lines = f.readlines()
 
@@ -430,7 +429,7 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        f"{file_storage}/uploaded_video/{opt.project}.mp4"
+        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
     )
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
@@ -510,6 +509,7 @@ def detect(opt, save_img=False):
 
     t0 = time.time()
     results_temp = defaultdict(dict)
+    results = []
     for frame, path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -536,7 +536,6 @@ def detect(opt, save_img=False):
             pred = apply_classifier(pred, modelc, img, im0s)
 
         # Process detections
-        results = []
         for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], "%g: " % i, im0s[i].copy(), dataset.count
@@ -569,11 +568,18 @@ def detect(opt, save_img=False):
                     online_cls.append(t.cls)
 
                     results.append(
-                        f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
+                        {
+                            "frame": frame, 
+                            "tid": tid, 
+                            "tl_x": tlwh[0], 
+                            "tl_y": tlwh[1],
+                            "width": tlwh[2],
+                            "height": tlwh[3],
+                            "conf": t.score
+                        }
                     )
+                    
                     results_temp[tid][frame] = np.append(tlbr,t.score)
-                    if save_results:
-                        write_results(os.path.join(save_dir, "results.txt"), results)
 
                     if save_img or view_img:  # Add bbox to image
                         if opt.hide_labels_name:
@@ -649,12 +655,13 @@ def detect(opt, save_img=False):
             write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
 
     num_frames = get_frame_num(source)
-    final_lines = parsing_results(valid_ids, save_dir, num_frames)
+    # final_lines = parsing_results(valid_ids, save_dir, num_frames)
     save_face_swapped_vid(final_lines, save_dir, fps, opt)
 
     end_time_total = time.time()
-
+    
     print(f"Total Time Elapsed : {end_time_total - start_time_total}")
+    return results
 
 
 if __name__ == "__main__":
