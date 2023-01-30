@@ -76,6 +76,14 @@ def get_frame_num(source):
 
     return i
 
+def calc_resized_size(h, w):
+    if min(h, w) > 720:
+        if h > w:
+            h, w = int(720 * h / w), 720
+        else:
+            h, w = 720, int(720 * w / h)
+    h, w = (h // 8) * 8, (w // 8) * 8
+    return h, w
 
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
@@ -107,31 +115,31 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
     return valid_ids
 
-def dbscan(target_dir,tracklet_dir):
-    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
-    # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
-    data = []
-    for imagePath in tracklet_imgs : 
-        image = cv2.imread(imagePath)
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
-        boxes = face_recognition.face_locations(rgb,
-		    model="cnn")
-        encodings = face_recognition.face_encodings(rgb, boxes)
-        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-        for (box, enc) in zip(boxes, encodings)]
-        data.extend(d)
-    encodings = [d["encoding"] for d in data]
-    # dump the facial encodings data to disk
-    stime = time.time()
-    clt = DBSCAN(metric="euclidean")
-    clt.fit(encodings)
-    etime = time.time()
-    print(f"DBSCAN time elapsed :{etime - stime}")
-    label_ids = np.unique(clt.labels_)
-    numUniqueFaces = len(np.where(label_ids>-1)[0])
-    print("[INFO] # unique faces: {}".format(numUniqueFaces))
+# def dbscan(target_dir,tracklet_dir):
+#     tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+#     # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
+#     data = []
+#     for imagePath in tracklet_imgs : 
+#         image = cv2.imread(imagePath)
+#         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
+#         boxes = face_recognition.face_locations(rgb,
+# 		    model="cnn")
+#         encodings = face_recognition.face_encodings(rgb, boxes)
+#         d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
+#         for (box, enc) in zip(boxes, encodings)]
+#         data.extend(d)
+#     encodings = [d["encoding"] for d in data]
+#     # dump the facial encodings data to disk
+#     stime = time.time()
+#     clt = DBSCAN(metric="euclidean")
+#     clt.fit(encodings)
+#     etime = time.time()
+#     print(f"DBSCAN time elapsed :{etime - stime}")
+#     label_ids = np.unique(clt.labels_)
+#     numUniqueFaces = len(np.where(label_ids>-1)[0])
+#     print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
-    return
+#     return
 
 def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
 
@@ -178,9 +186,10 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
                 )
                 
                 t_ids[i.track_id]=conf   
-    if opt.dbscan :
-        dbscan(target_dir,tracklet_dir)
-        return True
+
+    # if opt.dbscan :
+    #     dbscan(target_dir,tracklet_dir)
+    #     return True
     else :
         dfs = DeepFace.find(
             img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
@@ -284,17 +293,17 @@ def parsing_results(valid_ids, save_dir, num_frames):
             frame, obj_id, x, y, w, h, conf = line
             
             ### save valid face
-            if obj_id in valid_ids:
-                if not final_lines or frame != final_lines[-1][0]:
-                    final_lines.append([frame, x, y, x + w, y + h])
-                else:
-                    final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
+            # if obj_id in valid_ids:
+            #     if not final_lines or frame != final_lines[-1][0]:
+            #         final_lines.append([frame, x, y, x + w, y + h])
+            #     else:
+            #         final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
 
             ### save all face (for debugging)
-            # if not final_lines or frame != final_lines[-1][0]:
-            #     final_lines.append([frame, x, y, x + w, y + h])
-            # else:
-            #     final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
+            if not final_lines or frame != final_lines[-1][0]:
+                final_lines.append([frame, x, y, x + w, y + h])
+            else:
+                final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
 
                 
         total_lines = []
@@ -433,7 +442,7 @@ def detect(opt, save_img=False):
         f"{file_storage}/uploaded_video/{opt.project}.mp4"
     )
     target_path = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
+        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
@@ -606,8 +615,13 @@ def detect(opt, save_img=False):
                             vid_writer.release()  # release previous video writer
                         if vid_cap:  # video
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            ### origin    
+                            # w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                            # h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                        
+                            ### revised (detection & tracking with resized img)
+                            h, w = calc_resized_size(int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
+
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += ".mp4"
@@ -664,8 +678,8 @@ if __name__ == "__main__":
     
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/chim.mp4"
-        target = f"chim"
+        source = f"{file_storage}/uploaded_video/resized_1000_1299_1080p.mp4"
+        target = f"HanniPham"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -679,7 +693,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"chim"
+        project= f"resized_1000_1299_1080p"
         name= "exp"
         exist_ok= None
         trace= None

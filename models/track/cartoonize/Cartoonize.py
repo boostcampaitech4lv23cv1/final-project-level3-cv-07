@@ -30,8 +30,7 @@ def save_vid_2_img(vid_path, save_dir):
         ret, frame = cap.read()
         if not ret:
             break
-        # frame = cv2.resize(frame, (1280, 720))
-        # frame_list.append(frame)
+        # frame = resize_crop(frame) for resize sol2
         cv2.imwrite(save_dir + f"/frame_{i+1}.png", frame)
         i += 1
 
