@@ -188,10 +188,11 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
         targeted_ids = {}
 
         for i in range(len(dfs)):
-            id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-            targeted_ids[id] = t_ids[id]
+            id,sim = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0]),dfs.iloc[i]['VGG-Face_cosine']
+            targeted_ids[id] = sim
+            
         ##
-        targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True))
+        targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1]))
         # t_ids = dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
         
         best_matched_id = list(targeted_ids.keys())[0]
@@ -444,7 +445,7 @@ def detect(opt, save_img=False):
     start_time_total = time.time()
 
     source = (
-        f"{file_storage}/uploaded_video/{opt.project}.mp4"
+        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
     )
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
@@ -679,7 +680,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"phs"
+        target = f"jjh"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -693,7 +694,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"Newjeans"
+        project= f"mudo"
         name= "exp"
         exist_ok= None
         trace= None
@@ -723,11 +724,11 @@ if __name__ == "__main__":
         cmc_method = "sparseOptFlow"
         
         #ReID
-        with_reid = False
+        with_reid = True
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
         fast_reid_weights = r"pretrained/mot17_sbs_S50.pth"
         proximity_thresh = 0.5
-        appearance_thresh = 0.25
+        appearance_thresh = 0.15
         jde= False
         ablation= False
     
