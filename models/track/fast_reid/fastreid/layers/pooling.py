@@ -9,15 +9,15 @@ import torch.nn.functional as F
 from torch import nn
 
 __all__ = [
-    'Identity',
-    'Flatten',
-    'GlobalAvgPool',
-    'GlobalMaxPool',
-    'GeneralizedMeanPooling',
-    'GeneralizedMeanPoolingP',
-    'FastGlobalAvgPool',
-    'AdaptiveAvgMaxPool',
-    'ClipGlobalAvgPool',
+    "Identity",
+    "Flatten",
+    "GlobalAvgPool",
+    "GlobalMaxPool",
+    "GeneralizedMeanPooling",
+    "GeneralizedMeanPoolingP",
+    "FastGlobalAvgPool",
+    "AdaptiveAvgMaxPool",
+    "ClipGlobalAvgPool",
 ]
 
 
@@ -70,17 +70,22 @@ class GeneralizedMeanPooling(nn.Module):
 
     def forward(self, x):
         x = x.clamp(min=self.eps).pow(self.p)
-        return F.adaptive_avg_pool2d(x, self.output_size).pow(1. / self.p)
+        return F.adaptive_avg_pool2d(x, self.output_size).pow(1.0 / self.p)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(' \
-               + str(self.p) + ', ' \
-               + 'output_size=' + str(self.output_size) + ')'
+        return (
+            self.__class__.__name__
+            + "("
+            + str(self.p)
+            + ", "
+            + "output_size="
+            + str(self.output_size)
+            + ")"
+        )
 
 
 class GeneralizedMeanPoolingP(GeneralizedMeanPooling):
-    """ Same, but norm is trainable
-    """
+    """Same, but norm is trainable"""
 
     def __init__(self, norm=3, output_size=(1, 1), eps=1e-6, *args, **kwargs):
         super(GeneralizedMeanPoolingP, self).__init__(norm, output_size, eps)
@@ -110,7 +115,11 @@ class FastGlobalAvgPool(nn.Module):
             in_size = x.size()
             return x.view((in_size[0], in_size[1], -1)).mean(dim=2)
         else:
-            return x.view(x.size(0), x.size(1), -1).mean(-1).view(x.size(0), x.size(1), 1, 1)
+            return (
+                x.view(x.size(0), x.size(1), -1)
+                .mean(-1)
+                .view(x.size(0), x.size(1), 1, 1)
+            )
 
 
 class ClipGlobalAvgPool(nn.Module):
@@ -120,5 +129,5 @@ class ClipGlobalAvgPool(nn.Module):
 
     def forward(self, x):
         x = self.avgpool(x)
-        x = torch.clamp(x, min=0., max=1.)
+        x = torch.clamp(x, min=0.0, max=1.0)
         return x

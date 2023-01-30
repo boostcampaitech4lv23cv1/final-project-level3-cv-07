@@ -20,7 +20,7 @@ def print_csv_format(results):
     assert isinstance(results, OrderedDict) or not len(results), results
     logger = logging.getLogger(__name__)
 
-    dataset_name = results.pop('dataset')
+    dataset_name = results.pop("dataset")
     metrics = ["Dataset"] + [k for k in results]
     csv_results = [(dataset_name, *list(results.values()))]
 

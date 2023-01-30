@@ -48,8 +48,15 @@ class Visualizer:
         sort_idx = order[keep]
         return cmc, sort_idx
 
-    def save_rank_result(self, query_indices, output, max_rank=5, vis_label=False, label_sort='ascending',
-                         actmap=False):
+    def save_rank_result(
+        self,
+        query_indices,
+        output,
+        max_rank=5,
+        vis_label=False,
+        label_sort="ascending",
+        actmap=False,
+    ):
         if vis_label:
             fig, axes = plt.subplots(2, max_rank + 1, figsize=(3 * max_rank, 12))
         else:
@@ -58,15 +65,15 @@ class Visualizer:
             all_imgs = []
             cmc, sort_idx = self.get_matched_result(q_idx)
             query_info = self.dataset[q_idx]
-            query_img = query_info['images']
-            cam_id = query_info['camids']
-            query_name = query_info['img_paths'].split('/')[-1]
+            query_img = query_info["images"]
+            cam_id = query_info["camids"]
+            query_name = query_info["img_paths"].split("/")[-1]
             all_imgs.append(query_img)
             query_img = np.rollaxis(np.asarray(query_img.numpy(), dtype=np.uint8), 0, 3)
             plt.clf()
             ax = fig.add_subplot(1, max_rank + 1, 1)
             ax.imshow(query_img)
-            ax.set_title('{:.4f}/cam{}'.format(self.all_ap[q_idx], cam_id))
+            ax.set_title("{:.4f}/cam{}".format(self.all_ap[q_idx], cam_id))
             ax.axis("off")
             for i in range(max_rank):
                 if vis_label:
@@ -75,22 +82,36 @@ class Visualizer:
                     ax = fig.add_subplot(1, max_rank + 1, i + 2)
                 g_idx = self.num_query + sort_idx[i]
                 gallery_info = self.dataset[g_idx]
-                gallery_img = gallery_info['images']
-                cam_id = gallery_info['camids']
+                gallery_img = gallery_info["images"]
+                cam_id = gallery_info["camids"]
                 all_imgs.append(gallery_img)
                 gallery_img = np.rollaxis(np.asarray(gallery_img, dtype=np.uint8), 0, 3)
                 if cmc[i] == 1:
-                    label = 'true'
-                    ax.add_patch(plt.Rectangle(xy=(0, 0), width=gallery_img.shape[1] - 1,
-                                               height=gallery_img.shape[0] - 1, edgecolor=(1, 0, 0),
-                                               fill=False, linewidth=5))
+                    label = "true"
+                    ax.add_patch(
+                        plt.Rectangle(
+                            xy=(0, 0),
+                            width=gallery_img.shape[1] - 1,
+                            height=gallery_img.shape[0] - 1,
+                            edgecolor=(1, 0, 0),
+                            fill=False,
+                            linewidth=5,
+                        )
+                    )
                 else:
-                    label = 'false'
-                    ax.add_patch(plt.Rectangle(xy=(0, 0), width=gallery_img.shape[1] - 1,
-                                               height=gallery_img.shape[0] - 1,
-                                               edgecolor=(0, 0, 1), fill=False, linewidth=5))
+                    label = "false"
+                    ax.add_patch(
+                        plt.Rectangle(
+                            xy=(0, 0),
+                            width=gallery_img.shape[1] - 1,
+                            height=gallery_img.shape[0] - 1,
+                            edgecolor=(0, 0, 1),
+                            fill=False,
+                            linewidth=5,
+                        )
+                    )
                 ax.imshow(gallery_img)
-                ax.set_title(f'{self.sim[q_idx, sort_idx[i]]:.3f}/{label}/cam{cam_id}')
+                ax.set_title(f"{self.sim[q_idx, sort_idx[i]]:.3f}/{label}/cam{cam_id}")
                 ax.axis("off")
             # if actmap:
             #     act_outputs = []
@@ -112,31 +133,49 @@ class Visualizer:
             #         axes.flat[i].imshow(acts[i], alpha=0.3, cmap='jet')
             if vis_label:
                 label_indice = np.where(cmc == 1)[0]
-                if label_sort == "ascending": label_indice = label_indice[::-1]
+                if label_sort == "ascending":
+                    label_indice = label_indice[::-1]
                 label_indice = label_indice[:max_rank]
                 for i in range(max_rank):
-                    if i >= len(label_indice): break
+                    if i >= len(label_indice):
+                        break
                     j = label_indice[i]
                     g_idx = self.num_query + sort_idx[j]
                     gallery_info = self.dataset[g_idx]
-                    gallery_img = gallery_info['images']
-                    cam_id = gallery_info['camids']
-                    gallery_img = np.rollaxis(np.asarray(gallery_img, dtype=np.uint8), 0, 3)
+                    gallery_img = gallery_info["images"]
+                    cam_id = gallery_info["camids"]
+                    gallery_img = np.rollaxis(
+                        np.asarray(gallery_img, dtype=np.uint8), 0, 3
+                    )
                     ax = fig.add_subplot(2, max_rank + 1, max_rank + 3 + i)
-                    ax.add_patch(plt.Rectangle(xy=(0, 0), width=gallery_img.shape[1] - 1,
-                                               height=gallery_img.shape[0] - 1,
-                                               edgecolor=(1, 0, 0),
-                                               fill=False, linewidth=5))
+                    ax.add_patch(
+                        plt.Rectangle(
+                            xy=(0, 0),
+                            width=gallery_img.shape[1] - 1,
+                            height=gallery_img.shape[0] - 1,
+                            edgecolor=(1, 0, 0),
+                            fill=False,
+                            linewidth=5,
+                        )
+                    )
                     ax.imshow(gallery_img)
-                    ax.set_title(f'{self.sim[q_idx, sort_idx[j]]:.3f}/cam{cam_id}')
+                    ax.set_title(f"{self.sim[q_idx, sort_idx[j]]:.3f}/cam{cam_id}")
                     ax.axis("off")
 
             plt.tight_layout()
             filepath = os.path.join(output, "{}.jpg".format(cnt))
             fig.savefig(filepath)
 
-    def vis_rank_list(self, output, vis_label, num_vis=100, rank_sort="ascending", label_sort="ascending", max_rank=5,
-                      actmap=False):
+    def vis_rank_list(
+        self,
+        output,
+        vis_label,
+        num_vis=100,
+        rank_sort="ascending",
+        label_sort="ascending",
+        max_rank=5,
+        actmap=False,
+    ):
         r"""Visualize rank list of query instance
         Args:
             output (str): a directory to save rank list result.
@@ -148,13 +187,19 @@ class Visualizer:
             max_rank (int): maximum number of rank result to visualize
             actmap (bool):
         """
-        assert rank_sort in ['ascending', 'descending'], "{} not match [ascending, descending]".format(rank_sort)
+        assert rank_sort in [
+            "ascending",
+            "descending",
+        ], "{} not match [ascending, descending]".format(rank_sort)
 
         query_indices = np.argsort(self.all_ap)
-        if rank_sort == 'descending': query_indices = query_indices[::-1]
+        if rank_sort == "descending":
+            query_indices = query_indices[::-1]
 
-        query_indices = query_indices[:int(num_vis)]
-        self.save_rank_result(query_indices, output, max_rank, vis_label, label_sort, actmap)
+        query_indices = query_indices[: int(num_vis)]
+        self.save_rank_result(
+            query_indices, output, max_rank, vis_label, label_sort, actmap
+        )
 
     def vis_roc_curve(self, output):
         PathManager.mkdirs(output)
@@ -182,43 +227,63 @@ class Visualizer:
         return fpr, tpr, pos, neg
 
     @staticmethod
-    def plot_roc_curve(fpr, tpr, name='model', fig=None):
+    def plot_roc_curve(fpr, tpr, name="model", fig=None):
         if fig is None:
             fig = plt.figure()
-            plt.semilogx(np.arange(0, 1, 0.01), np.arange(0, 1, 0.01), 'r', linestyle='--', label='Random guess')
-        plt.semilogx(fpr, tpr, color=(random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)),
-                     label='ROC curve with {}'.format(name))
-        plt.title('Receiver Operating Characteristic')
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.legend(loc='best')
+            plt.semilogx(
+                np.arange(0, 1, 0.01),
+                np.arange(0, 1, 0.01),
+                "r",
+                linestyle="--",
+                label="Random guess",
+            )
+        plt.semilogx(
+            fpr,
+            tpr,
+            color=(random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)),
+            label="ROC curve with {}".format(name),
+        )
+        plt.title("Receiver Operating Characteristic")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.legend(loc="best")
         return fig
 
     @staticmethod
-    def plot_distribution(pos, neg, name='model', fig=None):
+    def plot_distribution(pos, neg, name="model", fig=None):
         if fig is None:
             fig = plt.figure()
         pos_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))
-        n, bins, _ = plt.hist(pos, bins=80, alpha=0.7, density=True,
-                              color=pos_color,
-                              label='positive with {}'.format(name))
+        n, bins, _ = plt.hist(
+            pos,
+            bins=80,
+            alpha=0.7,
+            density=True,
+            color=pos_color,
+            label="positive with {}".format(name),
+        )
         mu = np.mean(pos)
         sigma = np.std(pos)
         y = norm.pdf(bins, mu, sigma)  # fitting curve
         plt.plot(bins, y, color=pos_color)  # plot y curve
 
         neg_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))
-        n, bins, _ = plt.hist(neg, bins=80, alpha=0.5, density=True,
-                              color=neg_color,
-                              label='negative with {}'.format(name))
+        n, bins, _ = plt.hist(
+            neg,
+            bins=80,
+            alpha=0.5,
+            density=True,
+            color=neg_color,
+            label="negative with {}".format(name),
+        )
         mu = np.mean(neg)
         sigma = np.std(neg)
         y = norm.pdf(bins, mu, sigma)  # fitting curve
         plt.plot(bins, y, color=neg_color)  # plot y curve
 
         plt.xticks(np.arange(0, 1.5, 0.1))
-        plt.title('positive and negative pairs distribution')
-        plt.legend(loc='best')
+        plt.title("positive and negative pairs distribution")
+        plt.legend(loc="best")
         return fig
 
     @staticmethod
@@ -234,7 +299,8 @@ class Visualizer:
 
     @staticmethod
     def load_roc_info(path):
-        with open(path, 'rb') as handle: res = pickle.load(handle)
+        with open(path, "rb") as handle:
+            res = pickle.load(handle)
         return res
 
     # def plot_camera_dist(self):

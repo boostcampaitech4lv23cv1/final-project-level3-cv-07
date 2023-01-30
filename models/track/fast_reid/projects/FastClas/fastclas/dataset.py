@@ -18,7 +18,9 @@ class ClasDataset(Dataset):
 
         if idx_to_class is not None:
             self.idx_to_class = idx_to_class
-            self.class_to_idx = {clas_name: int(i) for i, clas_name in self.idx_to_class.items()}
+            self.class_to_idx = {
+                clas_name: int(i) for i, clas_name in self.idx_to_class.items()
+            }
             self.classes = sorted(list(self.idx_to_class.values()))
         else:
             classes = set()
@@ -37,7 +39,8 @@ class ClasDataset(Dataset):
         img_path = img_item[0]
         label = self.class_to_idx[img_item[1]]
         img = read_image(img_path)
-        if self.transform is not None: img = self.transform(img)
+        if self.transform is not None:
+            img = self.transform(img)
 
         return {
             "images": img,

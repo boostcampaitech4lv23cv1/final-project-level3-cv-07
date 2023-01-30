@@ -28,10 +28,20 @@ class Dataset(object):
             dataset for training.
         verbose (bool): show information.
     """
+
     _junk_pids = []  # contains useless person IDs, e.g. background, false detections
 
-    def __init__(self, train, query, gallery, transform=None, mode='train',
-                 combineall=False, verbose=True, **kwargs):
+    def __init__(
+        self,
+        train,
+        query,
+        gallery,
+        transform=None,
+        mode="train",
+        combineall=False,
+        verbose=True,
+        **kwargs,
+    ):
         self._train = train
         self._query = query
         self._gallery = gallery
@@ -43,15 +53,17 @@ class Dataset(object):
         if self.combineall:
             self.combine_all()
 
-        if self.mode == 'train':
+        if self.mode == "train":
             self.data = self.train
-        elif self.mode == 'query':
+        elif self.mode == "query":
             self.data = self.query
-        elif self.mode == 'gallery':
+        elif self.mode == "gallery":
             self.data = self.gallery
         else:
-            raise ValueError('Invalid mode. Got {}, but expected to be '
-                             'one of [train | query | gallery]'.format(self.mode))
+            raise ValueError(
+                "Invalid mode. Got {}, but expected to be "
+                "one of [train | query | gallery]".format(self.mode)
+            )
 
     @property
     def train(self):
@@ -151,8 +163,8 @@ class ImageDataset(Dataset):
     def show_train(self):
         num_train_pids, num_train_cams = self.parse_data(self.train)
 
-        headers = ['subset', '# ids', '# images', '# cameras']
-        csv_results = [['train', num_train_pids, len(self.train), num_train_cams]]
+        headers = ["subset", "# ids", "# images", "# cameras"]
+        csv_results = [["train", num_train_pids, len(self.train), num_train_cams]]
 
         # tabulate it
         table = tabulate(
@@ -161,16 +173,19 @@ class ImageDataset(Dataset):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        logger.info(
+            f"=> Loaded {self.__class__.__name__} in csv format: \n"
+            + colored(table, "cyan")
+        )
 
     def show_test(self):
         num_query_pids, num_query_cams = self.parse_data(self.query)
         num_gallery_pids, num_gallery_cams = self.parse_data(self.gallery)
 
-        headers = ['subset', '# ids', '# images', '# cameras']
+        headers = ["subset", "# ids", "# images", "# cameras"]
         csv_results = [
-            ['query', num_query_pids, len(self.query), num_query_cams],
-            ['gallery', num_gallery_pids, len(self.gallery), num_gallery_cams],
+            ["query", num_query_pids, len(self.query), num_query_cams],
+            ["gallery", num_gallery_pids, len(self.gallery), num_gallery_cams],
         ]
 
         # tabulate it
@@ -180,4 +195,7 @@ class ImageDataset(Dataset):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        logger.info(
+            f"=> Loaded {self.__class__.__name__} in csv format: \n"
+            + colored(table, "cyan")
+        )

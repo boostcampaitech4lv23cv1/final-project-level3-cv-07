@@ -20,7 +20,7 @@ class CPLFW(ImageDataset):
     dataset_dir = "faces_emore_val"
     dataset_name = "cplfw"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.dataset_dir = os.path.join(self.root, self.dataset_dir)
 
@@ -28,8 +28,12 @@ class CPLFW(ImageDataset):
 
         self.check_before_run(required_files)
 
-        carray = bcolz.carray(rootdir=os.path.join(self.dataset_dir, self.dataset_name), mode='r')
-        is_same = np.load(os.path.join(self.dataset_dir, "{}_list.npy".format(self.dataset_name)))
+        carray = bcolz.carray(
+            rootdir=os.path.join(self.dataset_dir, self.dataset_name), mode="r"
+        )
+        is_same = np.load(
+            os.path.join(self.dataset_dir, "{}_list.npy".format(self.dataset_name))
+        )
 
         self.carray = carray
         self.is_same = is_same

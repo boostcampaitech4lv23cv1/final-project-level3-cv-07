@@ -38,7 +38,7 @@ class ClasEvaluator(DatasetEvaluator):
     def __init__(self, cfg, output_dir=None):
         self.cfg = cfg
         self._output_dir = output_dir
-        self._cpu_device = torch.device('cpu')
+        self._cpu_device = torch.device("cpu")
 
         self._predictions = []
 
@@ -50,10 +50,12 @@ class ClasEvaluator(DatasetEvaluator):
         labels = inputs["targets"].to(self._cpu_device)
 
         # measure accuracy
-        acc1, = accuracy(pred_logits, labels, topk=(1,))
+        (acc1,) = accuracy(pred_logits, labels, topk=(1,))
         num_correct_acc1 = acc1 * labels.size(0) / 100
 
-        self._predictions.append({"num_correct": num_correct_acc1, "num_samples": labels.size(0)})
+        self._predictions.append(
+            {"num_correct": num_correct_acc1, "num_samples": labels.size(0)}
+        )
 
     def evaluate(self):
         if comm.get_world_size() > 1:
@@ -61,7 +63,8 @@ class ClasEvaluator(DatasetEvaluator):
             predictions = comm.gather(self._predictions, dst=0)
             predictions = list(itertools.chain(*predictions))
 
-            if not comm.is_main_process(): return {}
+            if not comm.is_main_process():
+                return {}
 
         else:
             predictions = self._predictions

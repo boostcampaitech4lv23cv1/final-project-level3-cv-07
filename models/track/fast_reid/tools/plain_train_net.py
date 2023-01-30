@@ -12,7 +12,7 @@ from collections import OrderedDict
 import torch
 from torch.nn.parallel import DistributedDataParallel
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.data import build_reid_test_loader, build_reid_train_loader
@@ -20,14 +20,18 @@ from fast_reid.fastreid.evaluation.testing import flatten_results_dict
 from fast_reid.fastreid.engine import default_argument_parser, default_setup, launch
 from fast_reid.fastreid.modeling import build_model
 from fast_reid.fastreid.solver import build_lr_scheduler, build_optimizer
-from fast_reid.fastreid.evaluation import inference_on_dataset, print_csv_format, ReidEvaluator
+from fast_reid.fastreid.evaluation import (
+    inference_on_dataset,
+    print_csv_format,
+    ReidEvaluator,
+)
 from fast_reid.fastreid.utils.checkpoint import Checkpointer, PeriodicCheckpointer
 from fast_reid.fastreid.utils import comm
 from fast_reid.fastreid.utils.events import (
     CommonMetricPrinter,
     EventStorage,
     JSONWriter,
-    TensorboardXWriter
+    TensorboardXWriter,
 )
 
 logger = logging.getLogger("fastreid")
@@ -45,12 +49,12 @@ def do_test(cfg, model):
         try:
             data_loader, evaluator = get_evaluator(cfg, dataset_name)
         except NotImplementedError:
-            logger.warn(
-                "No evaluator found. implement its `build_evaluator` method."
-            )
+            logger.warn("No evaluator found. implement its `build_evaluator` method.")
             results[dataset_name] = {}
             continue
-        results_i = inference_on_dataset(model, data_loader, evaluator, flip_test=cfg.TEST.FLIP.ENABLED)
+        results_i = inference_on_dataset(
+            model, data_loader, evaluator, flip_test=cfg.TEST.FLIP.ENABLED
+        )
         results[dataset_name] = results_i
 
         if comm.is_main_process():
@@ -60,7 +64,7 @@ def do_test(cfg, model):
                 results
             )
             logger.info("Evaluation results for {} in csv format:".format(dataset_name))
-            results_i['dataset'] = dataset_name
+            results_i["dataset"] = dataset_name
             print_csv_format(results_i)
 
     if len(results) == 1:
@@ -88,7 +92,8 @@ def do_train(cfg, model, resume=False):
     )
 
     start_epoch = (
-            checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get("epoch", -1) + 1
+        checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get("epoch", -1)
+        + 1
     )
     iteration = start_iter = start_epoch * iters_per_epoch
 
@@ -97,7 +102,9 @@ def do_train(cfg, model, resume=False):
     warmup_iters = cfg.SOLVER.WARMUP_ITERS
     delay_epochs = cfg.SOLVER.DELAY_EPOCHS
 
-    periodic_checkpointer = PeriodicCheckpointer(checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_epoch)
+    periodic_checkpointer = PeriodicCheckpointer(
+        checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_epoch
+    )
     if len(cfg.DATASETS.TESTS) == 1:
         metric_name = "metric"
     else:
@@ -107,7 +114,7 @@ def do_train(cfg, model, resume=False):
         [
             CommonMetricPrinter(max_iter),
             JSONWriter(os.path.join(cfg.OUTPUT_DIR, "metrics.json")),
-            TensorboardXWriter(cfg.OUTPUT_DIR)
+            TensorboardXWriter(cfg.OUTPUT_DIR),
         ]
         if comm.is_main_process()
         else []
@@ -128,7 +135,9 @@ def do_train(cfg, model, resume=False):
                 losses = sum(loss_dict.values())
                 assert torch.isfinite(losses).all(), loss_dict
 
-                loss_dict_reduced = {k: v.item() for k, v in comm.reduce_dict(loss_dict).items()}
+                loss_dict_reduced = {
+                    k: v.item() for k, v in comm.reduce_dict(loss_dict).items()
+                }
                 losses_reduced = sum(loss for loss in loss_dict_reduced.values())
                 if comm.is_main_process():
                     storage.put_scalars(total_loss=losses_reduced, **loss_dict_reduced)
@@ -136,11 +145,15 @@ def do_train(cfg, model, resume=False):
                 optimizer.zero_grad()
                 losses.backward()
                 optimizer.step()
-                storage.put_scalar("lr", optimizer.param_groups[0]["lr"], smoothing_hint=False)
+                storage.put_scalar(
+                    "lr", optimizer.param_groups[0]["lr"], smoothing_hint=False
+                )
 
-                if iteration - start_iter > 5 and \
-                        ((iteration + 1) % 200 == 0 or iteration == max_iter - 1) and \
-                        ((iteration + 1) % iters_per_epoch != 0):
+                if (
+                    iteration - start_iter > 5
+                    and ((iteration + 1) % 200 == 0 or iteration == max_iter - 1)
+                    and ((iteration + 1) % iters_per_epoch != 0)
+                ):
                     for writer in writers:
                         writer.write()
 
@@ -157,9 +170,9 @@ def do_train(cfg, model, resume=False):
                 scheduler["lr_sched"].step()
 
             if (
-                    cfg.TEST.EVAL_PERIOD > 0
-                    and (epoch + 1) % cfg.TEST.EVAL_PERIOD == 0
-                    and iteration != max_iter - 1
+                cfg.TEST.EVAL_PERIOD > 0
+                and (epoch + 1) % cfg.TEST.EVAL_PERIOD == 0
+                and iteration != max_iter - 1
             ):
                 results = do_test(cfg, model)
                 # Compared to "train_net.py", the test results are not dumped to EventStorage
@@ -167,7 +180,11 @@ def do_train(cfg, model, resume=False):
                 results = {}
             flatten_results = flatten_results_dict(results)
 
-            metric_dict = dict(metric=flatten_results[metric_name] if metric_name in flatten_results else -1)
+            metric_dict = dict(
+                metric=flatten_results[metric_name]
+                if metric_name in flatten_results
+                else -1
+            )
             periodic_checkpointer.step(epoch, **metric_dict)
 
 

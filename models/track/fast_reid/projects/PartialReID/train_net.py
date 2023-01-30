@@ -9,10 +9,15 @@ import logging
 import os
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
-from fast_reid.fastreid.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from fast_reid.fastreid.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 from fast_reid.fastreid.utils.checkpoint import Checkpointer
 from fast_reid.fastreid.engine import hooks
 
@@ -52,8 +57,12 @@ def main(args):
 
         if cfg.TEST.PRECISE_BN.ENABLED and hooks.get_bn_modules(model):
             prebn_cfg = cfg.clone()
-            prebn_cfg.DATALOADER.NUM_WORKERS = 0  # save some memory and time for PreciseBN
-            prebn_cfg.DATASETS.NAMES = tuple([cfg.TEST.PRECISE_BN.DATASET])  # set dataset name for PreciseBN
+            prebn_cfg.DATALOADER.NUM_WORKERS = (
+                0  # save some memory and time for PreciseBN
+            )
+            prebn_cfg.DATASETS.NAMES = tuple(
+                [cfg.TEST.PRECISE_BN.DATASET]
+            )  # set dataset name for PreciseBN
             logger.info("Prepare precise BN dataset")
             hooks.PreciseBN(
                 # Run at the same freq as (but before) evaluation.

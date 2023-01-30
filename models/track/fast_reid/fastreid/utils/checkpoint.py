@@ -41,12 +41,12 @@ class Checkpointer(object):
     """
 
     def __init__(
-            self,
-            model: nn.Module,
-            save_dir: str = "",
-            *,
-            save_to_disk: bool = True,
-            **checkpointables: object,
+        self,
+        model: nn.Module,
+        save_dir: str = "",
+        *,
+        save_to_disk: bool = True,
+        **checkpointables: object,
     ):
         """
         Args:
@@ -122,7 +122,7 @@ class Checkpointer(object):
         checkpoint = self._load_file(path)
         incompatible = self._load_model(checkpoint)
         if (
-                incompatible is not None
+            incompatible is not None
         ):  # handle some existing subclasses that returns None
             self._log_incompatible_keys(incompatible)
 
@@ -168,7 +168,7 @@ class Checkpointer(object):
             os.path.join(self.save_dir, file)
             for file in PathManager.ls(self.save_dir)
             if PathManager.isfile(os.path.join(self.save_dir, file))
-               and file.endswith(".pth")
+            and file.endswith(".pth")
         ]
         return all_model_checkpoints
 
@@ -283,13 +283,9 @@ class Checkpointer(object):
         # properties.
         for k in list(state_dict.keys()):
             v = state_dict[k]
-            if not isinstance(v, np.ndarray) and not isinstance(
-                    v, torch.Tensor
-            ):
+            if not isinstance(v, np.ndarray) and not isinstance(v, torch.Tensor):
                 raise ValueError(
-                    "Unsupported type found in checkpoint! {}: {}".format(
-                        k, type(v)
-                    )
+                    "Unsupported type found in checkpoint! {}: {}".format(k, type(v))
                 )
             if not isinstance(v, torch.Tensor):
                 state_dict[k] = torch.from_numpy(v)
@@ -330,19 +326,13 @@ class PeriodicCheckpointer:
         additional_state.update(kwargs)
         if (epoch + 1) % self.period == 0 and epoch < self.max_epoch - 1:
             if additional_state["metric"] > self.best_metric:
-                self.checkpointer.save(
-                    "model_best", **additional_state
-                )
+                self.checkpointer.save("model_best", **additional_state)
                 self.best_metric = additional_state["metric"]
             # Put it behind best model save to make last checkpoint valid
-            self.checkpointer.save(
-                "model_{:04d}".format(epoch), **additional_state
-            )
+            self.checkpointer.save("model_{:04d}".format(epoch), **additional_state)
         if epoch >= self.max_epoch - 1:
             if additional_state["metric"] > self.best_metric:
-                self.checkpointer.save(
-                    "model_best", **additional_state
-                )
+                self.checkpointer.save("model_best", **additional_state)
             self.checkpointer.save("model_final", **additional_state)
 
     def save(self, name: str, **kwargs: Any):
@@ -366,7 +356,7 @@ def _filter_reused_missing_keys(model: nn.Module, keys: List[str]) -> List[str]:
     param_to_names = defaultdict(set)  # param -> names that points to it
     for module_prefix, module in _named_modules_with_dup(model):
         for name, param in list(module.named_parameters(recurse=False)) + list(
-                module.named_buffers(recurse=False)  # pyre-ignore
+            module.named_buffers(recurse=False)  # pyre-ignore
         ):
             full_name = (module_prefix + "." if module_prefix else "") + name
             param_to_names[param].add(full_name)
@@ -427,7 +417,7 @@ def _strip_prefix_if_present(state_dict: Dict[str, Any], prefix: str) -> None:
         return
 
     for key in keys:
-        newkey = key[len(prefix):]
+        newkey = key[len(prefix) :]
         state_dict[newkey] = state_dict.pop(key)
 
     # also strip the prefix in metadata, if any..
@@ -444,7 +434,7 @@ def _strip_prefix_if_present(state_dict: Dict[str, Any], prefix: str) -> None:
 
             if len(key) == 0:
                 continue
-            newkey = key[len(prefix):]
+            newkey = key[len(prefix) :]
             metadata[newkey] = metadata.pop(key)
 
 
@@ -463,7 +453,7 @@ def _group_checkpoint_keys(keys: List[str]) -> Dict[str, List[str]]:
     for key in keys:
         pos = key.rfind(".")
         if pos >= 0:
-            head, tail = key[:pos], [key[pos + 1:]]
+            head, tail = key[:pos], [key[pos + 1 :]]
         else:
             head, tail = key, []
         groups[head].extend(tail)
@@ -489,7 +479,7 @@ def _group_to_str(group: List[str]) -> str:
 
 
 def _named_modules_with_dup(
-        model: nn.Module, prefix: str = ""
+    model: nn.Module, prefix: str = ""
 ) -> Iterable[Tuple[str, nn.Module]]:
     """
     The same as `model.named_modules()`, except that it includes

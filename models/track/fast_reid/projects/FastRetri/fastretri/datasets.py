@@ -14,10 +14,10 @@ __all__ = ["Cars196", "CUB", "SOP", "InShop"]
 
 @DATASET_REGISTRY.register()
 class Cars196(ImageDataset):
-    dataset_dir = 'Cars_196'
+    dataset_dir = "Cars_196"
     dataset_name = "cars"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.dataset_dir = os.path.join(self.root, self.dataset_dir)
         train_file = os.path.join(self.dataset_dir, "train.txt")
@@ -37,15 +37,15 @@ class Cars196(ImageDataset):
 
     def process_label_file(self, file, is_train):
         data_list = []
-        with open(file, 'r') as f:
+        with open(file, "r") as f:
             lines = f.read().splitlines()
 
         for line in lines:
-            img_name, label = line.split(',')
+            img_name, label = line.split(",")
             if is_train:
-                label = self.dataset_name + '_' + str(label)
+                label = self.dataset_name + "_" + str(label)
 
-            data_list.append((os.path.join(self.dataset_dir, img_name), label, '0'))
+            data_list.append((os.path.join(self.dataset_dir, img_name), label, "0"))
 
         return data_list
 

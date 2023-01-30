@@ -10,19 +10,21 @@ from glob import glob
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ['GRID', ]
+__all__ = [
+    "GRID",
+]
 
 
 @DATASET_REGISTRY.register()
 class GRID(ImageDataset):
-    """GRID
-    """
-    dataset_dir = "underground_reid"
-    dataset_name = 'grid'
+    """GRID"""
 
-    def __init__(self, root='datasets', **kwargs):
+    dataset_dir = "underground_reid"
+    dataset_name = "grid"
+
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
-        self.train_path = os.path.join(self.root, self.dataset_dir, 'images')
+        self.train_path = os.path.join(self.root, self.dataset_dir, "images")
 
         required_files = [self.train_path]
         self.check_before_run(required_files)
@@ -37,7 +39,7 @@ class GRID(ImageDataset):
 
         for img_path in img_paths:
             img_name = os.path.basename(img_path)
-            img_info = img_name.split('_')
+            img_info = img_name.split("_")
             pid = self.dataset_name + "_" + img_info[0]
             camid = self.dataset_name + "_" + img_info[1]
             data.append([img_path, pid, camid])

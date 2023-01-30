@@ -26,10 +26,11 @@ class cuhkSYSU(ImageDataset):
         - identities: xxx.
         - images: 12936 (train).
     """
-    dataset_dir = 'cuhk_sysu'
+
+    dataset_dir = "cuhk_sysu"
     dataset_name = "cuhksysu"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.dataset_dir = osp.join(self.root, self.dataset_dir)
 
@@ -45,8 +46,8 @@ class cuhkSYSU(ImageDataset):
         super(cuhkSYSU, self).__init__(train, query, gallery, **kwargs)
 
     def process_dir(self, dir_path):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'p([-\d]+)_s(\d)')
+        img_paths = glob.glob(osp.join(dir_path, "*.jpg"))
+        pattern = re.compile(r"p([-\d]+)_s(\d)")
 
         data = []
         for img_path in img_paths:

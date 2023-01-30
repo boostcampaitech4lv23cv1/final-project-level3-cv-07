@@ -7,7 +7,7 @@
 import logging
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
 
@@ -55,7 +55,9 @@ def main(args):
         cfg.MODEL.BACKBONE.PRETRAIN = False
         model = Trainer.build_model(cfg)
 
-        Checkpointer(model, save_dir=cfg.OUTPUT_DIR).load(cfg.MODEL.WEIGHTS)  # load trained model
+        Checkpointer(model, save_dir=cfg.OUTPUT_DIR).load(
+            cfg.MODEL.WEIGHTS
+        )  # load trained model
 
         if args.commit:
             res = Committer.test(cfg, model)
@@ -72,7 +74,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--commit", action="store_true", help="submission testing results")
+    parser.add_argument(
+        "--commit", action="store_true", help="submission testing results"
+    )
     args = parser.parse_args()
 
     print("Command Line Args:", args)

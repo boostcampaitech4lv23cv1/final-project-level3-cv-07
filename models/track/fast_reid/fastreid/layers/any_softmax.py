@@ -7,12 +7,7 @@
 import torch
 import torch.nn as nn
 
-__all__ = [
-    "Linear",
-    "ArcSoftmax",
-    "CosSoftmax",
-    "CircleSoftmax"
-]
+__all__ = ["Linear", "ArcSoftmax", "CosSoftmax", "CircleSoftmax"]
 
 
 class Linear(nn.Module):
@@ -30,12 +25,13 @@ class Linear(nn.Module):
 
 
 class CosSoftmax(Linear):
-    r"""Implement of large margin cosine distance:
-    """
+    r"""Implement of large margin cosine distance:"""
 
     def forward(self, logits, targets):
         index = torch.where(targets != -1)[0]
-        m_hot = torch.zeros(index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype)
+        m_hot = torch.zeros(
+            index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype
+        )
         m_hot.scatter_(1, targets[index, None], self.m)
         logits[index] -= m_hot
         logits.mul_(self.s)
@@ -43,10 +39,11 @@ class CosSoftmax(Linear):
 
 
 class ArcSoftmax(Linear):
-
     def forward(self, logits, targets):
         index = torch.where(targets != -1)[0]
-        m_hot = torch.zeros(index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype)
+        m_hot = torch.zeros(
+            index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype
+        )
         m_hot.scatter_(1, targets[index, None], self.m)
         logits.acos_()
         logits[index] += m_hot
@@ -55,16 +52,17 @@ class ArcSoftmax(Linear):
 
 
 class CircleSoftmax(Linear):
-
     def forward(self, logits, targets):
-        alpha_p = torch.clamp_min(-logits.detach() + 1 + self.m, min=0.)
-        alpha_n = torch.clamp_min(logits.detach() + self.m, min=0.)
+        alpha_p = torch.clamp_min(-logits.detach() + 1 + self.m, min=0.0)
+        alpha_n = torch.clamp_min(logits.detach() + self.m, min=0.0)
         delta_p = 1 - self.m
         delta_n = self.m
 
         # When use model parallel, there are some targets not in class centers of local rank
         index = torch.where(targets != -1)[0]
-        m_hot = torch.zeros(index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype)
+        m_hot = torch.zeros(
+            index.size()[0], logits.size()[1], device=logits.device, dtype=logits.dtype
+        )
         m_hot.scatter_(1, targets[index, None], 1)
 
         logits_p = alpha_p * (logits - delta_p)

@@ -12,8 +12,13 @@ import torch
 import torch.nn.functional as F
 
 
-def aqe(query_feat: torch.tensor, gallery_feat: torch.tensor,
-        qe_times: int = 1, qe_k: int = 10, alpha: float = 3.0):
+def aqe(
+    query_feat: torch.tensor,
+    gallery_feat: torch.tensor,
+    qe_times: int = 1,
+    qe_k: int = 10,
+    alpha: float = 3.0,
+):
     """
     Combining the retrieved topk nearest neighbors with the original query and doing another retrieval.
     c.f. https://www.robots.ox.ac.uk/~vgg/publications/papers/chum07b.pdf
@@ -37,7 +42,9 @@ def aqe(query_feat: torch.tensor, gallery_feat: torch.tensor,
             init_rank = np.argpartition(-sim, range(1, qe_k + 1))
             weights = sim[init_rank[:qe_k]].reshape((-1, 1))
             weights = np.power(weights, alpha)
-            all_feat_list.append(np.mean(all_feat[init_rank[:qe_k], :] * weights, axis=0))
+            all_feat_list.append(
+                np.mean(all_feat[init_rank[:qe_k], :] * weights, axis=0)
+            )
         all_feat = np.stack(all_feat_list, axis=0)
         norm_feat = F.normalize(torch.from_numpy(all_feat), p=2, dim=1)
 

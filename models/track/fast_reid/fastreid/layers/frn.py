@@ -23,7 +23,7 @@ class TLU(nn.Module):
         nn.init.zeros_(self.tau)
 
     def extra_repr(self):
-        return 'num_features={num_features}'.format(**self.__dict__)
+        return "num_features={num_features}".format(**self.__dict__)
 
     def forward(self, x):
         return torch.max(x, self.tau.view(1, self.num_features, 1, 1))
@@ -49,7 +49,7 @@ class FRN(nn.Module):
         if is_eps_leanable:
             self.eps = Parameter(torch.Tensor(1))
         else:
-            self.register_buffer('eps', torch.Tensor([eps]))
+            self.register_buffer("eps", torch.Tensor([eps]))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -59,7 +59,7 @@ class FRN(nn.Module):
             nn.init.constant_(self.eps, self.init_eps)
 
     def extra_repr(self):
-        return 'num_features={num_features}, eps={init_eps}'.format(**self.__dict__)
+        return "num_features={num_features}, eps={init_eps}".format(**self.__dict__)
 
     def forward(self, x):
         """
@@ -78,7 +78,9 @@ class FRN(nn.Module):
         x = x * torch.rsqrt(nu2 + self.eps.abs())
 
         # Scale and Bias
-        x = self.weight.view(1, self.num_features, 1, 1) * x + self.bias.view(1, self.num_features, 1, 1)
+        x = self.weight.view(1, self.num_features, 1, 1) * x + self.bias.view(
+            1, self.num_features, 1, 1
+        )
         # x = self.weight * x + self.bias
         return x
 
@@ -96,8 +98,7 @@ def bnrelu_to_frn(module):
         if is_before_bn and isinstance(child, (ReLU, LeakyReLU)):
             # Convert BN to FRN
             if isinstance(before_child, BatchNorm2d):
-                mod.add_module(
-                    before_name, FRN(num_features=before_child.num_features))
+                mod.add_module(before_name, FRN(num_features=before_child.num_features))
             else:
                 raise NotImplementedError()
 
@@ -131,7 +132,7 @@ def convert(module, flag_name):
 def remove_flags(module, flag_name):
     mod = module
     for name, child in module.named_children():
-        if hasattr(child, 'is_convert_frn'):
+        if hasattr(child, "is_convert_frn"):
             delattr(child, flag_name)
             mod.add_module(name, remove_flags(child, flag_name))
         else:
@@ -139,7 +140,9 @@ def remove_flags(module, flag_name):
     return mod
 
 
-def bnrelu_to_frn2(model, input_size=(3, 128, 128), batch_size=2, flag_name='is_convert_frn'):
+def bnrelu_to_frn2(
+    model, input_size=(3, 128, 128), batch_size=2, flag_name="is_convert_frn"
+):
     forard_hooks = list()
     backward_hooks = list()
 

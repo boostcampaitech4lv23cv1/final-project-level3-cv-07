@@ -63,23 +63,50 @@ def build_transforms(cfg, is_train=True):
             res.append(T.RandomApply([AutoAugment()], p=autoaug_prob))
 
         if size_train[0] > 0:
-            res.append(T.Resize(size_train[0] if len(size_train) == 1 else size_train, interpolation=3))
+            res.append(
+                T.Resize(
+                    size_train[0] if len(size_train) == 1 else size_train,
+                    interpolation=3,
+                )
+            )
 
         if do_crop:
-            res.append(T.RandomResizedCrop(size=crop_size[0] if len(crop_size) == 1 else crop_size,
-                                           interpolation=3,
-                                           scale=crop_scale, ratio=crop_ratio))
+            res.append(
+                T.RandomResizedCrop(
+                    size=crop_size[0] if len(crop_size) == 1 else crop_size,
+                    interpolation=3,
+                    scale=crop_scale,
+                    ratio=crop_ratio,
+                )
+            )
         if do_pad:
-            res.extend([T.Pad(padding_size, padding_mode=padding_mode),
-                        T.RandomCrop(size_train[0] if len(size_train) == 1 else size_train)])
+            res.extend(
+                [
+                    T.Pad(padding_size, padding_mode=padding_mode),
+                    T.RandomCrop(size_train[0] if len(size_train) == 1 else size_train),
+                ]
+            )
         if do_flip:
             res.append(T.RandomHorizontalFlip(p=flip_prob))
 
         if do_cj:
-            res.append(T.RandomApply([T.ColorJitter(cj_brightness, cj_contrast, cj_saturation, cj_hue)], p=cj_prob))
+            res.append(
+                T.RandomApply(
+                    [T.ColorJitter(cj_brightness, cj_contrast, cj_saturation, cj_hue)],
+                    p=cj_prob,
+                )
+            )
         if do_affine:
-            res.append(T.RandomAffine(degrees=10, translate=None, scale=[0.9, 1.1], shear=0.1, resample=False,
-                                      fillcolor=0))
+            res.append(
+                T.RandomAffine(
+                    degrees=10,
+                    translate=None,
+                    scale=[0.9, 1.1],
+                    shear=0.1,
+                    resample=False,
+                    fillcolor=0,
+                )
+            )
         if do_augmix:
             res.append(AugMix(prob=augmix_prob))
         res.append(ToTensor())
@@ -93,8 +120,14 @@ def build_transforms(cfg, is_train=True):
         crop_size = cfg.INPUT.CROP.SIZE
 
         if size_test[0] > 0:
-            res.append(T.Resize(size_test[0] if len(size_test) == 1 else size_test, interpolation=3))
+            res.append(
+                T.Resize(
+                    size_test[0] if len(size_test) == 1 else size_test, interpolation=3
+                )
+            )
         if do_crop:
-            res.append(T.CenterCrop(size=crop_size[0] if len(crop_size) == 1 else crop_size))
+            res.append(
+                T.CenterCrop(size=crop_size[0] if len(crop_size) == 1 else crop_size)
+            )
         res.append(ToTensor())
     return T.Compose(res)

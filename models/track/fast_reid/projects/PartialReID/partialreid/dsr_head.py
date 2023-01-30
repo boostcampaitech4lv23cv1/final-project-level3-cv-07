@@ -29,10 +29,18 @@ class OcclusionUnit(nn.Module):
         SpaFeat3 = self.MaxPool3(x)
         SpaFeat4 = self.MaxPool4(x)
 
-        Feat1 = SpaFeat1.view(SpaFeat1.size(0), SpaFeat1.size(1), SpaFeat1.size(2) * SpaFeat1.size(3))
-        Feat2 = SpaFeat2.view(SpaFeat2.size(0), SpaFeat2.size(1), SpaFeat2.size(2) * SpaFeat2.size(3))
-        Feat3 = SpaFeat3.view(SpaFeat3.size(0), SpaFeat3.size(1), SpaFeat3.size(2) * SpaFeat3.size(3))
-        Feat4 = SpaFeat4.view(SpaFeat4.size(0), SpaFeat4.size(1), SpaFeat4.size(2) * SpaFeat4.size(3))
+        Feat1 = SpaFeat1.view(
+            SpaFeat1.size(0), SpaFeat1.size(1), SpaFeat1.size(2) * SpaFeat1.size(3)
+        )
+        Feat2 = SpaFeat2.view(
+            SpaFeat2.size(0), SpaFeat2.size(1), SpaFeat2.size(2) * SpaFeat2.size(3)
+        )
+        Feat3 = SpaFeat3.view(
+            SpaFeat3.size(0), SpaFeat3.size(1), SpaFeat3.size(2) * SpaFeat3.size(3)
+        )
+        Feat4 = SpaFeat4.view(
+            SpaFeat4.size(0), SpaFeat4.size(1), SpaFeat4.size(2) * SpaFeat4.size(3)
+        )
         SpatialFeatAll = torch.cat((Feat1, Feat2, Feat3, Feat4), 2)
         SpatialFeatAll = SpatialFeatAll.transpose(1, 2)  # shape: [n, c, m]
         y = self.mask_layer(SpatialFeatAll)
@@ -48,7 +56,9 @@ class OcclusionUnit(nn.Module):
 
         SpaFeat1 = SpaFeat1.transpose(1, 2)
         SpaFeat1 = SpaFeat1.transpose(2, 3)  # shape: [n, h, w, c]
-        SpaFeat1 = SpaFeat1.view((SpaFeat1.size(0), SpaFeat1.size(1) * SpaFeat1.size(2), -1))  # shape: [n, h*w, c]
+        SpaFeat1 = SpaFeat1.view(
+            (SpaFeat1.size(0), SpaFeat1.size(1) * SpaFeat1.size(2), -1)
+        )  # shape: [n, h*w, c]
 
         global_feats = mask_score.matmul(SpaFeat1).view(SpaFeat1.shape[0], -1, 1, 1)
         return global_feats, mask_weight, mask_weight_norm
@@ -97,10 +107,18 @@ class DSRHead(EmbeddingHead):
         SpaFeat3 = self.MaxPool3(features)
         SpaFeat4 = self.MaxPool4(features)
 
-        Feat1 = SpaFeat1.view(SpaFeat1.size(0), SpaFeat1.size(1), SpaFeat1.size(2) * SpaFeat1.size(3))
-        Feat2 = SpaFeat2.view(SpaFeat2.size(0), SpaFeat2.size(1), SpaFeat2.size(2) * SpaFeat2.size(3))
-        Feat3 = SpaFeat3.view(SpaFeat3.size(0), SpaFeat3.size(1), SpaFeat3.size(2) * SpaFeat3.size(3))
-        Feat4 = SpaFeat4.view(SpaFeat4.size(0), SpaFeat4.size(1), SpaFeat4.size(2) * SpaFeat4.size(3))
+        Feat1 = SpaFeat1.view(
+            SpaFeat1.size(0), SpaFeat1.size(1), SpaFeat1.size(2) * SpaFeat1.size(3)
+        )
+        Feat2 = SpaFeat2.view(
+            SpaFeat2.size(0), SpaFeat2.size(1), SpaFeat2.size(2) * SpaFeat2.size(3)
+        )
+        Feat3 = SpaFeat3.view(
+            SpaFeat3.size(0), SpaFeat3.size(1), SpaFeat3.size(2) * SpaFeat3.size(3)
+        )
+        Feat4 = SpaFeat4.view(
+            SpaFeat4.size(0), SpaFeat4.size(1), SpaFeat4.size(2) * SpaFeat4.size(3)
+        )
         SpatialFeatAll = torch.cat((Feat1, Feat2, Feat3, Feat4), dim=2)
 
         foreground_feat, mask_weight, mask_weight_norm = self.occ_unit(features)
@@ -117,12 +135,14 @@ class DSRHead(EmbeddingHead):
         bn_feat = self.bottleneck(global_feat)
         bn_feat = bn_feat[..., 0, 0]
 
-        if self.cls_layer.__class__.__name__ == 'Linear':
+        if self.cls_layer.__class__.__name__ == "Linear":
             pred_class_logits = F.linear(bn_feat, self.weight)
             fore_pred_class_logits = F.linear(bn_foreground_feat, self.weight_occ)
         else:
             pred_class_logits = F.linear(F.normalize(bn_feat), F.normalize(self.weight))
-            fore_pred_class_logits = F.linear(F.normalize(bn_foreground_feat), F.normalize(self.weight_occ))
+            fore_pred_class_logits = F.linear(
+                F.normalize(bn_foreground_feat), F.normalize(self.weight_occ)
+            )
 
         cls_outputs = self.cls_layer(pred_class_logits, targets)
         fore_cls_outputs = self.cls_layer(fore_pred_class_logits, targets)

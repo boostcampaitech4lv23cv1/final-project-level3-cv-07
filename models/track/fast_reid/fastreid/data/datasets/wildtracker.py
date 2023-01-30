@@ -26,11 +26,12 @@ class WildTrackCrop(ImageDataset):
         data_path(str): path to WildTrackCrop dataset
         combineall(bool): combine train and test sets as train set if True
     """
-    dataset_url = None
-    dataset_dir = 'Wildtrack_crop_dataset'
-    dataset_name = 'wildtrack'
 
-    def __init__(self, root='datasets', **kwargs):
+    dataset_url = None
+    dataset_dir = "Wildtrack_crop_dataset"
+    dataset_name = "wildtrack"
+
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.dataset_dir = os.path.join(self.root, self.dataset_dir)
 
@@ -53,7 +54,7 @@ class WildTrackCrop(ImageDataset):
             img_lists = glob.glob(os.path.join(dir_path, dir_name, "*.png"))
             for img_path in img_lists:
                 pid = self.dataset_name + "_" + dir_name
-                camid = img_path.split('/')[-1].split('_')[0]
+                camid = img_path.split("/")[-1].split("_")[0]
                 camid = self.dataset_name + "_" + camid
                 data.append([img_path, pid, camid])
         return data

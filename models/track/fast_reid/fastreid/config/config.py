@@ -81,13 +81,9 @@ class CfgNode(_CfgNode):
             base_cfg_file = cfg[BASE_KEY]
             if base_cfg_file.startswith("~"):
                 base_cfg_file = os.path.expanduser(base_cfg_file)
-            if not any(
-                    map(base_cfg_file.startswith, ["/", "https://", "http://"])
-            ):
+            if not any(map(base_cfg_file.startswith, ["/", "https://", "http://"])):
                 # the path to base cfg is relative to the config file itself.
-                base_cfg_file = os.path.join(
-                    os.path.dirname(filename), base_cfg_file
-                )
+                base_cfg_file = os.path.join(os.path.dirname(filename), base_cfg_file)
             base_cfg = CfgNode.load_yaml_with_base(
                 base_cfg_file, allow_unsafe=allow_unsafe
             )
@@ -118,7 +114,7 @@ class CfgNode(_CfgNode):
             cfg_other (CfgNode): configs to merge from.
         """
         assert (
-                BASE_KEY not in cfg_other
+            BASE_KEY not in cfg_other
         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
         return super().merge_from_other_cfg(cfg_other)
 
@@ -129,7 +125,7 @@ class CfgNode(_CfgNode):
         """
         keys = set(cfg_list[0::2])
         assert (
-                BASE_KEY not in keys
+            BASE_KEY not in keys
         ), "The reserved key '{}' can only be used in files!".format(BASE_KEY)
         return super().merge_from_list(cfg_list)
 
@@ -141,9 +137,7 @@ class CfgNode(_CfgNode):
                     return
                 raise KeyError(
                     "Computed attributed '{}' already exists "
-                    "with a different value! old={}, new={}.".format(
-                        name, old_val, val
-                    )
+                    "with a different value! old={}, new={}.".format(name, old_val, val)
                 )
             self[name] = val
         else:
@@ -218,14 +212,14 @@ def configurable(init_func=None, *, from_config=None):
     def check_docstring(func):
         if func.__module__.startswith("fastreid."):
             assert (
-                    func.__doc__ is not None and "experimental" in func.__doc__.lower()
+                func.__doc__ is not None and "experimental" in func.__doc__.lower()
             ), f"configurable {func} should be marked experimental"
 
     if init_func is not None:
         assert (
-                inspect.isfunction(init_func)
-                and from_config is None
-                and init_func.__name__ == "__init__"
+            inspect.isfunction(init_func)
+            and from_config is None
+            and init_func.__name__ == "__init__"
         ), "Incorrect use of @configurable. Check API documentation for examples."
         check_docstring(init_func)
 
@@ -238,7 +232,9 @@ def configurable(init_func=None, *, from_config=None):
                     "Class with @configurable must have a 'from_config' classmethod."
                 ) from e
             if not inspect.ismethod(from_config_func):
-                raise TypeError("Class with @configurable must have a 'from_config' classmethod.")
+                raise TypeError(
+                    "Class with @configurable must have a 'from_config' classmethod."
+                )
 
             if _called_with_cfg(*args, **kwargs):
                 explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
@@ -289,7 +285,9 @@ def _get_args_from_config(from_config_func, *args, **kwargs):
         for param in signature.parameters.values()
     )
 
-    if support_var_arg:  # forward all arguments to from_config, if from_config accepts them
+    if (
+        support_var_arg
+    ):  # forward all arguments to from_config, if from_config accepts them
         ret = from_config_func(*args, **kwargs)
     else:
         # forward supported arguments to from_config

@@ -7,12 +7,12 @@ import numpy as np
 
 
 def generate_trajectories(file_path, groundTrues):
-    f = open(file_path, 'r')
+    f = open(file_path, "r")
 
-    lines = f.read().split('\n')
+    lines = f.read().split("\n")
     values = []
     for l in lines:
-        split = l.split(',')
+        split = l.split(",")
         if len(split) < 2:
             break
         numbers = [float(i) for i in split]
@@ -36,8 +36,14 @@ def make_parser():
     parser = argparse.ArgumentParser("MOTChallenge ReID dataset")
 
     parser.add_argument("--data_path", default="", help="path to MOT data")
-    parser.add_argument("--save_path", default="fast_reid/datasets", help="Path to save the MOT-ReID dataset")
-    parser.add_argument("--mot", default=17, help="MOTChallenge dataset number e.g. 17, 20")
+    parser.add_argument(
+        "--save_path",
+        default="fast_reid/datasets",
+        help="Path to save the MOT-ReID dataset",
+    )
+    parser.add_argument(
+        "--mot", default=17, help="MOTChallenge dataset number e.g. 17, 20"
+    )
 
     return parser
 
@@ -45,20 +51,20 @@ def make_parser():
 def main(args):
 
     # Create folder for outputs
-    save_path = os.path.join(args.save_path, 'MOT' + str(args.mot) + '-ReID')
+    save_path = os.path.join(args.save_path, "MOT" + str(args.mot) + "-ReID")
     os.makedirs(save_path, exist_ok=True)
 
-    save_path = os.path.join(args.save_path, 'MOT' + str(args.mot) + '-ReID')
-    train_save_path = os.path.join(save_path, 'bounding_box_train')
+    save_path = os.path.join(args.save_path, "MOT" + str(args.mot) + "-ReID")
+    train_save_path = os.path.join(save_path, "bounding_box_train")
     os.makedirs(train_save_path, exist_ok=True)
-    test_save_path = os.path.join(save_path, 'bounding_box_test')
+    test_save_path = os.path.join(save_path, "bounding_box_test")
     os.makedirs(test_save_path, exist_ok=True)
 
     # Get gt data
-    data_path = os.path.join(args.data_path, 'MOT' + str(args.mot), 'train')
+    data_path = os.path.join(args.data_path, "MOT" + str(args.mot), "train")
 
-    if args.mot == '17':
-        seqs = [f for f in os.listdir(data_path) if 'FRCNN' in f]
+    if args.mot == "17":
+        seqs = [f for f in os.listdir(data_path) if "FRCNN" in f]
     else:
         seqs = os.listdir(data_path)
 
@@ -70,10 +76,12 @@ def main(args):
         print(seq)
         print(id_offset)
 
-        ground_truth_path = os.path.join(data_path, seq, 'gt/gt.txt')
-        gt = generate_trajectories(ground_truth_path, groundTrues=True)  # f, id, x_tl, y_tl, x_br, y_br, ...
+        ground_truth_path = os.path.join(data_path, seq, "gt/gt.txt")
+        gt = generate_trajectories(
+            ground_truth_path, groundTrues=True
+        )  # f, id, x_tl, y_tl, x_br, y_br, ...
 
-        images_path = os.path.join(data_path, seq, 'img1')
+        images_path = os.path.join(data_path, seq, "img1")
         img_files = os.listdir(images_path)
         img_files.sort()
 
@@ -112,7 +120,14 @@ def main(args):
                 # plt.imshow(patch)
                 # plt.show()
 
-                fileName = (str(id_ + id_offset)).zfill(7) + '_' + seq + '_' + (str(f)).zfill(7) + '_acc_data.bmp'
+                fileName = (
+                    (str(id_ + id_offset)).zfill(7)
+                    + "_"
+                    + seq
+                    + "_"
+                    + (str(f)).zfill(7)
+                    + "_acc_data.bmp"
+                )
 
                 if f < num_frames // 2:
                     cv2.imwrite(os.path.join(train_save_path, fileName), patch)

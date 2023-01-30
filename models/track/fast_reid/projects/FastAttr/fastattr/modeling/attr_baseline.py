@@ -11,15 +11,10 @@ from .bce_loss import cross_entropy_sigmoid_loss
 
 @META_ARCH_REGISTRY.register()
 class AttrBaseline(Baseline):
-
     @classmethod
     def from_config(cls, cfg):
         base_res = Baseline.from_config(cfg)
-        base_res["loss_kwargs"].update({
-            'bce': {
-                'scale': cfg.MODEL.LOSSES.BCE.SCALE
-            }
-        })
+        base_res["loss_kwargs"].update({"bce": {"scale": cfg.MODEL.LOSSES.BCE.SCALE}})
         return base_res
 
     def losses(self, outputs, gt_labels):
@@ -34,11 +29,11 @@ class AttrBaseline(Baseline):
         loss_names = self.loss_kwargs["loss_names"]
 
         if "BinaryCrossEntropyLoss" in loss_names:
-            bce_kwargs = self.loss_kwargs.get('bce')
+            bce_kwargs = self.loss_kwargs.get("bce")
             loss_dict["loss_bce"] = cross_entropy_sigmoid_loss(
                 cls_outputs,
                 gt_labels,
                 self.sample_weights,
-            ) * bce_kwargs.get('scale')
+            ) * bce_kwargs.get("scale")
 
         return loss_dict

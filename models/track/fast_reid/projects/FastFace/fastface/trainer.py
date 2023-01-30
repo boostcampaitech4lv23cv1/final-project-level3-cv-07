@@ -10,7 +10,11 @@ import time
 from torch.nn.parallel import DistributedDataParallel
 from torch.nn.utils import clip_grad_norm_
 
-from fast_reid.fastreid.data.build import _root, build_reid_test_loader, build_reid_train_loader
+from fast_reid.fastreid.data.build import (
+    _root,
+    build_reid_test_loader,
+    build_reid_train_loader,
+)
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.transforms import build_transforms
 from fast_reid.fastreid.engine import hooks
@@ -33,8 +37,10 @@ class FaceTrainer(DefaultTrainer):
     def __init__(self, cfg):
         TrainerBase.__init__(self)
 
-        logger = logging.getLogger('fastreid.partial-fc.trainer')
-        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for fastreid
+        logger = logging.getLogger("fastreid.partial-fc.trainer")
+        if not logger.isEnabledFor(
+            logging.INFO
+        ):  # setup_logger is not called for fastreid
             setup_logger()
 
         # Assume these objects must be constructed in this order.
@@ -55,7 +61,9 @@ class FaceTrainer(DefaultTrainer):
             # fmt: on
             # Partial-FC module
             embedding_size = embedding_dim if embedding_dim > 0 else feat_dim
-            self.pfc_module = PartialFC(embedding_size, num_classes, sample_rate, cls_type, scale, margin)
+            self.pfc_module = PartialFC(
+                embedding_size, num_classes, sample_rate, cls_type, scale, margin
+            )
             self.pfc_optimizer, _ = build_optimizer(cfg, self.pfc_module, False)
 
         # For training, wrap with DDP. But don't need this for inference.
@@ -63,14 +71,26 @@ class FaceTrainer(DefaultTrainer):
             # ref to https://github.com/pytorch/pytorch/issues/22049 to set `find_unused_parameters=True`
             # for part of the parameters is not updated.
             model = DistributedDataParallel(
-                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False,
+                model,
+                device_ids=[comm.get_local_rank()],
+                broadcast_buffers=False,
             )
 
         if cfg.MODEL.HEADS.PFC.ENABLED:
             mini_batch_size = cfg.SOLVER.IMS_PER_BATCH // comm.get_world_size()
-            grad_scaler = MaxClipGradScaler(mini_batch_size, 128 * mini_batch_size, growth_interval=100)
-            self._trainer = PFCTrainer(model, data_loader, optimizer, param_wrapper,
-                                       self.pfc_module, self.pfc_optimizer, cfg.SOLVER.AMP.ENABLED, grad_scaler)
+            grad_scaler = MaxClipGradScaler(
+                mini_batch_size, 128 * mini_batch_size, growth_interval=100
+            )
+            self._trainer = PFCTrainer(
+                model,
+                data_loader,
+                optimizer,
+                param_wrapper,
+                self.pfc_module,
+                self.pfc_optimizer,
+                cfg.SOLVER.AMP.ENABLED,
+                grad_scaler,
+            )
         else:
             self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
                 model, data_loader, optimizer, param_wrapper
@@ -79,7 +99,9 @@ class FaceTrainer(DefaultTrainer):
         self.iters_per_epoch = len(data_loader.dataset) // cfg.SOLVER.IMS_PER_BATCH
         self.scheduler = self.build_lr_scheduler(cfg, optimizer, self.iters_per_epoch)
         if cfg.MODEL.HEADS.PFC.ENABLED:
-            self.pfc_scheduler = self.build_lr_scheduler(cfg, self.pfc_optimizer, self.iters_per_epoch)
+            self.pfc_scheduler = self.build_lr_scheduler(
+                cfg, self.pfc_optimizer, self.iters_per_epoch
+            )
 
         self.checkpointer = Checkpointer(
             # Assume you want to save checkpoints together with logs/statistics
@@ -114,12 +136,12 @@ class FaceTrainer(DefaultTrainer):
             # Make sure checkpointer is after writer
             ret.insert(
                 len(ret) - 1,
-                PfcPeriodicCheckpointer(self.pfc_checkpointer, self.cfg.SOLVER.CHECKPOINT_PERIOD)
+                PfcPeriodicCheckpointer(
+                    self.pfc_checkpointer, self.cfg.SOLVER.CHECKPOINT_PERIOD
+                ),
             )
             # partial fc scheduler hook
-            ret.append(
-                hooks.LRScheduler(self.pfc_optimizer, self.pfc_scheduler)
-            )
+            ret.append(hooks.LRScheduler(self.pfc_optimizer, self.pfc_scheduler))
         return ret
 
     def resume_or_load(self, resume=True):
@@ -127,7 +149,7 @@ class FaceTrainer(DefaultTrainer):
         super().resume_or_load(resume)
         # Partial-FC loading state_dict
         if self.cfg.MODEL.HEADS.PFC.ENABLED:
-            self.pfc_checkpointer.resume_or_load('', resume=resume)
+            self.pfc_checkpointer.resume_or_load("", resume=resume)
 
     @classmethod
     def build_train_loader(cls, cfg):
@@ -164,8 +186,17 @@ class PFCTrainer(SimpleTrainer):
     https://github.com/deepinsight/insightface/blob/master/recognition/arcface_torch/partial_fc.py
     """
 
-    def __init__(self, model, data_loader, optimizer, param_wrapper, pfc_module, pfc_optimizer, amp_enabled,
-                 grad_scaler):
+    def __init__(
+        self,
+        model,
+        data_loader,
+        optimizer,
+        param_wrapper,
+        pfc_module,
+        pfc_optimizer,
+        amp_enabled,
+        grad_scaler,
+    ):
         super().__init__(model, data_loader, optimizer, param_wrapper)
 
         self.pfc_module = pfc_module
@@ -184,7 +215,9 @@ class PFCTrainer(SimpleTrainer):
         features, targets = self.model(data)
 
         # Partial-fc backward
-        f_grad, loss_v = self.pfc_module.forward_backward(features, targets, self.pfc_optimizer)
+        f_grad, loss_v = self.pfc_module.forward_backward(
+            features, targets, self.pfc_optimizer
+        )
 
         if self.amp_enabled:
             features.backward(self.grad_scaler.scale(f_grad))

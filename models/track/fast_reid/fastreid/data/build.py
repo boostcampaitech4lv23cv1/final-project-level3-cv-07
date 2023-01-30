@@ -20,16 +20,15 @@ from .datasets import DATASET_REGISTRY
 from .transforms import build_transforms
 
 
-__all__ = [
-    "build_reid_train_loader",
-    "build_reid_test_loader"
-]
+__all__ = ["build_reid_train_loader", "build_reid_test_loader"]
 
 # _root = os.getenv("FASTREID_DATASETS", "datasets")
 _root = os.getenv("FASTREID_DATASETS", "fast_reid/datasets")
 
 
-def _train_loader_from_config(cfg, *, train_set=None, transforms=None, sampler=None, **kwargs):
+def _train_loader_from_config(
+    cfg, *, train_set=None, transforms=None, sampler=None, **kwargs
+):
 
     if transforms is None:
         transforms = build_transforms(cfg, is_train=True)
@@ -54,12 +53,18 @@ def _train_loader_from_config(cfg, *, train_set=None, transforms=None, sampler=N
         if sampler_name == "TrainingSampler":
             sampler = samplers.TrainingSampler(len(train_set))
         elif sampler_name == "NaiveIdentitySampler":
-            sampler = samplers.NaiveIdentitySampler(train_set.img_items, mini_batch_size, num_instance)
+            sampler = samplers.NaiveIdentitySampler(
+                train_set.img_items, mini_batch_size, num_instance
+            )
         elif sampler_name == "BalancedIdentitySampler":
-            sampler = samplers.BalancedIdentitySampler(train_set.img_items, mini_batch_size, num_instance)
+            sampler = samplers.BalancedIdentitySampler(
+                train_set.img_items, mini_batch_size, num_instance
+            )
         elif sampler_name == "SetReWeightSampler":
             set_weight = cfg.DATALOADER.SET_WEIGHT
-            sampler = samplers.SetReWeightSampler(train_set.img_items, mini_batch_size, num_instance, set_weight)
+            sampler = samplers.SetReWeightSampler(
+                train_set.img_items, mini_batch_size, num_instance, set_weight
+            )
         elif sampler_name == "ImbalancedDatasetSampler":
             sampler = samplers.ImbalancedDatasetSampler(train_set.img_items)
         else:
@@ -75,7 +80,11 @@ def _train_loader_from_config(cfg, *, train_set=None, transforms=None, sampler=N
 
 @configurable(from_config=_train_loader_from_config)
 def build_reid_train_loader(
-        train_set, *, sampler=None, total_batch_size, num_workers=0,
+    train_set,
+    *,
+    sampler=None,
+    total_batch_size,
+    num_workers=0,
 ):
     """
     Build a dataloader for object re-identification with some default features.
@@ -87,7 +96,9 @@ def build_reid_train_loader(
 
     mini_batch_size = total_batch_size // comm.get_world_size()
 
-    batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, mini_batch_size, True)
+    batch_sampler = torch.utils.data.sampler.BatchSampler(
+        sampler, mini_batch_size, True
+    )
 
     train_loader = DataLoaderX(
         comm.get_local_rank(),
@@ -101,12 +112,16 @@ def build_reid_train_loader(
     return train_loader
 
 
-def _test_loader_from_config(cfg, *, dataset_name=None, test_set=None, num_query=0, transforms=None, **kwargs):
+def _test_loader_from_config(
+    cfg, *, dataset_name=None, test_set=None, num_query=0, transforms=None, **kwargs
+):
     if transforms is None:
         transforms = build_transforms(cfg, is_train=False)
 
     if test_set is None:
-        assert dataset_name is not None, "dataset_name must be explicitly passed in when test_set is not provided"
+        assert (
+            dataset_name is not None
+        ), "dataset_name must be explicitly passed in when test_set is not provided"
         data = DATASET_REGISTRY.get(dataset_name)(root=_root, **kwargs)
         if comm.is_main_process():
             data.show_test()
@@ -180,7 +195,9 @@ def fast_batch_collator(batched_inputs):
         return out
 
     elif isinstance(elem, Mapping):
-        return {key: fast_batch_collator([d[key] for d in batched_inputs]) for key in elem}
+        return {
+            key: fast_batch_collator([d[key] for d in batched_inputs]) for key in elem
+        }
 
     elif isinstance(elem, float):
         return torch.tensor(batched_inputs, dtype=torch.float64)
