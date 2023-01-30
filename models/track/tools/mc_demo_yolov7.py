@@ -161,8 +161,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
     3. FIXME
     - frame_list에 모든 프레임 정보 저장하지 않고, 뒤에서 필요한 frame만 cv.imread로 불러오기
     """
-    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
-    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
+
     t_ids = {}
     height,width,channel = frame_list[0].shape
     createDirectory(tracklet_dir)
@@ -170,7 +169,7 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
     for i in tracks:
         if (
             i.tracklet_len > min_length
-        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
+        ):  
             frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
             x1,y1,x2,y2,conf = value
             if conf > conf_thresh : 
@@ -199,10 +198,25 @@ def get_valid_tids(tracker, results, frame_list, tracklet_dir, target_dir, min_l
 
         for i in range(len(dfs)):
             id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-            id_conf = t_ids.pop(id)
-            targeted_ids[id] = id_conf
+            targeted_ids[id] = t_ids[id]
+        ##
+        targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True))
+        # t_ids = dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+        
+        best_matched_id = list(targeted_ids.keys())[0]
+        
+        second_dfs = DeepFace.find(
+            img_path=f"{tracklet_dir}/{best_matched_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+        )
+        targeted_ids = {}
+        for i in range(len(second_dfs)):
+            id,sim = int(second_dfs.iloc[i].identity.split("/")[-1].split(".")[0]),second_dfs.iloc[i]['VGG-Face_cosine']
+            if sim < 0.25 :
+                id_conf = t_ids.pop(id)        
+                targeted_ids[id] = (id_conf,sim)
 
-        return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+        ##
+        return dict(sorted(targeted_ids.items(),key=lambda x : x[1][0],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
@@ -650,8 +664,8 @@ def detect(opt, save_img=False):
         write_results(
             os.path.join(save_dir, "valid_ids.txt"), "targeted tracklet ids (id : confidence)\n"
         )
-        for id,conf in targeted_ids.items():
-            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
+        for id,(conf,sim) in targeted_ids.items():
+            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f}\n")
 
         write_results(
             os.path.join(save_dir, "valid_ids.txt"), "\ncartoonized tracklet ids (id : confidence)\n"
@@ -676,7 +690,7 @@ if __name__ == "__main__":
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"haerin"
+        target = f"phs"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -690,7 +704,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"Newjeans"
+        project= f"SNL"
         name= "exp"
         exist_ok= None
         trace= None
@@ -712,7 +726,7 @@ if __name__ == "__main__":
         aspect_ratio_thresh = 1.6
         min_box_area = 10
         min_frame = 5 # added
-        dbscan = True # added
+        dbscan = False # added
         mot20 = True
         save_crop = None
         
