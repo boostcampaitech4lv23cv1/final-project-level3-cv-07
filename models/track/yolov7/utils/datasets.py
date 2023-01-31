@@ -236,7 +236,6 @@ class LoadImages:  # for inference
             self.frame += 1
             print(
                 f"video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ",
-                end="",
             )
 
         else:

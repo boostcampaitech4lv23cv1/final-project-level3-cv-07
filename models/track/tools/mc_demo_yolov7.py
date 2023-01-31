@@ -181,9 +181,13 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
         dbscan(target_dir,tracklet_dir)
         return True
     else :
-        dfs = DeepFace.find(
-            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
-        )
+        try:
+            dfs = DeepFace.find(
+                img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
+            )
+        except ValueError:
+            print("Error: Your video has no valid face tracking. Check again.")
+            sys.exit(0)
 
         targeted_ids = {}
 
@@ -432,12 +436,15 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
     return mask, 1 - mask
 
 
-def extract_feature(target_path, save_dir):
+def extract_target_face(target_path, save_dir):
     mtcnn = MTCNN(margin=30)
     img = Image.open(target_path)
-    img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
-    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
-    # img_embedding = resnet(img_cropped.unsqueeze(0))
+    img_path = str(save_dir) + "/target_detect.png"
+    img_cropped = mtcnn(img, save_path=img_path)
+
+    if img_cropped is None :
+        print("Error: Your target image has no valid face tracking. Check again.")
+        sys.exit(0)
 
 
 def detect(opt, save_img=False):
@@ -473,7 +480,7 @@ def detect(opt, save_img=False):
         parents=True, exist_ok=True
     )  # make dir
 
-    extract_feature(target_path, save_dir)
+    extract_target_face(target_path, save_dir)
 
     # Initialize
     set_logging()
@@ -525,6 +532,8 @@ def detect(opt, save_img=False):
 
     t0 = time.time()
     results_temp = defaultdict(dict)
+    results = []
+
     for frame, path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -551,7 +560,6 @@ def detect(opt, save_img=False):
             pred = apply_classifier(pred, modelc, img, im0s)
 
         # Process detections
-        results = []
         for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], "%g: " % i, im0s[i].copy(), dataset.count
@@ -587,8 +595,6 @@ def detect(opt, save_img=False):
                         f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                     )
                     results_temp[tid][frame] = np.append(tlbr,t.score)
-                    if save_results:
-                        write_results(os.path.join(save_dir, "results.txt"), results)
 
                     if save_img or view_img:  # Add bbox to image
                         if opt.hide_labels_name:
@@ -630,6 +636,9 @@ def detect(opt, save_img=False):
                             save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
                         )
                     vid_writer.write(im0)
+
+    if save_results:
+        write_results(os.path.join(save_dir, "results.txt"), results)
 
     if save_txt or save_img:
         s = (
@@ -678,9 +687,11 @@ if __name__ == "__main__":
     cartoonize_dir = f"cartoonize"
     
     class Opt:
+        project= f"chim"
+        name= "exp"
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"jjh"
+        source = f"{file_storage}/uploaded_video/sub.mp4"
+        target = f"chim"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -694,8 +705,6 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"mudo"
-        name= "exp"
         exist_ok= None
         trace= None
         hide_labels_name= False
