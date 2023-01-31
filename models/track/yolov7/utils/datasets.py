@@ -191,20 +191,6 @@ def resize_crop(image):
     image = image[:h, :w, :]
     return image
 
-
-def resize_crop(image):
-    h, w, c = np.shape(image)
-    if min(h, w) > 720:
-        if h > w:
-            h, w = int(720 * h / w), 720
-        else:
-            h, w = 720, int(720 * w / h)
-    image = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
-    h, w = (h // 8) * 8, (w // 8) * 8
-    image = image[:h, :w, :]
-    return image
-
-
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
         p = str(Path(path).absolute())  # os-agnostic absolute path
