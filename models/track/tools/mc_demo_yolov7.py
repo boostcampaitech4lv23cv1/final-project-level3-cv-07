@@ -18,6 +18,7 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import MTCNN
+
 # import face_recognition
 
 from yolov7.models.experimental import attempt_load
@@ -39,11 +40,17 @@ from yolov7.detect_temp import detect_image
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
-from tools.mask_generator import mask_generator_v0, mask_generator_v1, mask_generator_v2, mask_generator_v3
+from tools.mask_generator import (
+    mask_generator_v0,
+    mask_generator_v1,
+    mask_generator_v2,
+    mask_generator_v3,
+)
 from tools.utils import createDirectory, get_frame_num, bbox_scale_up
- 
+
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
+
 
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
@@ -77,17 +84,18 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
 
 
 def dbscan(target_dir, tracklet_dir):
-    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+    tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
     # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
     data = []
-    for imagePath in tracklet_imgs :
+    for imagePath in tracklet_imgs:
         image = cv2.imread(imagePath)
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        boxes = face_recognition.face_locations(rgb,
-		    model="cnn")
+        boxes = face_recognition.face_locations(rgb, model="cnn")
         encodings = face_recognition.face_encodings(rgb, boxes)
-        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-        for (box, enc) in zip(boxes, encodings)]
+        d = [
+            {"imagePath": imagePath, "loc": box, "encoding": enc}
+            for (box, enc) in zip(boxes, encodings)
+        ]
         data.extend(d)
     encodings = [d["encoding"] for d in data]
     # dump the facial encodings data to disk
@@ -97,7 +105,7 @@ def dbscan(target_dir, tracklet_dir):
     etime = time.time()
     print(f"DBSCAN time elapsed :{etime - stime}")
     label_ids = np.unique(clt.labels_)
-    numUniqueFaces = len(np.where(label_ids>-1)[0])
+    numUniqueFaces = len(np.where(label_ids > -1)[0])
     print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
     return
@@ -264,7 +272,7 @@ def parsing_results(valid_ids, save_dir, num_frames, swap_all_face=False):
                 else:
                     final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
 
-            # save valid face 
+            # save valid face
             else:
                 if obj_id in valid_ids:
                     if not final_lines or frame != final_lines[-1][0]:
@@ -317,16 +325,17 @@ def detect(opt, save_img=True):
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
-    weights, imgsz = opt.weights, opt.img_size,
+    weights, imgsz = (
+        opt.weights,
+        opt.img_size,
+    )
     save_results = opt.save_results
 
     # Directories
     save_dir = Path(
         increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
     )  # increment run
-    (save_dir).mkdir(
-        parents=True, exist_ok=True
-    )  # make dir
+    (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     extract_feature(target_path, save_dir)
 
@@ -444,7 +453,10 @@ def detect(opt, save_img=True):
                     )
                     h, w, _ = img.shape
                     vid_writer = cv2.VideoWriter(
-                        save_path[:-4]+"_tracked.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
+                        save_path[:-4] + "_tracked.mp4",
+                        cv2.VideoWriter_fourcc(*"mp4v"),
+                        fps,
+                        (w, h),
                     )
                 vid_writer.write(im0)
 

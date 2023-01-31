@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx - x) ** 2 + (cy - y) ** 2)
 

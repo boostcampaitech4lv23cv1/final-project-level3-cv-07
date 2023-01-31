@@ -1,6 +1,7 @@
 import os
 import cv2
 
+
 def createDirectory(dir):
     try:
         if not os.path.exists(dir):

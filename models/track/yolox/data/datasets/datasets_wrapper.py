@@ -60,7 +60,7 @@ class MixConcatDataset(torchConcatDataset):
 
 
 class Dataset(torchDataset):
-    """ This class is a subclass of the base :class:`torch.utils.data.Dataset`,
+    """This class is a subclass of the base :class:`torch.utils.data.Dataset`,
     that enables on the fly resizing of the ``input_dim``.
 
     Args:
