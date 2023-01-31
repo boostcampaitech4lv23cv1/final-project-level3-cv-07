@@ -113,7 +113,7 @@ def launch_by_subprocess(
             if machine_rank == 0:
                 port = _find_free_port()
                 with open(ip_add_file, "w") as ip_add:
-                    ip_add.write(dist_url+'\n')
+                    ip_add.write(dist_url + "\n")
                     ip_add.write(str(port))
             else:
                 while not os.path.exists(ip_add_file):

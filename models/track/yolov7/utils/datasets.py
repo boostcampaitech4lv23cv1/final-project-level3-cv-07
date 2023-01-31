@@ -179,6 +179,18 @@ class _RepeatSampler(object):
             yield from iter(self.sampler)
 
 
+def resize_crop(image):
+    h, w, c = np.shape(image)
+    if min(h, w) > 1080:
+        if h > w:
+            h, w = int(1080 * h / w), 1080
+        else:
+            h, w = 1080, int(1080 * w / h)
+    image = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
+    h, w = (h // 8) * 8, (w // 8) * 8
+    image = image[:h, :w, :]
+    return image
+
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
         p = str(Path(path).absolute())  # os-agnostic absolute path
@@ -232,11 +244,12 @@ class LoadImages:  # for inference
                     path = self.files[self.count]
                     self.new_video(path)
                     ret_val, img0 = self.cap.read()
-
+            img0 = resize_crop(img0)
             self.frame += 1
-            print(
-                f"video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ",
-            )
+            # print(
+            #     f"video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ",
+            #     end="",
+            # )
 
         else:
             # Read image
