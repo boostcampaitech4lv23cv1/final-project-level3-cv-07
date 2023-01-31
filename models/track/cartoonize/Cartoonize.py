@@ -21,16 +21,14 @@ def createDirectory(dir):
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
     i = 0
-    print("#####")
-    print(vid_path)
-    print(cap)
-    print("#####")
+    print("vid_path", vid_path)
+    print("cap", cap)
 
     while True:  # cap.isOpened()):
         ret, frame = cap.read()
         if not ret:
             break
-        # frame = resize_crop(frame) for resize sol2
+        frame = resize_crop(frame)
         cv2.imwrite(save_dir + f"/frame_{i+1}.png", frame)
         i += 1
 

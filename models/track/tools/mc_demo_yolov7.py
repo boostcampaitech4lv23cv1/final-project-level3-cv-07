@@ -22,7 +22,6 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import InceptionResnetV1, MTCNN
-
 # import face_recognition
 
 from yolov7.models.experimental import attempt_load
@@ -78,16 +77,6 @@ def get_frame_num(source):
     return i
 
 
-def calc_resized_size(h, w):
-    if min(h, w) > 720:
-        if h > w:
-            h, w = int(720 * h / w), 720
-        else:
-            h, w = 720, int(720 * w / h)
-    h, w = (h // 8) * 8, (w // 8) * 8
-    return h, w
-
-
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
     print(
@@ -119,31 +108,31 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     return valid_ids
 
 
-# def dbscan(target_dir,tracklet_dir):
-#     tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
-#     # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
-#     data = []
-#     for imagePath in tracklet_imgs :
-#         image = cv2.imread(imagePath)
-#         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#         boxes = face_recognition.face_locations(rgb,
-# 		    model="cnn")
-#         encodings = face_recognition.face_encodings(rgb, boxes)
-#         d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-#         for (box, enc) in zip(boxes, encodings)]
-#         data.extend(d)
-#     encodings = [d["encoding"] for d in data]
-#     # dump the facial encodings data to disk
-#     stime = time.time()
-#     clt = DBSCAN(metric="euclidean")
-#     clt.fit(encodings)
-#     etime = time.time()
-#     print(f"DBSCAN time elapsed :{etime - stime}")
-#     label_ids = np.unique(clt.labels_)
-#     numUniqueFaces = len(np.where(label_ids>-1)[0])
-#     print("[INFO] # unique faces: {}".format(numUniqueFaces))
+def dbscan(target_dir,tracklet_dir):
+    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+    # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
+    data = []
+    for imagePath in tracklet_imgs :
+        image = cv2.imread(imagePath)
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        boxes = face_recognition.face_locations(rgb,
+		    model="cnn")
+        encodings = face_recognition.face_encodings(rgb, boxes)
+        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
+        for (box, enc) in zip(boxes, encodings)]
+        data.extend(d)
+    encodings = [d["encoding"] for d in data]
+    # dump the facial encodings data to disk
+    stime = time.time()
+    clt = DBSCAN(metric="euclidean")
+    clt.fit(encodings)
+    etime = time.time()
+    print(f"DBSCAN time elapsed :{etime - stime}")
+    label_ids = np.unique(clt.labels_)
+    numUniqueFaces = len(np.where(label_ids>-1)[0])
+    print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
-#     return
+    return
 
 
 def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
@@ -620,11 +609,6 @@ def detect(opt, save_img=False):
                             vid_writer.release()  # release previous video writer
                         if vid_cap:  # video
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            ### origin
-                            # w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            # h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-                            ### revised (detection & tracking with resized img)
                             h, w = calc_resized_size(
                                 int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
                                 int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -634,7 +618,7 @@ def detect(opt, save_img=False):
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += ".mp4"
                         vid_writer = cv2.VideoWriter(
-                            save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
+                            save_path[:-4]+"_tracked.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
                         )
                     vid_writer.write(im0)
 
@@ -729,7 +713,7 @@ if __name__ == "__main__":
         aspect_ratio_thresh = 1.6
         min_box_area = 10
         min_frame = 5  # added
-        dbscan = True  # added
+        dbscan = False  # added
         mot20 = True
         save_crop = None
 
