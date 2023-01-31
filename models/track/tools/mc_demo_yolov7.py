@@ -134,8 +134,7 @@ def dbscan(target_dir,tracklet_dir):
 
     return
 
-def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
-
+def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh, work_dir):
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
     1. tracker status에 대한 설명
@@ -149,7 +148,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
     # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
     t_ids = {}
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+        f"{work_dir}/image_orig/frame_1.png"
     )
     height, width, layers = img.shape
     size = (width, height)
@@ -167,7 +166,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
                     x1, y1, x2, y2, height, width, 3
                 )
                 frame_img = cv2.imread(
-                    f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
+                    f"{work_dir}/image_orig/frame_{frame}.png"
                 )
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
@@ -179,22 +178,22 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
                 )
                 
                 t_ids[i.track_id]=conf   
-    if opt.dbscan :
-        dbscan(target_dir,tracklet_dir)
-        return True
-    else :
-        dfs = DeepFace.find(
-            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
-        )
+    # if opt.dbscan :
+    #     dbscan(target_dir,tracklet_dir)
+    #     return True
+    # else :
+    dfs = DeepFace.find(
+        img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
+    )
 
-        targeted_ids = {}
+    targeted_ids = {}
 
-        for i in range(len(dfs)):
-            id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-            id_conf = t_ids.pop(id)
-            targeted_ids[id] = id_conf
+    for i in range(len(dfs)):
+        id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
+        id_conf = t_ids.pop(id)
+        targeted_ids[id] = id_conf
 
-        return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+    return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
@@ -424,16 +423,12 @@ def extract_feature(target_path, save_dir):
     # img_embedding = resnet(img_cropped.unsqueeze(0))
 
 
-def detect(opt, save_img=False):
 
+def detect(opt, save_img=False):
     start_time_total = time.time()
 
-    source = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
-    )
-    target_path = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
-    )
+    source = opt.source
+    target_path = opt.target
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
         opt.view_img,
@@ -449,10 +444,12 @@ def detect(opt, save_img=False):
         or source.lower().startswith(("rtsp://", "rtmp://", "http://", "https://"))
     )
 
+    # save_dir = Path(
+    #     increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
+    # )  # increment run
+
     # Directories
-    save_dir = Path(
-        increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
-    )  # increment run
+    save_dir = Path(opt.work_dir) # increment run
     (save_dir / "labels" if save_txt else save_dir).mkdir(
         parents=True, exist_ok=True
     )  # make dir
@@ -508,7 +505,7 @@ def detect(opt, save_img=False):
         )  # run once
 
     t0 = time.time()
-    results_temp = defaultdict(dict)
+    results_tlbr = defaultdict(dict)
     results = []
     for frame, path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
@@ -579,7 +576,7 @@ def detect(opt, save_img=False):
                         }
                     )
                     
-                    results_temp[tid][frame] = np.append(tlbr,t.score)
+                    results_tlbr[tid][frame] = np.append(tlbr, t.score)
 
                     if save_img or view_img:  # Add bbox to image
                         if opt.hide_labels_name:
@@ -634,11 +631,12 @@ def detect(opt, save_img=False):
     tracklet_dir = str(save_dir) + "/tracklet"
     targeted_ids, valid_ids = get_valid_tids(
         tracker,
-        results_temp,
+        results_tlbr,
         tracklet_dir,
         str(save_dir) + "/target_detect.png",
         opt.min_frame,
-        opt.conf_thresh
+        opt.conf_thresh,
+        opt.work_dir 
     )
 
     if save_results:
@@ -655,7 +653,7 @@ def detect(opt, save_img=False):
             write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
 
     num_frames = get_frame_num(source)
-    # final_lines = parsing_results(valid_ids, save_dir, num_frames)
+    final_lines = parsing_results(valid_ids, save_dir, num_frames)
     save_face_swapped_vid(final_lines, save_dir, fps, opt)
 
     end_time_total = time.time()
@@ -665,15 +663,35 @@ def detect(opt, save_img=False):
 
 
 if __name__ == "__main__":
-    file_storage = "../../database"
-    track_dir = "."
-    cartoonize_dir = f"cartoonize"
+    import requests    
+    req = requests.get("http://ipconfig.kr")
+    server_ip = re.search(r'IP Address : (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', req.text)[1]
+
+    base = "/opt/ml/final-project-level3-cv-07"
+    database_info = {
+        "name": "database",
+        "dir": f"{base}/database"
+    }
+
+    cartoonize_info = {
+        "name": "cartoonize",
+        "dir": f"{base}/models/track/cartoonize",
+        "url": f"{server_ip}:30003/",
+    }
+
+    track_info = {
+        "name": "track",
+        "dir": f"{base}.models/track",
+        "url": f"{server_ip}:30004/",
+    }
+    
+    
     
     class Opt:
-        weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/chim.mp4"
-        target = f"chim"
-        cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
+        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+        source = f"{database_info['dir']}/uploaded_video/video.mp4"
+        target = f"{database_info['dir']}/target/target.jpeg"
+        cartoon = f"{track_info['dir']}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
         iou_thres= 0.7
@@ -686,7 +704,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"chim"
+        work_dir= f"{database_info['dir']}/work_dir"
         name= "exp"
         exist_ok= None
         trace= None

@@ -26,16 +26,15 @@ app = FastAPI()
 async def req_inference():
     class Opt:
         project = "chim"
+        work_dir= f"{database_info['dir']}/work_dir"
     
     opt = Opt
     
     model_path =f"{cartoonize_info['dir']}/saved_models"
-    load_dir = f"{cartoonize_info['dir']}/runs/{opt.project}/image_orig"
-    save_dir = f"{cartoonize_info['dir']}/runs/{opt.project}/image_cart"
-    input_video = f"{database_info}/uploaded_video/video.mp4"
-    run_dir = "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs"
+    load_dir = f"{opt.work_dir}/image_orig"
+    save_dir = f"{opt.work_dir}/image_cart"
+    input_video = f"{database_info['dir']}/uploaded_video/video.mp4"
 
-    createDirectory(run_dir)
     createDirectory(load_dir)
     createDirectory(save_dir)
 
