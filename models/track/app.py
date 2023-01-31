@@ -1,31 +1,27 @@
 from fastapi import FastAPI, Request
 import uvicorn
-import os
 
 from pymongo import MongoClient
 
 client = MongoClient()
-db = client["track"]
-collection = db["track_info"]
+db = client['cafe']
+collection = db['env']
+
+database_info = collection.find_one({'name': 'database'})
+cartoonize_info = collection.find_one({'name': 'cartoonize'})
+track_info = collection.find_one({'name': 'track'})
 
 # FastAPI 객체 생성
 app = FastAPI()
-
-base = os.getcwd()
-file_storage = "database"
-track_dir = "models/track"
-cartoonize_dir = "models/track/cartoonize"
-
 
 @app.get("/track")
 async def req_track():
     from tools.mc_demo_yolov7 import detect
     class Opt:
-        weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/video.mp4"
-        # target = f"{file_storage}/target/chim.jpeg"
-        target = f"chim"
-        cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
+        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+        source = f"{database_info['dir']}/uploaded_video/video.mp4"
+        target = f"{database_info['dir']}/target/target.jpeg"
+        cartoon = f"{track_info['dir']}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
         iou_thres= 0.7
@@ -38,8 +34,7 @@ async def req_track():
         agnostic_nms= True
         augment= None
         update= None
-        # project= f"{track_dir}/runs/detect"
-        project= f"chim"
+        work_dir= f"{database_info['dir']}/work_dir"
         name= "exp"
         exist_ok= None
         trace= None
@@ -57,8 +52,11 @@ async def req_track():
         new_track_thresh = 0.4
         track_buffer = 30
         match_thresh = 0.7
+        conf_thresh = 0.7 # added
         aspect_ratio_thresh = 1.6
         min_box_area = 10
+        min_frame = 5 # added
+        dbscan = True # added
         mot20 = True
         save_crop = None
         
@@ -76,7 +74,9 @@ async def req_track():
     
     opt = Opt
     track_infos = detect(opt)
+    collection = db['track_info']
     collection.insert_many(track_infos)
+
     
     
     return 200

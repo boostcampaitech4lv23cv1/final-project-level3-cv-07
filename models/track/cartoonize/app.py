@@ -5,12 +5,21 @@ import os
 import time
 from Cartoonize import save_vid_2_img, cartoonize, createDirectory
 
+from pymongo import MongoClient
+
+client = MongoClient()
+
+db = client["cafe"]
+collection = db['env']
+
+database_info = collection.find_one({'name': 'database'})
+cartoonize_info = collection.find_one({'name': 'cartoonize'})
+track_info = collection.find_one({'name': 'track'})
+
+
+
 # FastAPI 객체 생성
 app = FastAPI()
-
-file_storage = "database"
-track_dir = "models/track"
-cartoonize_dir = "models/track/cartoonize"
 
 # 라우터 '/'로 접근 시 {Hello: World}를 json 형태로 반환
 @app.get("/cartoonize")
@@ -20,10 +29,10 @@ async def req_inference():
     
     opt = Opt
     
-    model_path ="/opt/ml/final-project-level3-cv-07/models/track/cartoonize/saved_models"
-    load_dir = f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig"
-    save_dir = f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart"
-    input_video = f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
+    model_path =f"{cartoonize_info['dir']}/saved_models"
+    load_dir = f"{cartoonize_info['dir']}/runs/{opt.project}/image_orig"
+    save_dir = f"{cartoonize_info['dir']}/runs/{opt.project}/image_cart"
+    input_video = f"{database_info}/uploaded_video/video.mp4"
     run_dir = "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs"
 
     createDirectory(run_dir)
