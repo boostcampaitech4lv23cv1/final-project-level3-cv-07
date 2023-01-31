@@ -268,8 +268,6 @@ def extract_feature(opt, target_path):
     (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     mtcnn = MTCNN(margin=30)
-    print("target_path", target_path)
-    print(save_dir)
     img = Image.open(target_path)
     img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
     
@@ -442,13 +440,28 @@ def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
     
 def main(opt):
     target_path = (f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg")
+    time_1 = time.time()
     save_dir = extract_feature(opt, target_path)
+    time_2 = time.time()
     tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detect(opt, save_dir)
+    time_3 = time.time()
     valid_ids, save_dir = get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir)
+    time_4 = time.time()
     final_lines = parsing_results(opt, valid_ids, save_dir, num_frames)
+    time_5 = time.time()
     save_face_swapped_vid(opt, final_lines, save_dir, fps)
-
-
+    time_6 = time.time()
+    
+    if opt.verbose:
+        print('{:-^70}'.format(' Summary '))
+        print('{:<68}'.format(f"| Time Elapsed to extract target feature : {round(time_2-time_1,2)} (s)"),'|')
+        print('{:<68}'.format(f"| Time Elapsed to detection and tracking : {round(time_3-time_2,2)} (s)"),'|')
+        print('{:<68}'.format(f"| Time Elapsed to get valid face by similarity check : {round(time_4-time_3,2)} (s)"),'|')
+        print('{:<68}'.format(f"| Time Elapsed to parsing result : {round(time_5-time_4,2)} (s)"),'|')
+        print('{:<68}'.format(f"| Time Elapsed to swap face and save video : {round(time_6-time_5,2)} (s)"),'|')        
+        print('{:<68}'.format(f"| Total Elapsed Time : {round(time_6-time_1,2)} (s)"),'|')        
+        print('{:-^70}'.format('-'))
+        
 if __name__ == "__main__":
     file_storage = "../../database"
     track_dir = "."
@@ -495,7 +508,7 @@ if __name__ == "__main__":
         # CMC
         cmc_method = "sparseOptFlow"
         swap_all_face = False
-        verbose = False
+        verbose = True
         # ReID
         with_reid = False
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
