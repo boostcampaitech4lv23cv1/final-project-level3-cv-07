@@ -170,9 +170,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
                     np.array(
-                        frame_img[
-                            int(sy1) : int(sy2), int(sx1) : int(sx2), :
-                        ]
+                        frame_img[sy1:sy2, sx1:sx2, :]
                     ),
                 )
                 
@@ -234,15 +232,15 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
         for i in range(((len(line) - 1) // 4)):
-            x_min, y_min, x_max, y_max = (
+            x_min, y_min, x_max, y_max = (  # original bbox
                 line[4 * i + 1],
                 line[4 * i + 2],
                 line[4 * i + 3],
                 line[4 * i + 4],
-            )  # original bbox
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(
+            ) 
+            sx_min, sy_min, sx_max, sy_max = bbox_scale_up( # scaled bbox ('s' means scaled)
                 x_min, y_min, x_max, y_max, height, width, 2
-            )  # scaled bbox ('s' means scaled)
+            )  
 
             """
             Select mask generator function
@@ -259,7 +257,7 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         frame_array.append(face_swapped_img)
     swap_e = time.time()
     print(f"Time Elapsed for face swap: {swap_e - swap_s}")
-
+        
     out = cv2.VideoWriter(
         os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -620,8 +618,10 @@ def detect(opt, save_img=False):
                             vid_writer.release()  # release previous video writer
                         if vid_cap:  # video
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            img = cv2.imread(
+                                            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+                            )
+                            h, w, _ = img.shape
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += ".mp4"
@@ -678,9 +678,9 @@ if __name__ == "__main__":
     
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/chim.mp4"
-        target = f"chim"
-        cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
+        source = f"{file_storage}/uploaded_video/resized_1000_1299_1080p.mp4"
+        target = f"HanniPham"
+        cartoon = f"{track_dir}/assets/resized_1000_1299_1080p.mp4"
         img_size = 1920
         conf_thres= 0.09
         iou_thres= 0.7
@@ -693,7 +693,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"chim"
+        project= f"resized_1000_1299_1080p"
         name= "exp"
         exist_ok= None
         trace= None
