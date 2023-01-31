@@ -31,3 +31,39 @@ def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     x_max = int(min(width, x_max + w // scale))
     y_max = int(min(height, y_max + h // scale))
     return x_min, y_min, x_max, y_max
+
+
+def calculate_similarity(target_feature, tracker_feat, sim_thres):
+    print("Similairties(cosine) list: ")
+    print(
+        cdist(
+            target_feature.reshape(1, target_feature.size),
+            list(tracker_feat.values()),
+            metric="cosine",
+        )
+    )
+    print("Similairties(Euclidean) list: ")
+    print(
+        cdist(
+            target_feature.reshape(1, target_feature.size),
+            list(tracker_feat.values()),
+            metric="euclidean",
+        )
+    )
+    print(f"Similarity Threshold : {opt.sim_thres}")
+    sim = (
+        cdist(
+            target_feature.reshape(1, target_feature.size),
+            list(tracker_feat.values()),
+            metric="cosine",
+        )
+        > sim_thres
+    )  # distance가 1 이상인 (즉, 비슷하지 않은) tracker 찾기
+    t_ids = np.asarray(list(tracker_feat.keys()))
+    valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
+    return valid_ids
+
+
+def write_results(filename, results):
+    with open(filename, "a", encoding="UTF-8") as f:
+        f.writelines(results)

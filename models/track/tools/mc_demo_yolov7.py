@@ -14,12 +14,10 @@ from pathlib import Path
 from deepface import DeepFace
 from numpy import random
 from collections import defaultdict
-from scipy.spatial.distance import cdist
+
 from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import MTCNN
-
-# import face_recognition
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadImages
@@ -39,48 +37,18 @@ from yolov7.utils.torch_utils import (
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
+from tools.utils import createDirectory, get_frame_num, bbox_scale_up, calculate_similarity, write_results
 from tools.mask_generator import (
     mask_generator_v0,
     mask_generator_v1,
     mask_generator_v2,
     mask_generator_v3,
 )
-from tools.utils import createDirectory, get_frame_num, bbox_scale_up
+
+# import face_recognition
 
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
-
-
-def calculate_similarity(target_feature, tracker_feat, sim_thres):
-    print("Similairties(cosine) list: ")
-    print(
-        cdist(
-            target_feature.reshape(1, target_feature.size),
-            list(tracker_feat.values()),
-            metric="cosine",
-        )
-    )
-    print("Similairties(Euclidean) list: ")
-    print(
-        cdist(
-            target_feature.reshape(1, target_feature.size),
-            list(tracker_feat.values()),
-            metric="euclidean",
-        )
-    )
-    print(f"Similarity Threshold : {opt.sim_thres}")
-    sim = (
-        cdist(
-            target_feature.reshape(1, target_feature.size),
-            list(tracker_feat.values()),
-            metric="cosine",
-        )
-        > sim_thres
-    )  # distance가 1 이상인 (즉, 비슷하지 않은) tracker 찾기
-    t_ids = np.asarray(list(tracker_feat.keys()))
-    valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
-    return valid_ids
-
 
 def dbscan(target_dir, tracklet_dir):
     tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
@@ -102,10 +70,11 @@ def dbscan(target_dir, tracklet_dir):
     clt = DBSCAN(metric="euclidean")
     clt.fit(encodings)
     etime = time.time()
-    print(f"DBSCAN time elapsed :{etime - stime}")
     label_ids = np.unique(clt.labels_)
     numUniqueFaces = len(np.where(label_ids > -1)[0])
-    print("[INFO] # unique faces: {}".format(numUniqueFaces))
+    if opt.verbose:
+        print(f"DBSCAN time elapsed :{etime - stime}")
+        print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
     return
 
@@ -154,17 +123,13 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
 
                 t_ids[i.track_id] = conf
 
-    # if opt.dbscan :
-    #     dbscan(target_dir,tracklet_dir)
-    #     return True
+    if opt.dbscan :
+        dbscan(target_dir,tracklet_dir)
+        return True
     
     else:
-        dfs = DeepFace.find(
-            img_path=target_dir,
-            db_path=tracklet_dir,
-            enforce_detection=False,
-            model_name="VGG-Face",
-        )
+        silent = not opt.verbose
+        dfs = DeepFace.find(img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name="VGG-Face", silent=silent)
 
         targeted_ids = {}
 
@@ -178,14 +143,13 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
         ), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
 
 
-def save_face_swapped_vid(final_lines, save_dir, fps, opt):
+def save_face_swapped_vid(opt, final_lines, save_dir, fps):
     ## FIXME
     img = cv2.imread(
         f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
     )
     height, width, _ = img.shape
     size = (width, height)
-    swap_s = time.time()
 
     frame_array = []
     # face swap per frame
@@ -225,22 +189,21 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
             face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
         frame_array.append(face_swapped_img)
-    swap_e = time.time()
-    print(f"Time Elapsed for face swap: {swap_e - swap_s}")
-
+        
     out = cv2.VideoWriter(
         os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
         fps,
         size,
     )
-    print("****************** Video Saving Start ******************")
     for i in tqdm(range(len(frame_array))):
         out.write(frame_array[i])
     out.release()
+    
+    return None
 
 
-def parsing_results(valid_ids, save_dir, num_frames, swap_all_face=False):
+def parsing_results(opt, valid_ids, save_dir, num_frames):
 
     with open(os.path.join(save_dir, "results.txt"), "r") as f:
         lines = f.readlines()
@@ -266,7 +229,7 @@ def parsing_results(valid_ids, save_dir, num_frames, swap_all_face=False):
             frame, obj_id, x, y, w, h, conf = line
 
             # save all face (for debugging)
-            if swap_all_face:
+            if opt.swap_all_face:
                 if not final_lines or frame != final_lines[-1][0]:
                     final_lines.append([frame, x, y, x + w, y + h])
                 else:
@@ -294,50 +257,32 @@ def parsing_results(valid_ids, save_dir, num_frames, swap_all_face=False):
         while len(total_lines) < num_frames:
             total_lines.append([total_lines[-1][0] + 1])
 
-        # for debugging
-        """
-        for line in total_lines:
-            print(line[0], end=" / ")
-            print(num_frames, end = " : ")
-            print(line)
-        """
     return total_lines
 
 
-def write_results(filename, results):
-    with open(filename, "a", encoding="UTF-8") as f:
-        f.writelines(results)
-
-
-def extract_feature(target_path, save_dir):
-    mtcnn = MTCNN(margin=30)
-    img = Image.open(target_path)
-    img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
-    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
-    # img_embedding = resnet(img_cropped.unsqueeze(0))
-
-
-def detect(opt, save_img=True):
-
-    start_time_total = time.time()
-
-    source = f"{file_storage}/uploaded_video/{opt.project}.mp4"
-    target_path = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
-    )
-    weights, imgsz = (
-        opt.weights,
-        opt.img_size,
-    )
-    save_results = opt.save_results
-
-    # Directories
+def extract_feature(opt, target_path):
+    target_path = (f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg")
     save_dir = Path(
-        increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
+    increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
     )  # increment run
     (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    extract_feature(target_path, save_dir)
+    mtcnn = MTCNN(margin=30)
+    print("target_path", target_path)
+    print(save_dir)
+    img = Image.open(target_path)
+    img_cropped = mtcnn(img, save_path=str(save_dir) + "/target_detect.png")
+    
+    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
+    # img_embedding = resnet(img_cropped.unsqueeze(0))
+    return save_dir
+
+
+def detect(opt, save_dir):
+    # FIXME -> get file path from Opt class
+    source = f"{file_storage}/uploaded_video/{opt.project}.mp4"
+    weights, imgsz = opt.weights, opt.img_size
+    save_results = opt.save_results
 
     # Initialize
     set_logging()
@@ -371,10 +316,9 @@ def detect(opt, save_img=True):
             torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters()))
         )  # run once
 
-    t0 = time.time()
     results_temp = defaultdict(dict)
     num_frames = get_frame_num(source)
-    print("****************** Detection & Tracking Start ******************")
+
     with tqdm(total=num_frames) as progress_bar:
         for frame, path, img, im0s, vid_cap in tqdm(dataset):
             img = torch.from_numpy(img).to(device)
@@ -432,7 +376,7 @@ def detect(opt, save_img=True):
                         if save_results:
                             write_results(os.path.join(save_dir, "results.txt"), results)
 
-                        if save_img:  # Add bbox to image
+                        if opt.save_img:  # Add bbox to image
                             label = f"{tid}, {names[int(tcls)]}"
                             plot_one_box(
                                 tlbr,
@@ -445,7 +389,7 @@ def detect(opt, save_img=True):
                 save_path = str(save_dir / p.name)  # img.jpg
 
                 # Save results (image with detections)
-                if save_img:
+                if opt.save_img:
                     if vid_path != save_path:  # new video
                         vid_path = save_path
                         if isinstance(vid_writer, cv2.VideoWriter):
@@ -464,19 +408,17 @@ def detect(opt, save_img=True):
                     vid_writer.write(im0)
             progress_bar.update(1)
 
-    print(f"Done. ({time.time() - t0:.3f}s)")
-
     tracklet_dir = str(save_dir) + "/tracklet"
-    targeted_ids, valid_ids = get_valid_tids(
-        tracker,
-        results_temp,
-        tracklet_dir,
-        str(save_dir) + "/target_detect.png",
-        opt.min_frame,
-        opt.conf_thresh,
-    )
+    save_dir = str(save_dir)
+    return tracker, results_temp, tracklet_dir, save_dir, num_frames, fps
 
-    if save_results:
+
+def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
+    min_frame = opt.min_frame
+    conf_thresh = opt.conf_thresh
+    targeted_ids, valid_ids = get_valid_tids(tracker, results_temp, tracklet_dir, save_dir + "/target_detect.png", min_frame, conf_thresh)
+    
+    if opt.save_results:
         write_results(
             os.path.join(save_dir, "valid_ids.txt"),
             "targeted tracklet ids (id : confidence)\n",
@@ -495,14 +437,16 @@ def detect(opt, save_img=True):
                 os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
             )
 
-    final_lines = parsing_results(valid_ids, save_dir, num_frames)
+    return valid_ids, save_dir
     
-    print("****************** Face Swapping Start ******************")
-    save_face_swapped_vid(final_lines, save_dir, fps, opt)
-
-    end_time_total = time.time()
-
-    print(f"Total Time Elapsed : {end_time_total - start_time_total}")
+    
+def main(opt):
+    target_path = (f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg")
+    save_dir = extract_feature(opt, target_path)
+    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detect(opt, save_dir)
+    valid_ids, save_dir = get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir)
+    final_lines = parsing_results(opt, valid_ids, save_dir, num_frames)
+    save_face_swapped_vid(opt, final_lines, save_dir, fps)
 
 
 if __name__ == "__main__":
@@ -533,7 +477,7 @@ if __name__ == "__main__":
         kpt_label = 5
         hide_conf = (False,)
         line_thickness = 3
-
+        save_img = True
         # Tracking args
         track_high_thresh = 0.3
         track_low_thresh = 0.05
@@ -547,10 +491,11 @@ if __name__ == "__main__":
         dbscan = False  # added
         mot20 = True
         save_crop = None
-
+        
         # CMC
         cmc_method = "sparseOptFlow"
-
+        swap_all_face = False
+        verbose = False
         # ReID
         with_reid = False
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
@@ -561,14 +506,9 @@ if __name__ == "__main__":
         ablation = False
 
     opt = Opt
-
-    print(opt)
+    if opt.verbose:
+        print(opt)
     # check_requirements(exclude=('pycocotools', 'thop'))
 
     with torch.no_grad():
-        if opt.update:  # update all models (to fix SourceChangeWarning)
-            for opt.weights in ["yolov7.pt"]:
-                detect(opt)
-                strip_optimizer(opt.weights)
-        else:
-            detect(opt)
+        main(opt)
