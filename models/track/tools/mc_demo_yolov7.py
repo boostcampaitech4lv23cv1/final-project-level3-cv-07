@@ -37,7 +37,13 @@ from yolov7.utils.torch_utils import (
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
-from tools.utils import createDirectory, get_frame_num, bbox_scale_up, calculate_similarity, write_results
+from tools.utils import (
+    createDirectory,
+    get_frame_num,
+    bbox_scale_up,
+    calculate_similarity,
+    write_results,
+)
 from tools.mask_generator import (
     mask_generator_v0,
     mask_generator_v1,
@@ -49,6 +55,7 @@ from tools.mask_generator import (
 
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
+
 
 def dbscan(target_dir, tracklet_dir):
     tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
@@ -123,19 +130,23 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
 
                 t_ids[i.track_id] = conf
 
-    if opt.dbscan :
-        dbscan(target_dir,tracklet_dir)
+    if opt.dbscan:
+        dbscan(target_dir, tracklet_dir)
         return True
-    else :
+    else:
         try:
             silent = not opt.verbose
             dfs = DeepFace.find(
-                img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face', silent=silent
+                img_path=target_dir,
+                db_path=tracklet_dir,
+                enforce_detection=False,
+                model_name="VGG-Face",
+                silent=silent,
             )
         except ValueError:
             print("Error: Your video has no valid face tracking. Check again.")
             sys.exit(0)
-    
+
         targeted_ids = {}
 
         for i in range(len(dfs)):
@@ -194,7 +205,7 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
             swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
             face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
         frame_array.append(face_swapped_img)
-        
+
     out = cv2.VideoWriter(
         os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -204,7 +215,7 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
     for i in tqdm(range(len(frame_array))):
         out.write(frame_array[i])
     out.release()
-    
+
     return None
 
 
@@ -267,7 +278,7 @@ def parsing_results(opt, valid_ids, save_dir, num_frames):
 
 def extract_feature(opt, target_path):
     save_dir = Path(
-    increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
+        increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
     )  # increment run
     (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
@@ -276,13 +287,13 @@ def extract_feature(opt, target_path):
     img_path = str(save_dir) + "/target_detect.png"
     img_cropped = mtcnn(img, save_path=img_path)
 
-    if img_cropped is None :
+    if img_cropped is None:
         print("Error: Your target image has no valid face tracking. Check again.")
         sys.exit(0)
 
     # resnet = InceptionResnetV1(pretrained="vggface2").eval()
     # img_embedding = resnet(img_cropped.unsqueeze(0))
-    return save_dir            
+    return save_dir
 
 
 def detect(opt, save_dir):
@@ -299,7 +310,7 @@ def detect(opt, save_dir):
 
     # Load model
     model = attempt_load(weights, map_location=device)  # load FP32 model
-    
+
     stride = int(model.stride.max())  # model stride
     imgsz = check_img_size(imgsz, s=stride)  # check img_size
 
@@ -383,9 +394,11 @@ def detect(opt, save_dir):
                             f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                         )
                         results_temp[tid][frame] = np.append(tlbr, t.score)
-                        
+
                         if save_results:
-                            write_results(os.path.join(save_dir, "results.txt"), results)
+                            write_results(
+                                os.path.join(save_dir, "results.txt"), results
+                            )
 
                         if opt.save_img:  # Add bbox to image
                             label = f"{tid}, {names[int(tcls)]}"
@@ -430,8 +443,15 @@ def detect(opt, save_dir):
 def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
     min_frame = opt.min_frame
     conf_thresh = opt.conf_thresh
-    targeted_ids, valid_ids = get_valid_tids(tracker, results_temp, tracklet_dir, save_dir + "/target_detect.png", min_frame, conf_thresh)
-    
+    targeted_ids, valid_ids = get_valid_tids(
+        tracker,
+        results_temp,
+        tracklet_dir,
+        save_dir + "/target_detect.png",
+        min_frame,
+        conf_thresh,
+    )
+
     if opt.save_results:
         write_results(
             os.path.join(save_dir, "valid_ids.txt"),
@@ -452,49 +472,83 @@ def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
             )
 
     return valid_ids, save_dir
-    
-    
+
+
 def main(opt):
-    target_path = (f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg")
-    
-    if opt.verbose:    
+    target_path = (
+        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
+    )
+
+    if opt.verbose:
         time_1 = time.time()
         print("\n[ Start Target Feature Extraction ]")
     save_dir = extract_feature(opt, target_path)
-    if opt.verbose:    
+    if opt.verbose:
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()
-        print("\n[ Start Detection and Tracking ]")        
-    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detect(opt, save_dir)
-    if opt.verbose:    
+        print("\n[ Start Detection and Tracking ]")
+    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detect(
+        opt, save_dir
+    )
+    if opt.verbose:
         print("\n[ Target Feature Extraction Done]")
         time_3 = time.time()
-        print("\n[ Start Similarity Check ]")        
-    valid_ids, save_dir = get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir)
-    if opt.verbose:    
-        print("\n[ Similarity Check Done ]")        
+        print("\n[ Start Similarity Check ]")
+    valid_ids, save_dir = get_valid_results(
+        opt, tracker, results_temp, tracklet_dir, save_dir
+    )
+    if opt.verbose:
+        print("\n[ Similarity Check Done ]")
         time_4 = time.time()
         print("\n[ Start Result Parsing ]")
     final_lines = parsing_results(opt, valid_ids, save_dir, num_frames)
-    if opt.verbose:    
+    if opt.verbose:
         print("\n[ Result Parsing Done ]")
         time_5 = time.time()
         print("\n[ Start Swapping Video and Saving Video ]")
     save_face_swapped_vid(opt, final_lines, save_dir, fps)
-    if opt.verbose:    
+    if opt.verbose:
         print("\n[ Swapping Video and Saving Video Done]")
         time_6 = time.time()
         print("[ All Process Successfully Done ]")
         print()
-        print('{:-^70}'.format(' Summary '))
-        print('{:<68}'.format(f"| Time Elapsed to extract target feature : {round(time_2-time_1,2)} (s)"),'|')
-        print('{:<68}'.format(f"| Time Elapsed to detection and tracking : {round(time_3-time_2,2)} (s)"),'|')
-        print('{:<68}'.format(f"| Time Elapsed to get valid face by similarity check : {round(time_4-time_3,2)} (s)"),'|')
-        print('{:<68}'.format(f"| Time Elapsed to parsing result : {round(time_5-time_4,2)} (s)"),'|')
-        print('{:<68}'.format(f"| Time Elapsed to swap face and save video : {round(time_6-time_5,2)} (s)"),'|')        
-        print('{:<68}'.format(f"| Total Elapsed Time : {round(time_6-time_1,2)} (s)"),'|')        
-        print('{:-^70}'.format('-'))
-        
+        print("{:-^70}".format(" Summary "))
+        print(
+            "{:<68}".format(
+                f"| Time Elapsed to extract target feature : {round(time_2-time_1,2)} (s)"
+            ),
+            "|",
+        )
+        print(
+            "{:<68}".format(
+                f"| Time Elapsed to detection and tracking : {round(time_3-time_2,2)} (s)"
+            ),
+            "|",
+        )
+        print(
+            "{:<68}".format(
+                f"| Time Elapsed to get valid face by similarity check : {round(time_4-time_3,2)} (s)"
+            ),
+            "|",
+        )
+        print(
+            "{:<68}".format(
+                f"| Time Elapsed to parsing result : {round(time_5-time_4,2)} (s)"
+            ),
+            "|",
+        )
+        print(
+            "{:<68}".format(
+                f"| Time Elapsed to swap face and save video : {round(time_6-time_5,2)} (s)"
+            ),
+            "|",
+        )
+        print(
+            "{:<68}".format(f"| Total Elapsed Time : {round(time_6-time_1,2)} (s)"), "|"
+        )
+        print("{:-^70}".format("-"))
+
+
 if __name__ == "__main__":
     file_storage = "../../database"
     track_dir = "."
@@ -537,7 +591,7 @@ if __name__ == "__main__":
         dbscan = False  # added
         mot20 = True
         save_crop = None
-        
+
         # CMC
         cmc_method = "sparseOptFlow"
         swap_all_face = False

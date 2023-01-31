@@ -191,6 +191,7 @@ def resize_crop(image):
     image = image[:h, :w, :]
     return image
 
+
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
         p = str(Path(path).absolute())  # os-agnostic absolute path
