@@ -21,8 +21,8 @@ def createDirectory(dir):
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
     i = 0
-    print("vid_path : ", vid_path)
-    print("cap : ", cap)
+    print("vid_path", vid_path)
+    print("cap", cap)
 
     while True:  # cap.isOpened()):
         ret, frame = cap.read()
