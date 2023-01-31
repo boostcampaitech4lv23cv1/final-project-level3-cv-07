@@ -76,8 +76,33 @@ def get_frame_num(source):
 
     return i
 
+def dbscan(target_dir,tracklet_dir):
+    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+    # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
+    data = []
+    for imagePath in tracklet_imgs : 
+        image = cv2.imread(imagePath)
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
+        boxes = face_recognition.face_locations(rgb,
+		    model="cnn")
+        encodings = face_recognition.face_encodings(rgb, boxes)
+        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
+        for (box, enc) in zip(boxes, encodings)]
+        data.extend(d)
+    encodings = [d["encoding"] for d in data]
+    # dump the facial encodings data to disk
+    stime = time.time()
+    clt = DBSCAN(metric="euclidean")
+    clt.fit(encodings)
+    etime = time.time()
+    print(f"DBSCAN time elapsed :{etime - stime}")
+    label_ids = np.unique(clt.labels_)
+    numUniqueFaces = len(np.where(label_ids>-1)[0])
+    print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
-def calculate_similarity(target_feature, tracker_feat, sim_thres):
+    return
+
+def calc_similarity_v1(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
     print(
         cdist(
@@ -107,31 +132,62 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
     return valid_ids
 
-def dbscan(target_dir,tracklet_dir):
-    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
-    # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
-    data = []
-    for imagePath in tracklet_imgs : 
-        image = cv2.imread(imagePath)
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
-        boxes = face_recognition.face_locations(rgb,
-		    model="cnn")
-        encodings = face_recognition.face_encodings(rgb, boxes)
-        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-        for (box, enc) in zip(boxes, encodings)]
-        data.extend(d)
-    encodings = [d["encoding"] for d in data]
-    # dump the facial encodings data to disk
-    stime = time.time()
-    clt = DBSCAN(metric="euclidean")
-    clt.fit(encodings)
-    etime = time.time()
-    print(f"DBSCAN time elapsed :{etime - stime}")
-    label_ids = np.unique(clt.labels_)
-    numUniqueFaces = len(np.where(label_ids>-1)[0])
-    print("[INFO] # unique faces: {}".format(numUniqueFaces))
+def calc_similarity_v2(dfs,t_ids,tracklet_dir):
+    
+    targeted_ids = {}
 
-    return
+    for i in range(len(dfs)):
+        id,sim = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0]),dfs.iloc[i]['VGG-Face_cosine']
+        targeted_ids[id] = sim
+
+    targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1]))
+    # t_ids = dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+    
+    best_matched_id = list(targeted_ids.keys())[0]
+    
+    second_dfs = DeepFace.find(
+        img_path=f"{tracklet_dir}/{best_matched_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+    )
+    targeted_ids = {}
+    for i in range(len(second_dfs)):
+        id,sim = int(second_dfs.iloc[i].identity.split("/")[-1].split(".")[0]),second_dfs.iloc[i]['VGG-Face_cosine']
+        if sim < 0.25 :
+            id_conf = t_ids.pop(id)        
+            targeted_ids[id] = (id_conf,sim)
+            
+    return targeted_ids, t_ids
+
+def calc_similarity_v3(dfs,t_ids,tracklet_dir):
+    sim_dict, sim_cnt = defaultdict(float), defaultdict(int)
+    best_matched_id = int(dfs.identity[0].split("/")[-1].split(".")[0])
+    
+    second_dfs = DeepFace.find(
+                img_path=f"{tracklet_dir}/{best_matched_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+                )
+    cnt = 0
+    for i in range(len(second_dfs)):
+        second_id, second_sim = int(second_dfs.identity[i].split("/")[-1].split(".")[0]), second_dfs['VGG-Face_cosine'][i]
+        if second_sim < 0.25 : 
+            cnt += 1
+            third_dfs = DeepFace.find(
+                img_path=f"{tracklet_dir}/{second_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+                )
+            for i in range(len(third_dfs)):
+                third_id, third_sim = int(third_dfs.identity[i].split("/")[-1].split(".")[0]), third_dfs['VGG-Face_cosine'][i]
+                if third_sim < 0.25:
+                    sim_dict[third_id] += third_sim
+                    sim_cnt[third_id] += 1  
+    for id in sim_dict.keys():
+        sim_dict[id] /= sim_cnt[id]
+    
+    targeted_ids = {}
+    
+    if sim_cnt :
+        for tid,t_cnt in sim_cnt.items():
+            if t_cnt / cnt >= 0.75 : 
+                targeted_ids[tid] = (t_ids.pop(tid),sim_dict[tid])
+                
+    return targeted_ids, t_ids
 
 def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
 
@@ -162,7 +218,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
             x1,y1,x2,y2,conf = value
             if conf > conf_thresh : 
                 sx1, sy1, sx2, sy2 = bbox_scale_up(
-                    x1, y1, x2, y2, height, width, 3
+                    x1, y1, x2, y2, height, width, 3.5
                 )
                 frame_img = cv2.imread(
                     f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
@@ -189,29 +245,8 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
             print("Error: Your video has no valid face tracking. Check again.")
             sys.exit(0)
 
-        targeted_ids = {}
+        targeted_ids , t_ids = calc_similarity_v3(dfs,t_ids,tracklet_dir)
 
-        for i in range(len(dfs)):
-            id,sim = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0]),dfs.iloc[i]['VGG-Face_cosine']
-            targeted_ids[id] = sim
-            
-        ##
-        targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1]))
-        # t_ids = dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
-        
-        best_matched_id = list(targeted_ids.keys())[0]
-        
-        second_dfs = DeepFace.find(
-            img_path=f"{tracklet_dir}/{best_matched_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
-        )
-        targeted_ids = {}
-        for i in range(len(second_dfs)):
-            id,sim = int(second_dfs.iloc[i].identity.split("/")[-1].split(".")[0]),second_dfs.iloc[i]['VGG-Face_cosine']
-            if sim < 0.25 :
-                id_conf = t_ids.pop(id)        
-                targeted_ids[id] = (id_conf,sim)
-
-        ##
         return dict(sorted(targeted_ids.items(),key=lambda x : x[1][0],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
@@ -437,7 +472,7 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
 
 
 def extract_target_face(target_path, save_dir):
-    mtcnn = MTCNN(margin=30)
+    mtcnn = MTCNN(margin=40)
     img = Image.open(target_path)
     img_path = str(save_dir) + "/target_detect.png"
     img_cropped = mtcnn(img, save_path=img_path)
@@ -687,11 +722,11 @@ if __name__ == "__main__":
     cartoonize_dir = f"cartoonize"
     
     class Opt:
-        project= f"chim"
+        project= f"Newjeans"
         name= "exp"
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/sub.mp4"
-        target = f"chim"
+        target = f"haerin"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
