@@ -407,92 +407,97 @@ def detect(opt, save_img=False):
 
     t0 = time.time()
     results_temp = defaultdict(dict)
-    for frame, path, img, im0s, vid_cap in dataset:
-        img = torch.from_numpy(img).to(device)
-        img = img.half() if half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
+    num_frames = get_frame_num(source)
+    print("Detection & Tracking Start")
+    with tqdm(total=num_frames) as progress_bar:
+        for frame, path, img, im0s, vid_cap in dataset:
+            img = torch.from_numpy(img).to(device)
+            img = img.half() if half else img.float()  # uint8 to fp16/32
+            img /= 255.0  # 0 - 255 to 0.0 - 1.0
+            if img.ndimension() == 3:
+                img = img.unsqueeze(0)
 
-        # Inference
-        pred = model(img, augment=opt.augment)[0]
+            # Inference
+            pred = model(img, augment=opt.augment)[0]
 
-        # Apply NMS
-        pred = non_max_suppression(
-            pred,
-            opt.conf_thres,
-            opt.iou_thres,
-            classes=opt.classes,
-            agnostic=opt.agnostic_nms,
-        )
+            # Apply NMS
+            pred = non_max_suppression(
+                pred,
+                opt.conf_thres,
+                opt.iou_thres,
+                classes=opt.classes,
+                agnostic=opt.agnostic_nms,
+            )
 
-        # Process detections
-        results = []
-        for i, det in enumerate(pred):  # detections per image
-            p, s, im0, frame = path, "", im0s, getattr(dataset, "frame", 0)
+            # Process detections
+            results = []
+            for i, det in enumerate(pred):  # detections per image
+                p, s, im0, frame = path, "", im0s, getattr(dataset, "frame", 0)
 
-            # Run tracker
-            detections = []
-            if len(det):  # detection이 존재하면!
-                boxes = scale_coords(img.shape[2:], det[:, :4], im0.shape)
-                boxes = boxes.cpu().numpy()  # [[bbox1],[bbox2]..]
-                detections = det.cpu().numpy()
-                detections[:, :4] = boxes  #
+                # Run tracker
+                detections = []
+                if len(det):  # detection이 존재하면!
+                    boxes = scale_coords(img.shape[2:], det[:, :4], im0.shape)
+                    boxes = boxes.cpu().numpy()  # [[bbox1],[bbox2]..]
+                    detections = det.cpu().numpy()
+                    detections[:, :4] = boxes  #
 
-            online_targets = tracker.update(detections, im0)
+                online_targets = tracker.update(detections, im0)
 
-            online_tlwhs = []
-            online_ids = []
-            online_scores = []
-            online_cls = []
-            for t in online_targets:
-                tlwh = t.tlwh  # `(top left x, top left y, width, height)`
-                tlbr = t.tlbr  # `(min x, min y, max x, max y)`
-                tid = t.track_id
-                tcls = t.cls
-                if tlwh[2] * tlwh[3] > opt.min_box_area:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-                    online_scores.append(t.score)
-                    online_cls.append(t.cls)
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+                online_cls = []
+                for t in online_targets:
+                    tlwh = t.tlwh  # `(top left x, top left y, width, height)`
+                    tlbr = t.tlbr  # `(min x, min y, max x, max y)`
+                    tid = t.track_id
+                    tcls = t.cls
+                    if tlwh[2] * tlwh[3] > opt.min_box_area:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                        online_scores.append(t.score)
+                        online_cls.append(t.cls)
 
-                    results.append(
-                        f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
-                    )
-                    results_temp[tid][frame] = np.append(tlbr, t.score)
-                    if save_results:
-                        write_results(os.path.join(save_dir, "results.txt"), results)
-
-                    if save_img:  # Add bbox to image
-                        label = f"{tid}, {names[int(tcls)]}"
-                        plot_one_box(
-                            tlbr,
-                            im0,
-                            label=label,
-                            color=colors[int(tid) % len(colors)],
-                            line_thickness=2,
+                        results.append(
+                            f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                         )
-            p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)  # img.jpg
+                        results_temp[tid][frame] = np.append(tlbr, t.score)
+                        if save_results:
+                            write_results(os.path.join(save_dir, "results.txt"), results)
 
-            # Save results (image with detections)
-            if save_img:
-                if vid_path != save_path:  # new video
-                    vid_path = save_path
-                    if isinstance(vid_writer, cv2.VideoWriter):
-                        vid_writer.release()  # release previous video writer
-                    fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                    img = cv2.imread(
-                        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
-                    )
-                    h, w, _ = img.shape
-                    vid_writer = cv2.VideoWriter(
-                        save_path[:-4] + "_tracked.mp4",
-                        cv2.VideoWriter_fourcc(*"mp4v"),
-                        fps,
-                        (w, h),
-                    )
-                vid_writer.write(im0)
+                        if save_img:  # Add bbox to image
+                            label = f"{tid}, {names[int(tcls)]}"
+                            plot_one_box(
+                                tlbr,
+                                im0,
+                                label=label,
+                                color=colors[int(tid) % len(colors)],
+                                line_thickness=2,
+                            )
+                p = Path(p)  # to Path
+                save_path = str(save_dir / p.name)  # img.jpg
+
+                # Save results (image with detections)
+                if save_img:
+                    if vid_path != save_path:  # new video
+                        vid_path = save_path
+                        if isinstance(vid_writer, cv2.VideoWriter):
+                            vid_writer.release()  # release previous video writer
+                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        img = cv2.imread(
+                            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+                        )
+                        h, w, _ = img.shape
+                        vid_writer = cv2.VideoWriter(
+                            save_path[:-4] + "_tracked.mp4",
+                            cv2.VideoWriter_fourcc(*"mp4v"),
+                            fps,
+                            (w, h),
+                        )
+                    vid_writer.write(im0)
+            progress_bar.update(1)
+            
 
     print(f"Done. ({time.time() - t0:.3f}s)")
 
@@ -526,7 +531,6 @@ def detect(opt, save_img=False):
                 os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
             )
 
-    num_frames = get_frame_num(source)
     final_lines = parsing_results(valid_ids, save_dir, num_frames)
     save_face_swapped_vid(final_lines, save_dir, fps, opt)
 
