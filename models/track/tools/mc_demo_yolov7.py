@@ -196,10 +196,10 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
     return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 
-def save_face_swapped_vid(final_lines, save_dir, fps, opt):
+def save_face_swapped_vid(final_lines, save_dir, fps, work_dir):
     ## FIXME
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+        f"{work_dir}/image_orig/frame_1.png"
     )
     height, width, layers = img.shape
     size = (width, height)
@@ -211,10 +211,10 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
         orig_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame_idx}.png"
+            f"{work_dir}/image_orig/frame_{frame_idx}.png"
         )
         cart_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart/frame_{frame_idx}.png"
+            f"{work_dir}/image_cart/frame_{frame_idx}.png"
         )
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
