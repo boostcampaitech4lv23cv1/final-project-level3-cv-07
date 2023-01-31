@@ -85,7 +85,7 @@ def cartoonize(load_folder, save_folder, model_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--project", type=str, default="chim", help="name of video project"
+        "--project", type=str, default="SNL", help="name of video project"
     )
 
     opt = parser.parse_args()
