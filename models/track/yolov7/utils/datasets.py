@@ -248,10 +248,10 @@ class LoadImages:  # for inference
 
             self.frame += 1
             img0 = resize_crop(img0)  ### FIX HERE
-            print(
-                f"video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ",
-                end="",
-            )
+            # print(
+            #     f"video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ",
+            #     end="",
+            # )
 
         else:
             # Read image
