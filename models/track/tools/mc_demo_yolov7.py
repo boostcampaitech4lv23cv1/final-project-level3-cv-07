@@ -609,10 +609,10 @@ def detect(opt, save_img=False):
                             vid_writer.release()  # release previous video writer
                         if vid_cap:  # video
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            h, w = calc_resized_size(
-                                int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            img = cv2.imread(
+                                f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
                             )
+                            h, w, _ = img.shape
 
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
