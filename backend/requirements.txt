@@ -10,3 +10,4 @@ typing_extensions==4.4.0
 uvicorn==0.20.0
 requests
 aiohttp
+pymongo
