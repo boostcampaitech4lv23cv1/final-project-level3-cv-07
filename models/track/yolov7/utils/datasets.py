@@ -178,6 +178,7 @@ class _RepeatSampler(object):
         while True:
             yield from iter(self.sampler)
 
+
 def resize_crop(image):
     h, w, c = np.shape(image)
     if min(h, w) > 1080:
@@ -189,6 +190,7 @@ def resize_crop(image):
     h, w = (h // 8) * 8, (w // 8) * 8
     image = image[:h, :w, :]
     return image
+
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):

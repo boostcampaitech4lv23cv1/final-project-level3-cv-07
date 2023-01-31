@@ -7,7 +7,7 @@ import asyncio
 import aiohttp
 
 req = requests.get("http://ipconfig.kr")
-server_ip = re.search(r'IP Address : (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', req.text)[1]
+server_ip = re.search(r"IP Address : (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", req.text)[1]
 
 cartoonize_url = "http://115.85.182.51:30003"
 track_url = "http://115.85.182.51:30004"
@@ -15,13 +15,18 @@ track_url = "http://115.85.182.51:30004"
 # FastAPI 객체 생성
 app = FastAPI()
 
+
 async def inference():
     async def task(session, url):
         async with session.get(url) as response:
             return await response.text()
 
     async with aiohttp.ClientSession() as session:
-        await asyncio.gather(task(session, f"{cartoonize_url}/cartoonize"), task(session, f"{track_url}/track"))
+        await asyncio.gather(
+            task(session, f"{cartoonize_url}/cartoonize"),
+            task(session, f"{track_url}/track"),
+        )
+
 
 @app.post("/req_infer")
 async def read_root(req: Request):
@@ -29,9 +34,9 @@ async def read_root(req: Request):
     file = open("database/uploaded_video/video.mp4", "wb")
     file.write(data)
     file.close()
-    
+
     asyncio.create_task(inference())
-    
+
     return 200
 
 

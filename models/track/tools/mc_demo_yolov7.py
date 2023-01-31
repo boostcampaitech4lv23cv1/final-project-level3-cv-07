@@ -22,6 +22,7 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import DBSCAN
 from PIL import Image
 from facenet_pytorch import InceptionResnetV1, MTCNN
+
 # import face_recognition
 
 from yolov7.models.experimental import attempt_load
@@ -107,18 +108,20 @@ def calculate_similarity(target_feature, tracker_feat, sim_thres):
     valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
     return valid_ids
 
-def dbscan(target_dir,tracklet_dir):
-    tracklet_imgs = glob.glob(tracklet_dir+'/*.png')
+
+def dbscan(target_dir, tracklet_dir):
+    tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
     # encodings = [DeepFace.represent(img_path=img,enforce_detection=False,model_name="Facenet512") for img in tracklet_imgs]
     data = []
-    for imagePath in tracklet_imgs : 
+    for imagePath in tracklet_imgs:
         image = cv2.imread(imagePath)
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
-        boxes = face_recognition.face_locations(rgb,
-		    model="cnn")
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        boxes = face_recognition.face_locations(rgb, model="cnn")
         encodings = face_recognition.face_encodings(rgb, boxes)
-        d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-        for (box, enc) in zip(boxes, encodings)]
+        d = [
+            {"imagePath": imagePath, "loc": box, "encoding": enc}
+            for (box, enc) in zip(boxes, encodings)
+        ]
         data.extend(d)
     encodings = [d["encoding"] for d in data]
     # dump the facial encodings data to disk
@@ -128,10 +131,11 @@ def dbscan(target_dir,tracklet_dir):
     etime = time.time()
     print(f"DBSCAN time elapsed :{etime - stime}")
     label_ids = np.unique(clt.labels_)
-    numUniqueFaces = len(np.where(label_ids>-1)[0])
+    numUniqueFaces = len(np.where(label_ids > -1)[0])
     print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
     return
+
 
 def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
 
@@ -151,62 +155,74 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
     )
     height, width, layers = img.shape
     size = (width, height)
-    
+
     createDirectory(tracklet_dir)
-    tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
+    tracks = list(
+        set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
+    )
     for i in tracks:
-        if (
-            i.tracklet_len > min_length
-        ):  
-            frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
-            x1,y1,x2,y2,conf = value
-            if conf > conf_thresh : 
-                sx1, sy1, sx2, sy2 = bbox_scale_up(
-                    x1, y1, x2, y2, height, width, 3
-                )
+        if i.tracklet_len > min_length:
+            frame, value = sorted(results[i.track_id].items(), key=lambda x: x[1][4])[
+                -1
+            ]
+            x1, y1, x2, y2, conf = value
+            if conf > conf_thresh:
+                sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
                 frame_img = cv2.imread(
                     f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
                 )
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
-                    np.array(
-                        frame_img[sy1:sy2, sx1:sx2, :]
-                    ),
+                    np.array(frame_img[sy1:sy2, sx1:sx2, :]),
                 )
-                
-                t_ids[i.track_id]=conf   
-    if opt.dbscan :
-        dbscan(target_dir,tracklet_dir)
+
+                t_ids[i.track_id] = conf
+    if opt.dbscan:
+        dbscan(target_dir, tracklet_dir)
         return True
-    else :
+    else:
         dfs = DeepFace.find(
-            img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
+            img_path=target_dir,
+            db_path=tracklet_dir,
+            enforce_detection=False,
+            model_name="VGG-Face",
         )
 
         targeted_ids = {}
 
         for i in range(len(dfs)):
-            id,sim = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0]),dfs.iloc[i]['VGG-Face_cosine']
+            id, sim = (
+                int(dfs.iloc[i].identity.split("/")[-1].split(".")[0]),
+                dfs.iloc[i]["VGG-Face_cosine"],
+            )
             targeted_ids[id] = sim
-            
+
         ##
-        targeted_ids = dict(sorted(targeted_ids.items(),key=lambda x : x[1]))
+        targeted_ids = dict(sorted(targeted_ids.items(), key=lambda x: x[1]))
         # t_ids = dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
-        
+
         best_matched_id = list(targeted_ids.keys())[0]
-        
+
         second_dfs = DeepFace.find(
-            img_path=f"{tracklet_dir}/{best_matched_id}.png",db_path=tracklet_dir, enforce_detection=False ,model_name= 'VGG-Face'
+            img_path=f"{tracklet_dir}/{best_matched_id}.png",
+            db_path=tracklet_dir,
+            enforce_detection=False,
+            model_name="VGG-Face",
         )
         targeted_ids = {}
         for i in range(len(second_dfs)):
-            id,sim = int(second_dfs.iloc[i].identity.split("/")[-1].split(".")[0]),second_dfs.iloc[i]['VGG-Face_cosine']
-            if sim < 0.25 :
-                id_conf = t_ids.pop(id)        
-                targeted_ids[id] = (id_conf,sim)
+            id, sim = (
+                int(second_dfs.iloc[i].identity.split("/")[-1].split(".")[0]),
+                second_dfs.iloc[i]["VGG-Face_cosine"],
+            )
+            if sim < 0.25:
+                id_conf = t_ids.pop(id)
+                targeted_ids[id] = (id_conf, sim)
 
         ##
-        return dict(sorted(targeted_ids.items(),key=lambda x : x[1][0],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
+        return dict(
+            sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)
+        ), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
 
 
 def save_face_swapped_vid(final_lines, save_dir, fps, opt):
@@ -237,10 +253,15 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
                 line[4 * i + 2],
                 line[4 * i + 3],
                 line[4 * i + 4],
-            ) 
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up( # scaled bbox ('s' means scaled)
+            )
+            (
+                sx_min,
+                sy_min,
+                sx_max,
+                sy_max,
+            ) = bbox_scale_up(  # scaled bbox ('s' means scaled)
                 x_min, y_min, x_max, y_max, height, width, 2
-            )  
+            )
 
             """
             Select mask generator function
@@ -257,7 +278,7 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
         frame_array.append(face_swapped_img)
     swap_e = time.time()
     print(f"Time Elapsed for face swap: {swap_e - swap_s}")
-        
+
     out = cv2.VideoWriter(
         os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -294,7 +315,7 @@ def parsing_results(valid_ids, save_dir, num_frames):
         i = 1
         for line in parsed_lines:
             frame, obj_id, x, y, w, h, conf = line
-            
+
             ### save valid face
             if obj_id in valid_ids:
                 if not final_lines or frame != final_lines[-1][0]:
@@ -308,28 +329,27 @@ def parsing_results(valid_ids, save_dir, num_frames):
             # else:
             #     final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
 
-                
         total_lines = []
-        
+
         idx = 1
         for i in range(len(final_lines)):
             if idx < final_lines[i][0]:
                 while idx < final_lines[i][0]:
-                    total_lines.append([idx+1])
+                    total_lines.append([idx + 1])
                     idx += 1
             total_lines.append(final_lines[i])
             idx += 1
-            
+
         while len(total_lines) < num_frames:
             total_lines.append([total_lines[-1][0] + 1])
-                
-        # for debugging            
-        '''
+
+        # for debugging
+        """
         for line in total_lines:
             print(line[0], end=" / ")
             print(num_frames, end = " : ")
             print(line)
-        ''' 
+        """
     return total_lines
 
 
@@ -341,9 +361,9 @@ def write_results(filename, results):
 def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     h = y_max - y_min
     w = x_max - x_min
-    x_min = int(max(0, x_min - w // scale)) 
+    x_min = int(max(0, x_min - w // scale))
     y_min = int(max(0, y_min - h // scale))
-    x_max = int(min(width, x_max + w // scale)) 
+    x_max = int(min(width, x_max + w // scale))
     y_max = int(min(height, y_max + h // scale))
     return x_min, y_min, x_max, y_max
 
@@ -441,9 +461,7 @@ def detect(opt, save_img=False):
 
     start_time_total = time.time()
 
-    source = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
-    )
+    source = f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
@@ -583,7 +601,7 @@ def detect(opt, save_img=False):
                     results.append(
                         f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
                     )
-                    results_temp[tid][frame] = np.append(tlbr,t.score)
+                    results_temp[tid][frame] = np.append(tlbr, t.score)
                     if save_results:
                         write_results(os.path.join(save_dir, "results.txt"), results)
 
@@ -619,14 +637,17 @@ def detect(opt, save_img=False):
                         if vid_cap:  # video
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
                             img = cv2.imread(
-                                            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+                                f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
                             )
                             h, w, _ = img.shape
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += ".mp4"
                         vid_writer = cv2.VideoWriter(
-                            save_path[:-4]+"_tracked.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
+                            save_path[:-4] + "_tracked.mp4",
+                            cv2.VideoWriter_fourcc(*"mp4v"),
+                            fps,
+                            (w, h),
                         )
                     vid_writer.write(im0)
 
@@ -646,21 +667,28 @@ def detect(opt, save_img=False):
         tracklet_dir,
         str(save_dir) + "/target_detect.png",
         opt.min_frame,
-        opt.conf_thresh
+        opt.conf_thresh,
     )
 
     if save_results:
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "targeted tracklet ids (id : confidence)\n"
+            os.path.join(save_dir, "valid_ids.txt"),
+            "targeted tracklet ids (id : confidence)\n",
         )
-        for id,(conf,sim) in targeted_ids.items():
-            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f}\n")
+        for id, (conf, sim) in targeted_ids.items():
+            write_results(
+                os.path.join(save_dir, "valid_ids.txt"),
+                f"{id} - conf : {conf:.2f}, sim : {sim:.2f}\n",
+            )
 
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "\ncartoonized tracklet ids (id : confidence)\n"
+            os.path.join(save_dir, "valid_ids.txt"),
+            "\ncartoonized tracklet ids (id : confidence)\n",
         )
-        for id,conf in valid_ids.items():
-            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
+        for id, conf in valid_ids.items():
+            write_results(
+                os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
+            )
 
     num_frames = get_frame_num(source)
     final_lines = parsing_results(valid_ids, save_dir, num_frames)
@@ -675,62 +703,62 @@ if __name__ == "__main__":
     file_storage = "../../database"
     track_dir = "."
     cartoonize_dir = f"cartoonize"
-    
+
     class Opt:
-        weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
+        weights = f"{track_dir}/pretrained/yolov7-tiny.pt"
         source = f"{file_storage}/uploaded_video/resized_1000_1299_1080p.mp4"
         target = f"HanniPham"
         cartoon = f"{track_dir}/assets/resized_1000_1299_1080p.mp4"
         img_size = 1920
-        conf_thres= 0.09
-        iou_thres= 0.7
-        sim_thres= 0.35
-        device= "0"
-        view_img= None
-        save_txt= None
-        nosave= None
+        conf_thres = 0.09
+        iou_thres = 0.7
+        sim_thres = 0.35
+        device = "0"
+        view_img = None
+        save_txt = None
+        nosave = None
         classes = None
-        agnostic_nms= True
-        augment= None
-        update= None
-        project= f"resized_1000_1299_1080p"
-        name= "exp"
-        exist_ok= None
-        trace= None
-        hide_labels_name= False
+        agnostic_nms = True
+        augment = None
+        update = None
+        project = f"resized_1000_1299_1080p"
+        name = "exp"
+        exist_ok = None
+        trace = None
+        hide_labels_name = False
         save_results = True
         save_txt_tidl = None
         kpt_label = 5
         hide_labels = False
-        hide_conf = False,
+        hide_conf = (False,)
         line_thickness = 3
-        
+
         # Tracking args
         track_high_thresh = 0.3
         track_low_thresh = 0.05
         new_track_thresh = 0.4
         track_buffer = 30
         match_thresh = 0.7
-        conf_thresh = 0.7 # added
+        conf_thresh = 0.7  # added
         aspect_ratio_thresh = 1.6
         min_box_area = 10
-        min_frame = 5 # added
-        dbscan = False # added
+        min_frame = 5  # added
+        dbscan = False  # added
         mot20 = True
         save_crop = None
-        
-        #CMC
+
+        # CMC
         cmc_method = "sparseOptFlow"
-        
-        #ReID
+
+        # ReID
         with_reid = True
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
         fast_reid_weights = r"pretrained/mot17_sbs_S50.pth"
         proximity_thresh = 0.5
         appearance_thresh = 0.15
-        jde= False
-        ablation= False
-    
+        jde = False
+        ablation = False
+
     opt = Opt
 
     print(opt)

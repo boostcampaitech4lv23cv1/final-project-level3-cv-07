@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from facenet_pytorch import InceptionResnetV1
+
 # from torch.backends import cudnn
 
 from fast_reid.fastreid.config import get_cfg
@@ -71,8 +72,8 @@ class FastReIDInterface:
         # self.model.eval()
 
         # Checkpointer(self.model).load(weights_path)
-        
-        self.model = InceptionResnetV1(pretrained='vggface2')
+
+        self.model = InceptionResnetV1(pretrained="vggface2")
 
         if self.device != "cpu":
             self.model = self.model.eval().to(device="cuda").half()
