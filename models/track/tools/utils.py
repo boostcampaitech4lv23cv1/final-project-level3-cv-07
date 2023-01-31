@@ -1,6 +1,7 @@
 import os
 import cv2
 
+
 def createDirectory(dir):
     try:
         if not os.path.exists(dir):
@@ -20,6 +21,7 @@ def get_frame_num(source):
         i += 1
 
     return i
+
 
 def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     h = y_max - y_min

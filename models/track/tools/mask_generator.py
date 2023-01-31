@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx - x) ** 2 + (cy - y) ** 2)
 
@@ -80,4 +81,3 @@ def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
         )
     mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
-

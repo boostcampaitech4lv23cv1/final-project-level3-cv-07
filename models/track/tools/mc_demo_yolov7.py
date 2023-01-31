@@ -53,14 +53,17 @@ from tracker.tracking_utils.timer import Timer
 
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
-from tools.mask_generator import mask_generator_v0, mask_generator_v1, mask_generator_v2, mask_generator_v3
+from tools.mask_generator import (
+    mask_generator_v0,
+    mask_generator_v1,
+    mask_generator_v2,
+    mask_generator_v3,
+)
 from tools.utils import createDirectory, get_frame_num, bbox_scale_up
 
 
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
-
-
 
 
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
@@ -366,9 +369,7 @@ def detect(opt, save_img=False):
     save_dir = Path(
         increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
     )  # increment run
-    (save_dir).mkdir(
-        parents=True, exist_ok=True
-    )  # make dir
+    (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     extract_feature(target_path, save_dir)
 
@@ -384,7 +385,6 @@ def detect(opt, save_img=False):
 
     if half:  # FP 16
         model.half()  # to FP16
-
 
     # Get names and colors
     names = model.module.names if hasattr(model, "module") else model.names
