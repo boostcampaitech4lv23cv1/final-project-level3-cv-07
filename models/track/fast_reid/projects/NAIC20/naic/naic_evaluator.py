@@ -64,19 +64,21 @@ class NaicEvaluator(ReidEvaluator):
 
         features = torch.cat(features, dim=0)
         # query feature, person ids and camera ids
-        query_features = features[:self._num_query]
-        query_pids = np.asarray(pids[:self._num_query])
+        query_features = features[: self._num_query]
+        query_pids = np.asarray(pids[: self._num_query])
 
         # gallery features, person ids and camera ids
-        gallery_features = features[self._num_query:]
-        gallery_pids = np.asarray(pids[self._num_query:])
+        gallery_features = features[self._num_query :]
+        gallery_pids = np.asarray(pids[self._num_query :])
 
         if self.cfg.TEST.AQE.ENABLED:
             logger.info("Test with AQE setting")
             qe_time = self.cfg.TEST.AQE.QE_TIME
             qe_k = self.cfg.TEST.AQE.QE_K
             alpha = self.cfg.TEST.AQE.ALPHA
-            query_features, gallery_features = aqe(query_features, gallery_features, qe_time, qe_k, alpha)
+            query_features, gallery_features = aqe(
+                query_features, gallery_features, qe_time, qe_k, alpha
+            )
 
         if self.cfg.TEST.METRIC == "cosine":
             query_features = F.normalize(query_features, dim=1)
@@ -94,7 +96,9 @@ class NaicEvaluator(ReidEvaluator):
                 query_features = F.normalize(query_features, dim=1)
                 gallery_features = F.normalize(gallery_features, dim=1)
 
-            rerank_dist = build_dist(query_features, gallery_features, metric="jaccard", k1=k1, k2=k2)
+            rerank_dist = build_dist(
+                query_features, gallery_features, metric="jaccard", k1=k1, k2=k2
+            )
             dist = rerank_dist * (1 - lambda_value) + dist * lambda_value
 
         if self.cfg.TEST.SAVE_DISTMAT:
@@ -106,7 +110,7 @@ class NaicEvaluator(ReidEvaluator):
         for i in range(topk_indices.shape[0]):
             results[query_pids[i]].extend(gallery_pids[topk_indices[i]])
 
-        with open(os.path.join(self.cfg.OUTPUT_DIR, "submit.json"), 'w') as f:
+        with open(os.path.join(self.cfg.OUTPUT_DIR, "submit.json"), "w") as f:
             json.dump(results, f)
 
         return {}

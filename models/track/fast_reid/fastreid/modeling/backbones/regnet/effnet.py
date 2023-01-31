@@ -15,20 +15,23 @@ import torch.nn as nn
 from fast_reid.fastreid.layers import *
 from fast_reid.fastreid.modeling.backbones.build import BACKBONE_REGISTRY
 from fast_reid.fastreid.utils import comm
-from fast_reid.fastreid.utils.checkpoint import get_missing_parameters_message, get_unexpected_parameters_message
+from fast_reid.fastreid.utils.checkpoint import (
+    get_missing_parameters_message,
+    get_unexpected_parameters_message,
+)
 from .config import cfg as effnet_cfg
 from .regnet import drop_connect, init_weights
 
 logger = logging.getLogger(__name__)
 model_urls = {
-    'b0': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305613/EN-B0_dds_8gpu.pyth',
-    'b1': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B1_dds_8gpu.pyth',
-    'b2': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305015/EN-B2_dds_8gpu.pyth',
-    'b3': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B3_dds_8gpu.pyth',
-    'b4': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305098/EN-B4_dds_8gpu.pyth',
-    'b5': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B5_dds_8gpu.pyth',
-    'b6': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B6_dds_8gpu.pyth',
-    'b7': 'https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B7_dds_8gpu.pyth',
+    "b0": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305613/EN-B0_dds_8gpu.pyth",
+    "b1": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B1_dds_8gpu.pyth",
+    "b2": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305015/EN-B2_dds_8gpu.pyth",
+    "b3": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B3_dds_8gpu.pyth",
+    "b4": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161305098/EN-B4_dds_8gpu.pyth",
+    "b5": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B5_dds_8gpu.pyth",
+    "b6": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B6_dds_8gpu.pyth",
+    "b7": "https://dl.fbaipublicfiles.com/pycls/dds_baselines/161304979/EN-B7_dds_8gpu.pyth",
 }
 
 
@@ -118,7 +121,9 @@ class EffStage(nn.Module):
             b_stride = stride if i == 0 else 1
             b_w_in = w_in if i == 0 else w_out
             name = "b{}".format(i + 1)
-            self.add_module(name, MBConv(b_w_in, exp_r, kernel, b_stride, se_r, w_out, bn_norm))
+            self.add_module(
+                name, MBConv(b_w_in, exp_r, kernel, b_stride, se_r, w_out, bn_norm)
+            )
 
     def forward(self, x):
         for block in self.children():
@@ -163,14 +168,19 @@ class EffNet(nn.Module):
         self._construct(**kwargs, last_stride=last_stride, bn_norm=bn_norm)
         self.apply(init_weights)
 
-    def _construct(self, stem_w, ds, ws, exp_rs, se_r, ss, ks, head_w, last_stride, bn_norm):
+    def _construct(
+        self, stem_w, ds, ws, exp_rs, se_r, ss, ks, head_w, last_stride, bn_norm
+    ):
         stage_params = list(zip(ds, ws, exp_rs, ss, ks))
         self.stem = StemIN(3, stem_w, bn_norm)
         prev_w = stem_w
         for i, (d, w, exp_r, stride, kernel) in enumerate(stage_params):
             name = "s{}".format(i + 1)
-            if i == 5: stride = last_stride
-            self.add_module(name, EffStage(prev_w, exp_r, kernel, stride, se_r, w, d, bn_norm))
+            if i == 5:
+                stride = last_stride
+            self.add_module(
+                name, EffStage(prev_w, exp_r, kernel, stride, se_r, w, d, bn_norm)
+            )
             prev_w = w
         self.head = EffHead(prev_w, head_w, bn_norm)
 
@@ -190,21 +200,19 @@ def init_pretrained_weights(key):
     import gdown
 
     def _get_torch_home():
-        ENV_TORCH_HOME = 'TORCH_HOME'
-        ENV_XDG_CACHE_HOME = 'XDG_CACHE_HOME'
-        DEFAULT_CACHE_DIR = '~/.cache'
+        ENV_TORCH_HOME = "TORCH_HOME"
+        ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
+        DEFAULT_CACHE_DIR = "~/.cache"
         torch_home = os.path.expanduser(
             os.getenv(
                 ENV_TORCH_HOME,
-                os.path.join(
-                    os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), 'torch'
-                )
+                os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
             )
         )
         return torch_home
 
     torch_home = _get_torch_home()
-    model_dir = os.path.join(torch_home, 'checkpoints')
+    model_dir = os.path.join(torch_home, "checkpoints")
     try:
         os.makedirs(model_dir)
     except OSError as e:
@@ -215,7 +223,7 @@ def init_pretrained_weights(key):
             # Unexpected OSError, re-raise.
             raise
 
-    filename = model_urls[key].split('/')[-1]
+    filename = model_urls[key].split("/")[-1]
 
     cached_file = os.path.join(model_dir, filename)
 
@@ -226,7 +234,9 @@ def init_pretrained_weights(key):
     comm.synchronize()
 
     logger.info(f"Loading pretrained model from {cached_file}")
-    state_dict = torch.load(cached_file, map_location=torch.device("cpu"))["model_state"]
+    state_dict = torch.load(cached_file, map_location=torch.device("cpu"))[
+        "model_state"
+    ]
 
     return state_dict
 
@@ -242,12 +252,12 @@ def build_effnet_backbone(cfg):
     # fmt: on
 
     cfg_files = {
-        'b0': 'fastreid/modeling/backbones/regnet/effnet/EN-B0_dds_8gpu.yaml',
-        'b1': 'fastreid/modeling/backbones/regnet/effnet/EN-B1_dds_8gpu.yaml',
-        'b2': 'fastreid/modeling/backbones/regnet/effnet/EN-B2_dds_8gpu.yaml',
-        'b3': 'fastreid/modeling/backbones/regnet/effnet/EN-B3_dds_8gpu.yaml',
-        'b4': 'fastreid/modeling/backbones/regnet/effnet/EN-B4_dds_8gpu.yaml',
-        'b5': 'fastreid/modeling/backbones/regnet/effnet/EN-B5_dds_8gpu.yaml',
+        "b0": "fastreid/modeling/backbones/regnet/effnet/EN-B0_dds_8gpu.yaml",
+        "b1": "fastreid/modeling/backbones/regnet/effnet/EN-B1_dds_8gpu.yaml",
+        "b2": "fastreid/modeling/backbones/regnet/effnet/EN-B2_dds_8gpu.yaml",
+        "b3": "fastreid/modeling/backbones/regnet/effnet/EN-B3_dds_8gpu.yaml",
+        "b4": "fastreid/modeling/backbones/regnet/effnet/EN-B4_dds_8gpu.yaml",
+        "b5": "fastreid/modeling/backbones/regnet/effnet/EN-B5_dds_8gpu.yaml",
     }[depth]
 
     effnet_cfg.merge_from_file(cfg_files)
@@ -257,10 +267,12 @@ def build_effnet_backbone(cfg):
         # Load pretrain path if specifically
         if pretrain_path:
             try:
-                state_dict = torch.load(pretrain_path, map_location=torch.device('cpu'))["model_state"]
+                state_dict = torch.load(
+                    pretrain_path, map_location=torch.device("cpu")
+                )["model_state"]
                 logger.info(f"Loading pretrained model from {pretrain_path}")
             except FileNotFoundError as e:
-                logger.info(f'{pretrain_path} is not found! Please check this path.')
+                logger.info(f"{pretrain_path} is not found! Please check this path.")
                 raise e
             except KeyError as e:
                 logger.info("State dict keys error! Please check the state dict.")
@@ -271,11 +283,7 @@ def build_effnet_backbone(cfg):
 
         incompatible = model.load_state_dict(state_dict, strict=False)
         if incompatible.missing_keys:
-            logger.info(
-                get_missing_parameters_message(incompatible.missing_keys)
-            )
+            logger.info(get_missing_parameters_message(incompatible.missing_keys))
         if incompatible.unexpected_keys:
-            logger.info(
-                get_unexpected_parameters_message(incompatible.unexpected_keys)
-            )
+            logger.info(get_unexpected_parameters_message(incompatible.unexpected_keys))
     return model

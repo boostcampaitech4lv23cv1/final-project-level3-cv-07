@@ -26,15 +26,16 @@ class VeRi(ImageDataset):
         - identities: 775.
         - images: 37778 (train) + 1678 (query) + 11579 (gallery).
     """
+
     dataset_dir = "veri"
     dataset_name = "veri"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.dataset_dir = osp.join(root, self.dataset_dir)
 
-        self.train_dir = osp.join(self.dataset_dir, 'image_train')
-        self.query_dir = osp.join(self.dataset_dir, 'image_query')
-        self.gallery_dir = osp.join(self.dataset_dir, 'image_test')
+        self.train_dir = osp.join(self.dataset_dir, "image_train")
+        self.query_dir = osp.join(self.dataset_dir, "image_query")
+        self.gallery_dir = osp.join(self.dataset_dir, "image_test")
 
         required_files = [
             self.dataset_dir,
@@ -51,13 +52,14 @@ class VeRi(ImageDataset):
         super(VeRi, self).__init__(train, query, gallery, **kwargs)
 
     def process_dir(self, dir_path, is_train=True):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'([\d]+)_c(\d\d\d)')
+        img_paths = glob.glob(osp.join(dir_path, "*.jpg"))
+        pattern = re.compile(r"([\d]+)_c(\d\d\d)")
 
         data = []
         for img_path in img_paths:
             pid, camid = map(int, pattern.search(img_path).groups())
-            if pid == -1: continue  # junk images are just ignored
+            if pid == -1:
+                continue  # junk images are just ignored
             assert 0 <= pid <= 776
             assert 1 <= camid <= 20
             camid -= 1  # index starts from 0

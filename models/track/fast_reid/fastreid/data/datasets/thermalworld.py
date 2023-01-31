@@ -10,17 +10,19 @@ from glob import glob
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ['Thermalworld', ]
+__all__ = [
+    "Thermalworld",
+]
 
 
 @DATASET_REGISTRY.register()
 class Thermalworld(ImageDataset):
-    """thermal world
-    """
+    """thermal world"""
+
     dataset_dir = "thermalworld_rgb"
     dataset_name = "thermalworld"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.train_path = os.path.join(self.root, self.dataset_dir)
 

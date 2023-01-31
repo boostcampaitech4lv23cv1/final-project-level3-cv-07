@@ -1,7 +1,14 @@
 **/.ipynb*
 **/__pycache__/
-*.mp4
+.vscode/launch.json
 
+*.mp4
+*.mov
+
+*.png
+*.jpg
+*.jpeg
+*.
 # frontend
 
 # backend
@@ -10,13 +17,13 @@
 models/track/pretrained/*
 models/track/assets/
 models/track/runs
+models/track/target
+exp*/
 
 # cartoonize
 models/cartoonize/test_code/save_models/*
 
-#
-#models/code/BoT-SORT/exp*
-#models/code/BoT-SORT/exp*
-*.png
-exp*/
-*.mov
+# yolo build
+models/track/yolox.egg-info/*
+models/track/yolox/*
+models/track/build

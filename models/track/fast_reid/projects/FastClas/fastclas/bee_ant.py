@@ -19,10 +19,11 @@ class Hymenoptera(ImageDataset):
     """This is a demo dataset for smoke test, you can refer to
     https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
     """
-    dataset_dir = 'hymenoptera_data'
+
+    dataset_dir = "hymenoptera_data"
     dataset_name = "hyt"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.dataset_dir = os.path.join(self.root, self.dataset_dir)
         train_dir = os.path.join(self.dataset_dir, "train")
@@ -46,5 +47,5 @@ class Hymenoptera(ImageDataset):
         for dir_name in all_dirs:
             all_imgs = glob.glob(os.path.join(data_dir, dir_name, "*.jpg"))
             for img_name in all_imgs:
-                data.append([img_name, dir_name, '0'])
+                data.append([img_name, dir_name, "0"])
         return data

@@ -38,7 +38,8 @@ class CommDataset(Dataset):
         pid = img_item[1]
         camid = img_item[2]
         img = read_image(img_path)
-        if self.transform is not None: img = self.transform(img)
+        if self.transform is not None:
+            img = self.transform(img)
         if self.relabel:
             pid = self.pid_dict[pid]
             camid = self.cam_dict[camid]

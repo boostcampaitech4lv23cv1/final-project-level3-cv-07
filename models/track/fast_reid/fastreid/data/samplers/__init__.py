@@ -4,7 +4,11 @@
 @contact: sherlockliao01@gmail.com
 """
 
-from .triplet_sampler import BalancedIdentitySampler, NaiveIdentitySampler, SetReWeightSampler
+from .triplet_sampler import (
+    BalancedIdentitySampler,
+    NaiveIdentitySampler,
+    SetReWeightSampler,
+)
 from .data_sampler import TrainingSampler, InferenceSampler
 from .imbalance_sampler import ImbalancedDatasetSampler
 

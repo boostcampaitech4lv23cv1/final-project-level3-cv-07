@@ -15,16 +15,15 @@ logger = logging.getLogger("fastreid.attr_dataset")
 
 
 class Dataset(object):
-
     def __init__(
-            self,
-            train,
-            val,
-            test,
-            attr_dict,
-            mode='train',
-            verbose=True,
-            **kwargs,
+        self,
+        train,
+        val,
+        test,
+        attr_dict,
+        mode="train",
+        verbose=True,
+        **kwargs,
     ):
         self.train = train
         self.val = val
@@ -32,9 +31,9 @@ class Dataset(object):
         self._attr_dict = attr_dict
         self._num_attrs = len(self.attr_dict)
 
-        if mode == 'train':
+        if mode == "train":
             self.data = self.train
-        elif mode == 'val':
+        elif mode == "val":
             self.data = self.val
         else:
             self.data = self.test
@@ -88,11 +87,11 @@ class Dataset(object):
         num_val = len(self.val)
         num_total = num_train + num_val
 
-        headers = ['subset', '# images']
+        headers = ["subset", "# images"]
         csv_results = [
-            ['train', num_train],
-            ['val', num_val],
-            ['total', num_total],
+            ["train", num_train],
+            ["val", num_val],
+            ["total", num_total],
         ]
 
         # tabulate it
@@ -102,19 +101,22 @@ class Dataset(object):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        logger.info(
+            f"=> Loaded {self.__class__.__name__} in csv format: \n"
+            + colored(table, "cyan")
+        )
         logger.info("attributes:")
         for label, attr in self.attr_dict.items():
-            logger.info('{:3d}: {}'.format(label, attr))
+            logger.info("{:3d}: {}".format(label, attr))
         logger.info("------------------------------")
         logger.info("# attributes: {}".format(len(self.attr_dict)))
 
     def show_test(self):
         num_test = len(self.test)
 
-        headers = ['subset', '# images']
+        headers = ["subset", "# images"]
         csv_results = [
-            ['test', num_test],
+            ["test", num_test],
         ]
 
         # tabulate it
@@ -124,4 +126,7 @@ class Dataset(object):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        logger.info(
+            f"=> Loaded {self.__class__.__name__} in csv format: \n"
+            + colored(table, "cyan")
+        )

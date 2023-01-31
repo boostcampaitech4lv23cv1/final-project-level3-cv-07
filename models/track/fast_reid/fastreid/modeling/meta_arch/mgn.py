@@ -27,23 +27,23 @@ class MGN(nn.Module):
 
     @configurable
     def __init__(
-            self,
-            *,
-            backbone,
-            neck1,
-            neck2,
-            neck3,
-            b1_head,
-            b2_head,
-            b21_head,
-            b22_head,
-            b3_head,
-            b31_head,
-            b32_head,
-            b33_head,
-            pixel_mean,
-            pixel_std,
-            loss_kwargs=None
+        self,
+        *,
+        backbone,
+        neck1,
+        neck2,
+        neck3,
+        b1_head,
+        b2_head,
+        b21_head,
+        b22_head,
+        b3_head,
+        b31_head,
+        b32_head,
+        b33_head,
+        pixel_mean,
+        pixel_std,
+        loss_kwargs=None
     ):
         """
         NOTE: this interface is experimental.
@@ -88,8 +88,12 @@ class MGN(nn.Module):
         self.b33_head = b33_head
 
         self.loss_kwargs = loss_kwargs
-        self.register_buffer('pixel_mean', torch.Tensor(pixel_mean).view(1, -1, 1, 1), False)
-        self.register_buffer('pixel_std', torch.Tensor(pixel_std).view(1, -1, 1, 1), False)
+        self.register_buffer(
+            "pixel_mean", torch.Tensor(pixel_mean).view(1, -1, 1, 1), False
+        )
+        self.register_buffer(
+            "pixel_std", torch.Tensor(pixel_std).view(1, -1, 1, 1), False
+        )
 
     @classmethod
     def from_config(cls, cfg):
@@ -106,87 +110,85 @@ class MGN(nn.Module):
             all_blocks.maxpool,
             all_blocks.layer1,
             all_blocks.layer2,
-            all_blocks.layer3[0]
+            all_blocks.layer3[0],
         )
         res_conv4 = nn.Sequential(*all_blocks.layer3[1:])
         res_g_conv5 = all_blocks.layer4
 
         res_p_conv5 = nn.Sequential(
-            Bottleneck(1024, 512, bn_norm, False, with_se, downsample=nn.Sequential(
-                nn.Conv2d(1024, 2048, 1, bias=False), get_norm(bn_norm, 2048))),
+            Bottleneck(
+                1024,
+                512,
+                bn_norm,
+                False,
+                with_se,
+                downsample=nn.Sequential(
+                    nn.Conv2d(1024, 2048, 1, bias=False), get_norm(bn_norm, 2048)
+                ),
+            ),
             Bottleneck(2048, 512, bn_norm, False, with_se),
-            Bottleneck(2048, 512, bn_norm, False, with_se))
+            Bottleneck(2048, 512, bn_norm, False, with_se),
+        )
         res_p_conv5.load_state_dict(all_blocks.layer4.state_dict())
 
         # branch
-        neck1 = nn.Sequential(
-            copy.deepcopy(res_conv4),
-            copy.deepcopy(res_g_conv5)
-        )
+        neck1 = nn.Sequential(copy.deepcopy(res_conv4), copy.deepcopy(res_g_conv5))
         b1_head = build_heads(cfg)
 
         # branch2
-        neck2 = nn.Sequential(
-            copy.deepcopy(res_conv4),
-            copy.deepcopy(res_p_conv5)
-        )
+        neck2 = nn.Sequential(copy.deepcopy(res_conv4), copy.deepcopy(res_p_conv5))
         b2_head = build_heads(cfg)
         b21_head = build_heads(cfg)
         b22_head = build_heads(cfg)
 
         # branch3
-        neck3 = nn.Sequential(
-            copy.deepcopy(res_conv4),
-            copy.deepcopy(res_p_conv5)
-        )
+        neck3 = nn.Sequential(copy.deepcopy(res_conv4), copy.deepcopy(res_p_conv5))
         b3_head = build_heads(cfg)
         b31_head = build_heads(cfg)
         b32_head = build_heads(cfg)
         b33_head = build_heads(cfg)
 
         return {
-            'backbone': backbone,
-            'neck1': neck1,
-            'neck2': neck2,
-            'neck3': neck3,
-            'b1_head': b1_head,
-            'b2_head': b2_head,
-            'b21_head': b21_head,
-            'b22_head': b22_head,
-            'b3_head': b3_head,
-            'b31_head': b31_head,
-            'b32_head': b32_head,
-            'b33_head': b33_head,
-            'pixel_mean': cfg.MODEL.PIXEL_MEAN,
-            'pixel_std': cfg.MODEL.PIXEL_STD,
-            'loss_kwargs':
-                {
-                    # loss name
-                    'loss_names': cfg.MODEL.LOSSES.NAME,
-
-                    # loss hyperparameters
-                    'ce': {
-                        'eps': cfg.MODEL.LOSSES.CE.EPSILON,
-                        'alpha': cfg.MODEL.LOSSES.CE.ALPHA,
-                        'scale': cfg.MODEL.LOSSES.CE.SCALE
-                    },
-                    'tri': {
-                        'margin': cfg.MODEL.LOSSES.TRI.MARGIN,
-                        'norm_feat': cfg.MODEL.LOSSES.TRI.NORM_FEAT,
-                        'hard_mining': cfg.MODEL.LOSSES.TRI.HARD_MINING,
-                        'scale': cfg.MODEL.LOSSES.TRI.SCALE
-                    },
-                    'circle': {
-                        'margin': cfg.MODEL.LOSSES.CIRCLE.MARGIN,
-                        'gamma': cfg.MODEL.LOSSES.CIRCLE.GAMMA,
-                        'scale': cfg.MODEL.LOSSES.CIRCLE.SCALE
-                    },
-                    'cosface': {
-                        'margin': cfg.MODEL.LOSSES.COSFACE.MARGIN,
-                        'gamma': cfg.MODEL.LOSSES.COSFACE.GAMMA,
-                        'scale': cfg.MODEL.LOSSES.COSFACE.SCALE
-                    }
-                }
+            "backbone": backbone,
+            "neck1": neck1,
+            "neck2": neck2,
+            "neck3": neck3,
+            "b1_head": b1_head,
+            "b2_head": b2_head,
+            "b21_head": b21_head,
+            "b22_head": b22_head,
+            "b3_head": b3_head,
+            "b31_head": b31_head,
+            "b32_head": b32_head,
+            "b33_head": b33_head,
+            "pixel_mean": cfg.MODEL.PIXEL_MEAN,
+            "pixel_std": cfg.MODEL.PIXEL_STD,
+            "loss_kwargs": {
+                # loss name
+                "loss_names": cfg.MODEL.LOSSES.NAME,
+                # loss hyperparameters
+                "ce": {
+                    "eps": cfg.MODEL.LOSSES.CE.EPSILON,
+                    "alpha": cfg.MODEL.LOSSES.CE.ALPHA,
+                    "scale": cfg.MODEL.LOSSES.CE.SCALE,
+                },
+                "tri": {
+                    "margin": cfg.MODEL.LOSSES.TRI.MARGIN,
+                    "norm_feat": cfg.MODEL.LOSSES.TRI.NORM_FEAT,
+                    "hard_mining": cfg.MODEL.LOSSES.TRI.HARD_MINING,
+                    "scale": cfg.MODEL.LOSSES.TRI.SCALE,
+                },
+                "circle": {
+                    "margin": cfg.MODEL.LOSSES.CIRCLE.MARGIN,
+                    "gamma": cfg.MODEL.LOSSES.CIRCLE.GAMMA,
+                    "scale": cfg.MODEL.LOSSES.CIRCLE.SCALE,
+                },
+                "cosface": {
+                    "margin": cfg.MODEL.LOSSES.COSFACE.MARGIN,
+                    "gamma": cfg.MODEL.LOSSES.COSFACE.GAMMA,
+                    "scale": cfg.MODEL.LOSSES.COSFACE.SCALE,
+                },
+            },
         }
 
     @property
@@ -209,10 +211,13 @@ class MGN(nn.Module):
         b31_feat, b32_feat, b33_feat = torch.chunk(b3_feat, 3, dim=2)
 
         if self.training:
-            assert "targets" in batched_inputs, "Person ID annotation are missing in training!"
+            assert (
+                "targets" in batched_inputs
+            ), "Person ID annotation are missing in training!"
             targets = batched_inputs["targets"]
 
-            if targets.sum() < 0: targets.zero_()
+            if targets.sum() < 0:
+                targets.zero_()
 
             b1_outputs = self.b1_head(b1_feat, targets)
             b2_outputs = self.b2_head(b2_feat, targets)
@@ -223,10 +228,17 @@ class MGN(nn.Module):
             b32_outputs = self.b32_head(b32_feat, targets)
             b33_outputs = self.b33_head(b33_feat, targets)
 
-            losses = self.losses(b1_outputs,
-                                 b2_outputs, b21_outputs, b22_outputs,
-                                 b3_outputs, b31_outputs, b32_outputs, b33_outputs,
-                                 targets)
+            losses = self.losses(
+                b1_outputs,
+                b2_outputs,
+                b21_outputs,
+                b22_outputs,
+                b3_outputs,
+                b31_outputs,
+                b32_outputs,
+                b33_outputs,
+                targets,
+            )
             return losses
         else:
             b1_pool_feat = self.b1_head(b1_feat)
@@ -238,8 +250,19 @@ class MGN(nn.Module):
             b32_pool_feat = self.b32_head(b32_feat)
             b33_pool_feat = self.b33_head(b33_feat)
 
-            pred_feat = torch.cat([b1_pool_feat, b2_pool_feat, b3_pool_feat, b21_pool_feat,
-                                   b22_pool_feat, b31_pool_feat, b32_pool_feat, b33_pool_feat], dim=1)
+            pred_feat = torch.cat(
+                [
+                    b1_pool_feat,
+                    b2_pool_feat,
+                    b3_pool_feat,
+                    b21_pool_feat,
+                    b22_pool_feat,
+                    b31_pool_feat,
+                    b32_pool_feat,
+                    b33_pool_feat,
+                ],
+                dim=1,
+            )
             return pred_feat
 
     def preprocess_image(self, batched_inputs):
@@ -251,15 +274,27 @@ class MGN(nn.Module):
         elif isinstance(batched_inputs, torch.Tensor):
             images = batched_inputs.to(self.device)
         else:
-            raise TypeError("batched_inputs must be dict or torch.Tensor, but get {}".format(type(batched_inputs)))
+            raise TypeError(
+                "batched_inputs must be dict or torch.Tensor, but get {}".format(
+                    type(batched_inputs)
+                )
+            )
 
         images.sub_(self.pixel_mean).div_(self.pixel_std)
         return images
 
-    def losses(self,
-               b1_outputs,
-               b2_outputs, b21_outputs, b22_outputs,
-               b3_outputs, b31_outputs, b32_outputs, b33_outputs, gt_labels):
+    def losses(
+        self,
+        b1_outputs,
+        b2_outputs,
+        b21_outputs,
+        b22_outputs,
+        b3_outputs,
+        b31_outputs,
+        b32_outputs,
+        b33_outputs,
+        gt_labels,
+    ):
         # model predictions
         # fmt: off
         pred_class_logits = b1_outputs['pred_class_logits'].detach()
@@ -288,107 +323,134 @@ class MGN(nn.Module):
         b33_pool_feat = torch.cat((b31_pool_feat, b32_pool_feat, b33_pool_feat), dim=1)
 
         loss_dict = {}
-        loss_names = self.loss_kwargs['loss_names']
+        loss_names = self.loss_kwargs["loss_names"]
 
         if "CrossEntropyLoss" in loss_names:
-            ce_kwargs = self.loss_kwargs.get('ce')
-            loss_dict['loss_cls_b1'] = cross_entropy_loss(
-                b1_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            ce_kwargs = self.loss_kwargs.get("ce")
+            loss_dict["loss_cls_b1"] = (
+                cross_entropy_loss(
+                    b1_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b2'] = cross_entropy_loss(
-                b2_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b2"] = (
+                cross_entropy_loss(
+                    b2_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b21'] = cross_entropy_loss(
-                b21_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b21"] = (
+                cross_entropy_loss(
+                    b21_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b22'] = cross_entropy_loss(
-                b22_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b22"] = (
+                cross_entropy_loss(
+                    b22_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b3'] = cross_entropy_loss(
-                b3_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b3"] = (
+                cross_entropy_loss(
+                    b3_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b31'] = cross_entropy_loss(
-                b31_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b31"] = (
+                cross_entropy_loss(
+                    b31_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b32'] = cross_entropy_loss(
-                b32_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b32"] = (
+                cross_entropy_loss(
+                    b32_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
-            loss_dict['loss_cls_b33'] = cross_entropy_loss(
-                b33_logits,
-                gt_labels,
-                ce_kwargs.get('eps'),
-                ce_kwargs.get('alpha')
-            ) * ce_kwargs.get('scale') * 0.125
+            loss_dict["loss_cls_b33"] = (
+                cross_entropy_loss(
+                    b33_logits, gt_labels, ce_kwargs.get("eps"), ce_kwargs.get("alpha")
+                )
+                * ce_kwargs.get("scale")
+                * 0.125
+            )
 
         if "TripletLoss" in loss_names:
-            tri_kwargs = self.loss_kwargs.get('tri')
-            loss_dict['loss_triplet_b1'] = triplet_loss(
-                b1_pool_feat,
-                gt_labels,
-                tri_kwargs.get('margin'),
-                tri_kwargs.get('norm_feat'),
-                tri_kwargs.get('hard_mining')
-            ) * tri_kwargs.get('scale') * 0.2
+            tri_kwargs = self.loss_kwargs.get("tri")
+            loss_dict["loss_triplet_b1"] = (
+                triplet_loss(
+                    b1_pool_feat,
+                    gt_labels,
+                    tri_kwargs.get("margin"),
+                    tri_kwargs.get("norm_feat"),
+                    tri_kwargs.get("hard_mining"),
+                )
+                * tri_kwargs.get("scale")
+                * 0.2
+            )
 
-            loss_dict['loss_triplet_b2'] = triplet_loss(
-                b2_pool_feat,
-                gt_labels,
-                tri_kwargs.get('margin'),
-                tri_kwargs.get('norm_feat'),
-                tri_kwargs.get('hard_mining')
-            ) * tri_kwargs.get('scale') * 0.2
+            loss_dict["loss_triplet_b2"] = (
+                triplet_loss(
+                    b2_pool_feat,
+                    gt_labels,
+                    tri_kwargs.get("margin"),
+                    tri_kwargs.get("norm_feat"),
+                    tri_kwargs.get("hard_mining"),
+                )
+                * tri_kwargs.get("scale")
+                * 0.2
+            )
 
-            loss_dict['loss_triplet_b3'] = triplet_loss(
-                b3_pool_feat,
-                gt_labels,
-                tri_kwargs.get('margin'),
-                tri_kwargs.get('norm_feat'),
-                tri_kwargs.get('hard_mining')
-            ) * tri_kwargs.get('scale') * 0.2
+            loss_dict["loss_triplet_b3"] = (
+                triplet_loss(
+                    b3_pool_feat,
+                    gt_labels,
+                    tri_kwargs.get("margin"),
+                    tri_kwargs.get("norm_feat"),
+                    tri_kwargs.get("hard_mining"),
+                )
+                * tri_kwargs.get("scale")
+                * 0.2
+            )
 
-            loss_dict['loss_triplet_b22'] = triplet_loss(
-                b22_pool_feat,
-                gt_labels,
-                tri_kwargs.get('margin'),
-                tri_kwargs.get('norm_feat'),
-                tri_kwargs.get('hard_mining')
-            ) * tri_kwargs.get('scale') * 0.2
+            loss_dict["loss_triplet_b22"] = (
+                triplet_loss(
+                    b22_pool_feat,
+                    gt_labels,
+                    tri_kwargs.get("margin"),
+                    tri_kwargs.get("norm_feat"),
+                    tri_kwargs.get("hard_mining"),
+                )
+                * tri_kwargs.get("scale")
+                * 0.2
+            )
 
-            loss_dict['loss_triplet_b33'] = triplet_loss(
-                b33_pool_feat,
-                gt_labels,
-
-                tri_kwargs.get('margin'),
-                tri_kwargs.get('norm_feat'),
-                tri_kwargs.get('hard_mining')
-            ) * tri_kwargs.get('scale') * 0.2
+            loss_dict["loss_triplet_b33"] = (
+                triplet_loss(
+                    b33_pool_feat,
+                    gt_labels,
+                    tri_kwargs.get("margin"),
+                    tri_kwargs.get("norm_feat"),
+                    tri_kwargs.get("hard_mining"),
+                )
+                * tri_kwargs.get("scale")
+                * 0.2
+            )
 
         return loss_dict

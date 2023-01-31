@@ -15,12 +15,15 @@ import torch.nn as nn
 
 from fast_reid.fastreid.layers import *
 from fast_reid.fastreid.utils import comm
-from fast_reid.fastreid.utils.checkpoint import get_missing_parameters_message, get_unexpected_parameters_message
+from fast_reid.fastreid.utils.checkpoint import (
+    get_missing_parameters_message,
+    get_unexpected_parameters_message,
+)
 from .build import BACKBONE_REGISTRY
 
 logger = logging.getLogger(__name__)
 model_urls = {
-    'ibn_101x': 'https://github.com/XingangPan/IBN-Net/releases/download/v1.0/resnext101_ibn_a-6ace051d.pth',
+    "ibn_101x": "https://github.com/XingangPan/IBN-Net/releases/download/v1.0/resnext101_ibn_a-6ace051d.pth",
 }
 
 
@@ -28,11 +31,21 @@ class Bottleneck(nn.Module):
     """
     RexNeXt bottleneck type C
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, bn_norm, with_ibn, baseWidth, cardinality, stride=1,
-                 downsample=None):
-        """ Constructor
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        bn_norm,
+        with_ibn,
+        baseWidth,
+        cardinality,
+        stride=1,
+        downsample=None,
+    ):
+        """Constructor
         Args:
             inplanes: input channel dimensionality
             planes: output channel dimensionality
@@ -44,14 +57,20 @@ class Bottleneck(nn.Module):
 
         D = int(math.floor(planes * (baseWidth / 64)))
         C = cardinality
-        self.conv1 = nn.Conv2d(inplanes, D * C, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(
+            inplanes, D * C, kernel_size=1, stride=1, padding=0, bias=False
+        )
         if with_ibn:
             self.bn1 = IBN(D * C, bn_norm)
         else:
             self.bn1 = get_norm(bn_norm, D * C)
-        self.conv2 = nn.Conv2d(D * C, D * C, kernel_size=3, stride=stride, padding=1, groups=C, bias=False)
+        self.conv2 = nn.Conv2d(
+            D * C, D * C, kernel_size=3, stride=stride, padding=1, groups=C, bias=False
+        )
         self.bn2 = get_norm(bn_norm, D * C)
-        self.conv3 = nn.Conv2d(D * C, planes * 4, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv3 = nn.Conv2d(
+            D * C, planes * 4, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.bn3 = get_norm(bn_norm, planes * 4)
         self.relu = nn.ReLU(inplace=True)
 
@@ -86,9 +105,19 @@ class ResNeXt(nn.Module):
     https://arxiv.org/pdf/1611.05431.pdf
     """
 
-    def __init__(self, last_stride, bn_norm, with_ibn, with_nl, block, layers, non_layers,
-                 baseWidth=4, cardinality=32):
-        """ Constructor
+    def __init__(
+        self,
+        last_stride,
+        bn_norm,
+        with_ibn,
+        with_nl,
+        block,
+        layers,
+        non_layers,
+        baseWidth=4,
+        cardinality=32,
+    ):
+        """Constructor
         Args:
             baseWidth: baseWidth for ResNeXt.
             cardinality: number of convolution groups.
@@ -105,10 +134,18 @@ class ResNeXt(nn.Module):
         self.bn1 = get_norm(bn_norm, 64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0], 1, bn_norm, with_ibn=with_ibn)
-        self.layer2 = self._make_layer(block, 128, layers[1], 2, bn_norm, with_ibn=with_ibn)
-        self.layer3 = self._make_layer(block, 256, layers[2], 2, bn_norm, with_ibn=with_ibn)
-        self.layer4 = self._make_layer(block, 512, layers[3], last_stride, bn_norm, with_ibn=with_ibn)
+        self.layer1 = self._make_layer(
+            block, 64, layers[0], 1, bn_norm, with_ibn=with_ibn
+        )
+        self.layer2 = self._make_layer(
+            block, 128, layers[1], 2, bn_norm, with_ibn=with_ibn
+        )
+        self.layer3 = self._make_layer(
+            block, 256, layers[2], 2, bn_norm, with_ibn=with_ibn
+        )
+        self.layer4 = self._make_layer(
+            block, 512, layers[3], last_stride, bn_norm, with_ibn=with_ibn
+        )
 
         self.random_init()
 
@@ -117,8 +154,10 @@ class ResNeXt(nn.Module):
         else:       self.NL_1_idx = self.NL_2_idx = self.NL_3_idx = self.NL_4_idx = []
         # fmt: on
 
-    def _make_layer(self, block, planes, blocks, stride=1, bn_norm='BN', with_ibn=False):
-        """ Stack n bottleneck modules where n is inferred from the depth of the network.
+    def _make_layer(
+        self, block, planes, blocks, stride=1, bn_norm="BN", with_ibn=False
+    ):
+        """Stack n bottleneck modules where n is inferred from the depth of the network.
         Args:
             block: block type used to construct ResNext
             planes: number of output channels (need to multiply by block.expansion)
@@ -129,33 +168,62 @@ class ResNeXt(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 get_norm(bn_norm, planes * block.expansion),
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, bn_norm, with_ibn,
-                            self.baseWidth, self.cardinality, stride, downsample))
+        layers.append(
+            block(
+                self.inplanes,
+                planes,
+                bn_norm,
+                with_ibn,
+                self.baseWidth,
+                self.cardinality,
+                stride,
+                downsample,
+            )
+        )
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(
-                block(self.inplanes, planes, bn_norm, with_ibn, self.baseWidth, self.cardinality, 1, None))
+                block(
+                    self.inplanes,
+                    planes,
+                    bn_norm,
+                    with_ibn,
+                    self.baseWidth,
+                    self.cardinality,
+                    1,
+                    None,
+                )
+            )
 
         return nn.Sequential(*layers)
 
     def _build_nonlocal(self, layers, non_layers, bn_norm):
         self.NL_1 = nn.ModuleList(
-            [Non_local(256, bn_norm) for _ in range(non_layers[0])])
+            [Non_local(256, bn_norm) for _ in range(non_layers[0])]
+        )
         self.NL_1_idx = sorted([layers[0] - (i + 1) for i in range(non_layers[0])])
         self.NL_2 = nn.ModuleList(
-            [Non_local(512, bn_norm) for _ in range(non_layers[1])])
+            [Non_local(512, bn_norm) for _ in range(non_layers[1])]
+        )
         self.NL_2_idx = sorted([layers[1] - (i + 1) for i in range(non_layers[1])])
         self.NL_3 = nn.ModuleList(
-            [Non_local(1024, bn_norm) for _ in range(non_layers[2])])
+            [Non_local(1024, bn_norm) for _ in range(non_layers[2])]
+        )
         self.NL_3_idx = sorted([layers[2] - (i + 1) for i in range(non_layers[2])])
         self.NL_4 = nn.ModuleList(
-            [Non_local(2048, bn_norm) for _ in range(non_layers[3])])
+            [Non_local(2048, bn_norm) for _ in range(non_layers[3])]
+        )
         self.NL_4_idx = sorted([layers[3] - (i + 1) for i in range(non_layers[3])])
 
     def forward(self, x):
@@ -206,11 +274,11 @@ class ResNeXt(nn.Module):
         return x
 
     def random_init(self):
-        self.conv1.weight.data.normal_(0, math.sqrt(2. / (7 * 7 * 64)))
+        self.conv1.weight.data.normal_(0, math.sqrt(2.0 / (7 * 7 * 64)))
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -229,21 +297,19 @@ def init_pretrained_weights(key):
     import gdown
 
     def _get_torch_home():
-        ENV_TORCH_HOME = 'TORCH_HOME'
-        ENV_XDG_CACHE_HOME = 'XDG_CACHE_HOME'
-        DEFAULT_CACHE_DIR = '~/.cache'
+        ENV_TORCH_HOME = "TORCH_HOME"
+        ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
+        DEFAULT_CACHE_DIR = "~/.cache"
         torch_home = os.path.expanduser(
             os.getenv(
                 ENV_TORCH_HOME,
-                os.path.join(
-                    os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), 'torch'
-                )
+                os.path.join(os.getenv(ENV_XDG_CACHE_HOME, DEFAULT_CACHE_DIR), "torch"),
             )
         )
         return torch_home
 
     torch_home = _get_torch_home()
-    model_dir = os.path.join(torch_home, 'checkpoints')
+    model_dir = os.path.join(torch_home, "checkpoints")
     try:
         os.makedirs(model_dir)
     except OSError as e:
@@ -254,7 +320,7 @@ def init_pretrained_weights(key):
             # Unexpected OSError, re-raise.
             raise
 
-    filename = model_urls[key].split('/')[-1]
+    filename = model_urls[key].split("/")[-1]
 
     cached_file = os.path.join(model_dir, filename)
 
@@ -266,7 +332,7 @@ def init_pretrained_weights(key):
     comm.synchronize()
 
     logger.info(f"Loading pretrained model from {cached_file}")
-    state_dict = torch.load(cached_file, map_location=torch.device('cpu'))
+    state_dict = torch.load(cached_file, map_location=torch.device("cpu"))
 
     return state_dict
 
@@ -290,46 +356,53 @@ def build_resnext_backbone(cfg):
     # fmt: on
 
     num_blocks_per_stage = {
-        '50x': [3, 4, 6, 3],
-        '101x': [3, 4, 23, 3],
-        '152x': [3, 8, 36, 3], }[depth]
-    nl_layers_per_stage = {
-        '50x': [0, 2, 3, 0],
-        '101x': [0, 2, 3, 0]}[depth]
-    model = ResNeXt(last_stride, bn_norm, with_ibn, with_nl, Bottleneck,
-                    num_blocks_per_stage, nl_layers_per_stage)
+        "50x": [3, 4, 6, 3],
+        "101x": [3, 4, 23, 3],
+        "152x": [3, 8, 36, 3],
+    }[depth]
+    nl_layers_per_stage = {"50x": [0, 2, 3, 0], "101x": [0, 2, 3, 0]}[depth]
+    model = ResNeXt(
+        last_stride,
+        bn_norm,
+        with_ibn,
+        with_nl,
+        Bottleneck,
+        num_blocks_per_stage,
+        nl_layers_per_stage,
+    )
     if pretrain:
         if pretrain_path:
             try:
-                state_dict = torch.load(pretrain_path, map_location=torch.device('cpu'))['model']
+                state_dict = torch.load(
+                    pretrain_path, map_location=torch.device("cpu")
+                )["model"]
                 # Remove module.encoder in name
                 new_state_dict = {}
                 for k in state_dict:
-                    new_k = '.'.join(k.split('.')[2:])
-                    if new_k in model.state_dict() and (model.state_dict()[new_k].shape == state_dict[k].shape):
+                    new_k = ".".join(k.split(".")[2:])
+                    if new_k in model.state_dict() and (
+                        model.state_dict()[new_k].shape == state_dict[k].shape
+                    ):
                         new_state_dict[new_k] = state_dict[k]
                 state_dict = new_state_dict
                 logger.info(f"Loading pretrained model from {pretrain_path}")
             except FileNotFoundError as e:
-                logger.info(f'{pretrain_path} is not found! Please check this path.')
+                logger.info(f"{pretrain_path} is not found! Please check this path.")
                 raise e
             except KeyError as e:
                 logger.info("State dict keys error! Please check the state dict.")
                 raise e
         else:
             key = depth
-            if with_ibn: key = 'ibn_' + key
+            if with_ibn:
+                key = "ibn_" + key
 
             state_dict = init_pretrained_weights(key)
 
         incompatible = model.load_state_dict(state_dict, strict=False)
         if incompatible.missing_keys:
-            logger.info(
-                get_missing_parameters_message(incompatible.missing_keys)
-            )
+            logger.info(get_missing_parameters_message(incompatible.missing_keys))
         if incompatible.unexpected_keys:
-            logger.info(
-                get_unexpected_parameters_message(incompatible.unexpected_keys)
-            )
+            logger.info(get_unexpected_parameters_message(incompatible.unexpected_keys))
 
     return model

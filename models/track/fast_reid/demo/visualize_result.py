@@ -13,7 +13,7 @@ import torch
 import tqdm
 from torch.backends import cudnn
 
-sys.path.append('.')
+sys.path.append(".")
 
 # from fast_reid.fastreid.evaluation import evaluate_rank
 from fast_reid.fastreid.evaluation.rank import evaluate_rank
@@ -31,7 +31,7 @@ from fast_reid.fastreid.utils.visualizer import Visualizer
 cudnn.benchmark = True
 setup_logger(name="fastreid")
 
-logger = logging.getLogger('fastreid.visualize_result')
+logger = logging.getLogger("fastreid.visualize_result")
 
 
 def setup_cfg(args):
@@ -52,24 +52,20 @@ def get_parser():
         help="path to config file",
     )
     parser.add_argument(
-        '--parallel',
-        action='store_true',
-        help='if use multiprocess for feature extraction.'
+        "--parallel",
+        action="store_true",
+        help="if use multiprocess for feature extraction.",
     )
     parser.add_argument(
-        "--dataset-name",
-        help="a test dataset name for visualizing ranking list."
+        "--dataset-name", help="a test dataset name for visualizing ranking list."
     )
     parser.add_argument(
         "--output",
         default="./vis_rank_list",
         help="a file or directory to save rankling list result.",
-
     )
     parser.add_argument(
-        "--vis-label",
-        action='store_true',
-        help="if visualize label of query instance"
+        "--vis-label", action="store_true", help="if visualize label of query instance"
     )
     parser.add_argument(
         "--num-vis",
@@ -100,7 +96,7 @@ def get_parser():
     return parser
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = get_parser().parse_args()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -122,7 +118,9 @@ if __name__ == '__main__':
     feats = []
     pids = []
     camids = []
-    for (feat, pid, camid) in tqdm.tqdm(demo.run_on_loader(test_loader), total=len(test_loader)):
+    for (feat, pid, camid) in tqdm.tqdm(
+        demo.run_on_loader(test_loader), total=len(test_loader)
+    ):
         feats.append(feat)
         pids.extend(pid)
         camids.extend(camid)
@@ -152,6 +150,12 @@ if __name__ == '__main__':
     logger.info("Finish saving ROC curve!")
 
     logger.info("Saving rank list result ...")
-    query_indices = visualizer.vis_rank_list(args.output, args.vis_label, args.num_vis,
-                                             args.rank_sort, args.label_sort, args.max_rank)
+    query_indices = visualizer.vis_rank_list(
+        args.output,
+        args.vis_label,
+        args.num_vis,
+        args.rank_sort,
+        args.label_sort,
+        args.max_rank,
+    )
     logger.info("Finish saving rank list results!")

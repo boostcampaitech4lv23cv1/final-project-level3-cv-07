@@ -14,21 +14,42 @@ __all__ = ["IBN", "get_norm"]
 
 
 class BatchNorm(nn.BatchNorm2d):
-    def __init__(self, num_features, eps=1e-05, momentum=0.1, weight_freeze=False, bias_freeze=False, weight_init=1.0,
-                 bias_init=0.0, **kwargs):
+    def __init__(
+        self,
+        num_features,
+        eps=1e-05,
+        momentum=0.1,
+        weight_freeze=False,
+        bias_freeze=False,
+        weight_init=1.0,
+        bias_init=0.0,
+        **kwargs
+    ):
         super().__init__(num_features, eps=eps, momentum=momentum)
-        if weight_init is not None: nn.init.constant_(self.weight, weight_init)
-        if bias_init is not None: nn.init.constant_(self.bias, bias_init)
+        if weight_init is not None:
+            nn.init.constant_(self.weight, weight_init)
+        if bias_init is not None:
+            nn.init.constant_(self.bias, bias_init)
         self.weight.requires_grad_(not weight_freeze)
         self.bias.requires_grad_(not bias_freeze)
 
 
 class SyncBatchNorm(nn.SyncBatchNorm):
-    def __init__(self, num_features, eps=1e-05, momentum=0.1, weight_freeze=False, bias_freeze=False, weight_init=1.0,
-                 bias_init=0.0):
+    def __init__(
+        self,
+        num_features,
+        eps=1e-05,
+        momentum=0.1,
+        weight_freeze=False,
+        bias_freeze=False,
+        weight_init=1.0,
+        bias_init=0.0,
+    ):
         super().__init__(num_features, eps=eps, momentum=momentum)
-        if weight_init is not None: nn.init.constant_(self.weight, weight_init)
-        if bias_init is not None: nn.init.constant_(self.bias, bias_init)
+        if weight_init is not None:
+            nn.init.constant_(self.weight, weight_init)
+        if bias_init is not None:
+            nn.init.constant_(self.bias, bias_init)
         self.weight.requires_grad_(not weight_freeze)
         self.bias.requires_grad_(not bias_freeze)
 
@@ -54,8 +75,8 @@ class GhostBatchNorm(BatchNorm):
     def __init__(self, num_features, num_splits=1, **kwargs):
         super().__init__(num_features, **kwargs)
         self.num_splits = num_splits
-        self.register_buffer('running_mean', torch.zeros(num_features))
-        self.register_buffer('running_var', torch.ones(num_features))
+        self.register_buffer("running_mean", torch.zeros(num_features))
+        self.register_buffer("running_var", torch.ones(num_features))
 
     def forward(self, input):
         N, C, H, W = input.shape
@@ -63,16 +84,33 @@ class GhostBatchNorm(BatchNorm):
             self.running_mean = self.running_mean.repeat(self.num_splits)
             self.running_var = self.running_var.repeat(self.num_splits)
             outputs = F.batch_norm(
-                input.view(-1, C * self.num_splits, H, W), self.running_mean, self.running_var,
-                self.weight.repeat(self.num_splits), self.bias.repeat(self.num_splits),
-                True, self.momentum, self.eps).view(N, C, H, W)
-            self.running_mean = torch.mean(self.running_mean.view(self.num_splits, self.num_features), dim=0)
-            self.running_var = torch.mean(self.running_var.view(self.num_splits, self.num_features), dim=0)
+                input.view(-1, C * self.num_splits, H, W),
+                self.running_mean,
+                self.running_var,
+                self.weight.repeat(self.num_splits),
+                self.bias.repeat(self.num_splits),
+                True,
+                self.momentum,
+                self.eps,
+            ).view(N, C, H, W)
+            self.running_mean = torch.mean(
+                self.running_mean.view(self.num_splits, self.num_features), dim=0
+            )
+            self.running_var = torch.mean(
+                self.running_var.view(self.num_splits, self.num_features), dim=0
+            )
             return outputs
         else:
             return F.batch_norm(
-                input, self.running_mean, self.running_var,
-                self.weight, self.bias, False, self.momentum, self.eps)
+                input,
+                self.running_mean,
+                self.running_var,
+                self.weight,
+                self.bias,
+                False,
+                self.momentum,
+                self.eps,
+            )
 
 
 class FrozenBatchNorm(nn.Module):
@@ -125,7 +163,14 @@ class FrozenBatchNorm(nn.Module):
             )
 
     def _load_from_state_dict(
-            self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -133,22 +178,36 @@ class FrozenBatchNorm(nn.Module):
             # No running_mean/var in early versions
             # This will silent the warnings
             if prefix + "running_mean" not in state_dict:
-                state_dict[prefix + "running_mean"] = torch.zeros_like(self.running_mean)
+                state_dict[prefix + "running_mean"] = torch.zeros_like(
+                    self.running_mean
+                )
             if prefix + "running_var" not in state_dict:
                 state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
 
         if version is not None and version < 3:
             logger = logging.getLogger(__name__)
-            logger.info("FrozenBatchNorm {} is upgraded to version 3.".format(prefix.rstrip(".")))
+            logger.info(
+                "FrozenBatchNorm {} is upgraded to version 3.".format(
+                    prefix.rstrip(".")
+                )
+            )
             # In version < 3, running_var are used without +eps.
             state_dict[prefix + "running_var"] -= self.eps
 
         super()._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
         )
 
     def __repr__(self):
-        return "FrozenBatchNorm2d(num_features={}, eps={})".format(self.num_features, self.eps)
+        return "FrozenBatchNorm2d(num_features={}, eps={})".format(
+            self.num_features, self.eps
+        )
 
     @classmethod
     def convert_frozen_batchnorm(cls, module):

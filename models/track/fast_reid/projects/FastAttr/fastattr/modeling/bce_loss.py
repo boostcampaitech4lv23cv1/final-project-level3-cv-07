@@ -18,11 +18,16 @@ def ratio2weight(targets, ratio):
 
 
 def cross_entropy_sigmoid_loss(pred_class_logits, gt_classes, sample_weight=None):
-    loss = F.binary_cross_entropy_with_logits(pred_class_logits, gt_classes, reduction='none')
+    loss = F.binary_cross_entropy_with_logits(
+        pred_class_logits, gt_classes, reduction="none"
+    )
 
     if sample_weight is not None:
-        targets_mask = torch.where(gt_classes.detach() > 0.5,
-                                   torch.ones(1, device="cuda"), torch.zeros(1, device="cuda"))  # dtype float32
+        targets_mask = torch.where(
+            gt_classes.detach() > 0.5,
+            torch.ones(1, device="cuda"),
+            torch.zeros(1, device="cuda"),
+        )  # dtype float32
         weight = ratio2weight(targets_mask, sample_weight)
         loss = loss * weight
 

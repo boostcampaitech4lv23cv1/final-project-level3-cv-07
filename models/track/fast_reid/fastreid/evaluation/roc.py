@@ -16,8 +16,8 @@ try:
 except ImportError:
     IS_CYTHON_AVAI = False
     warnings.warn(
-        'Cython roc evaluation (very fast so highly recommended) is '
-        'unavailable, now use python evaluation.'
+        "Cython roc evaluation (very fast so highly recommended) is "
+        "unavailable, now use python evaluation."
     )
 
 
@@ -61,14 +61,7 @@ def evaluate_roc_py(distmat, q_pids, g_pids, q_camids, g_camids):
     return scores, labels
 
 
-def evaluate_roc(
-        distmat,
-        q_pids,
-        g_pids,
-        q_camids,
-        g_camids,
-        use_cython=True
-):
+def evaluate_roc(distmat, q_pids, g_pids, q_camids, g_camids, use_cython=True):
     """Evaluates CMC rank.
     Args:
         distmat (numpy.ndarray): distance matrix of shape (num_query, num_gallery).

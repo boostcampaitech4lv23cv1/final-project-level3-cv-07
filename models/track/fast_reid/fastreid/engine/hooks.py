@@ -16,7 +16,9 @@ from torch.nn.parallel import DistributedDataParallel
 from fast_reid.fastreid.evaluation.testing import flatten_results_dict
 from fast_reid.fastreid.solver import optim
 from fast_reid.fastreid.utils import comm
-from fast_reid.fastreid.utils.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
+from fast_reid.fastreid.utils.checkpoint import (
+    PeriodicCheckpointer as _PeriodicCheckpointer,
+)
 from fast_reid.fastreid.utils.events import EventStorage, EventWriter, get_event_storage
 from fast_reid.fastreid.utils.file_io import PathManager
 from fast_reid.fastreid.utils.precision_bn import update_bn_stats, get_bn_modules
@@ -45,8 +47,16 @@ class CallbackHook(HookBase):
     Create a hook using callback functions provided by the user.
     """
 
-    def __init__(self, *, before_train=None, after_train=None, before_epoch=None, after_epoch=None,
-                 before_step=None, after_step=None):
+    def __init__(
+        self,
+        *,
+        before_train=None,
+        after_train=None,
+        before_epoch=None,
+        after_epoch=None,
+        before_step=None,
+        after_step=None,
+    ):
         """
         Each argument is a function that takes one argument: the trainer.
         """
@@ -173,7 +183,7 @@ class PeriodicWriter(HookBase):
 
     def after_step(self):
         if (self.trainer.iter + 1) % self._period == 0 or (
-                self.trainer.iter == self.trainer.max_iter - 1
+            self.trainer.iter == self.trainer.max_iter - 1
         ):
             for writer in self._writers:
                 writer.write()
@@ -207,7 +217,9 @@ class PeriodicCheckpointer(_PeriodicCheckpointer, HookBase):
         # No way to use **kwargs
         storage = get_event_storage()
         metric_dict = dict(
-            metric=storage.latest()[self.metric_name][0] if self.metric_name in storage.latest() else -1
+            metric=storage.latest()[self.metric_name][0]
+            if self.metric_name in storage.latest()
+            else -1
         )
         self.step(self.trainer.epoch, **metric_dict)
 
@@ -257,13 +269,19 @@ class LRScheduler(HookBase):
 
         next_iter = self.trainer.iter + 1
         if next_iter <= self.trainer.warmup_iters:
-            if self.trainer.grad_scaler is None or self._scale == self.trainer.grad_scaler.get_scale():
+            if (
+                self.trainer.grad_scaler is None
+                or self._scale == self.trainer.grad_scaler.get_scale()
+            ):
                 self._scheduler["warmup_sched"].step()
 
     def after_epoch(self):
         next_iter = self.trainer.iter + 1
         next_epoch = self.trainer.epoch + 1
-        if next_iter > self.trainer.warmup_iters and next_epoch > self.trainer.delay_epochs:
+        if (
+            next_iter > self.trainer.warmup_iters
+            and next_epoch > self.trainer.delay_epochs
+        ):
             self._scheduler["lr_sched"].step()
 
 
@@ -441,7 +459,9 @@ class PreciseBN(HookBase):
             for num_iter in itertools.count(1):
                 if num_iter % 100 == 0:
                     self._logger.info(
-                        "Running precise-BN ... {}/{} iterations.".format(num_iter, self._num_iter)
+                        "Running precise-BN ... {}/{} iterations.".format(
+                            num_iter, self._num_iter
+                        )
                     )
                 # This way we can reuse the same iterator
                 yield next(self._data_iter)
@@ -478,7 +498,9 @@ class LayerFreeze(HookBase):
     def freeze_specific_layer(self):
         for layer in self.freeze_layers:
             if not hasattr(self.model, layer):
-                self._logger.info(f'{layer} is not an attribute of the model, will skip this layer')
+                self._logger.info(
+                    f"{layer} is not an attribute of the model, will skip this layer"
+                )
 
         for name, module in self.model.named_children():
             if name in self.freeze_layers:
@@ -487,7 +509,9 @@ class LayerFreeze(HookBase):
 
         self.is_frozen = True
         freeze_layers = ", ".join(self.freeze_layers)
-        self._logger.info(f'Freeze layer group "{freeze_layers}" training for {self.freeze_iters:d} iterations')
+        self._logger.info(
+            f'Freeze layer group "{freeze_layers}" training for {self.freeze_iters:d} iterations'
+        )
 
     def open_all_layer(self):
         for name, module in self.model.named_children():
@@ -501,7 +525,14 @@ class LayerFreeze(HookBase):
 
 
 class SWA(HookBase):
-    def __init__(self, swa_start: int, swa_freq: int, swa_lr_factor: float, eta_min: float, lr_sched=False, ):
+    def __init__(
+        self,
+        swa_start: int,
+        swa_freq: int,
+        swa_lr_factor: float,
+        eta_min: float,
+        lr_sched=False,
+    ):
         self.swa_start = swa_start
         self.swa_freq = swa_freq
         self.swa_lr_factor = swa_lr_factor
@@ -512,7 +543,9 @@ class SWA(HookBase):
         is_swa = self.trainer.iter == self.swa_start
         if is_swa:
             # Wrapper optimizer with SWA
-            self.trainer.optimizer = optim.SWA(self.trainer.optimizer, self.swa_freq, self.swa_lr_factor)
+            self.trainer.optimizer = optim.SWA(
+                self.trainer.optimizer, self.swa_freq, self.swa_lr_factor
+            )
             self.trainer.optimizer.reset_lr_to_swa()
 
             if self.lr_sched:

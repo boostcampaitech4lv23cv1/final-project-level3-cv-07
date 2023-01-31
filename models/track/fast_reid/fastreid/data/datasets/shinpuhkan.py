@@ -9,17 +9,19 @@ import os
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ['Shinpuhkan', ]
+__all__ = [
+    "Shinpuhkan",
+]
 
 
 @DATASET_REGISTRY.register()
 class Shinpuhkan(ImageDataset):
-    """shinpuhkan
-    """
-    dataset_dir = "shinpuhkan"
-    dataset_name = 'shinpuhkan'
+    """shinpuhkan"""
 
-    def __init__(self, root='datasets', **kwargs):
+    dataset_dir = "shinpuhkan"
+    dataset_name = "shinpuhkan"
+
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
         self.train_path = os.path.join(self.root, self.dataset_dir)
 
@@ -40,7 +42,7 @@ class Shinpuhkan(ImageDataset):
             # fmt: on
             for img_name in img_names:
                 img_path = os.path.join(root, img_name)
-                split_path = img_name.split('_')
+                split_path = img_name.split("_")
                 pid = self.dataset_name + "_" + split_path[0]
                 camid = self.dataset_name + "_" + split_path[2]
                 data.append((img_path, pid, camid))

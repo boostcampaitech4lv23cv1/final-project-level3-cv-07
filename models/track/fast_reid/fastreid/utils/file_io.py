@@ -60,9 +60,7 @@ class PathHandler:
         else:
             logger = logging.getLogger(__name__)
             for k, v in kwargs.items():
-                logger.warning(
-                    "[PathManager] {}={} argument ignored".format(k, v)
-                )
+                logger.warning("[PathManager] {}={} argument ignored".format(k, v))
 
     def _get_supported_prefixes(self) -> List[str]:
         """
@@ -86,7 +84,7 @@ class PathHandler:
         raise NotImplementedError()
 
     def _open(
-            self, path: str, mode: str = "r", buffering: int = -1, **kwargs: Any
+        self, path: str, mode: str = "r", buffering: int = -1, **kwargs: Any
     ) -> Union[IO[str], IO[bytes]]:
         """
         Open a stream to a URI, similar to the built-in `open`.
@@ -105,11 +103,11 @@ class PathHandler:
         raise NotImplementedError()
 
     def _copy(
-            self,
-            src_path: str,
-            dst_path: str,
-            overwrite: bool = False,
-            **kwargs: Any,
+        self,
+        src_path: str,
+        dst_path: str,
+        overwrite: bool = False,
+        **kwargs: Any,
     ) -> bool:
         """
         Copies a source path to a destination path.
@@ -192,16 +190,16 @@ class NativePathHandler(PathHandler):
         return path
 
     def _open(
-            self,
-            path: str,
-            mode: str = "r",
-            buffering: int = -1,
-            encoding: Optional[str] = None,
-            errors: Optional[str] = None,
-            newline: Optional[str] = None,
-            closefd: bool = True,
-            opener: Optional[Callable] = None,
-            **kwargs: Any,
+        self,
+        path: str,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: Optional[str] = None,
+        errors: Optional[str] = None,
+        newline: Optional[str] = None,
+        closefd: bool = True,
+        opener: Optional[Callable] = None,
+        **kwargs: Any,
     ) -> Union[IO[str], IO[bytes]]:
         """
         Open a path.
@@ -252,11 +250,11 @@ class NativePathHandler(PathHandler):
         )
 
     def _copy(
-            self,
-            src_path: str,
-            dst_path: str,
-            overwrite: bool = False,
-            **kwargs: Any,
+        self,
+        src_path: str,
+        dst_path: str,
+        overwrite: bool = False,
+        **kwargs: Any,
     ) -> bool:
         """
         Copies a source path to a destination path.
@@ -337,7 +335,7 @@ class PathManager:
 
     @staticmethod
     def open(
-            path: str, mode: str = "r", buffering: int = -1, **kwargs: Any
+        path: str, mode: str = "r", buffering: int = -1, **kwargs: Any
     ) -> Union[IO[str], IO[bytes]]:
         """
         Open a stream to a URI, similar to the built-in `open`.
@@ -359,7 +357,7 @@ class PathManager:
 
     @staticmethod
     def copy(
-            src_path: str, dst_path: str, overwrite: bool = False, **kwargs: Any
+        src_path: str, dst_path: str, overwrite: bool = False, **kwargs: Any
     ) -> bool:
         """
         Copies a source path to a destination path.
@@ -391,9 +389,9 @@ class PathManager:
         Returns:
             local_path (str): a file path which exists on the local file system
         """
-        return PathManager.__get_path_handler(  # type: ignore
-            path
-        )._get_local_path(path, **kwargs)
+        return PathManager.__get_path_handler(path)._get_local_path(  # type: ignore
+            path, **kwargs
+        )
 
     @staticmethod
     def exists(path: str, **kwargs: Any) -> bool:
@@ -443,9 +441,7 @@ class PathManager:
         Returns:
             List[str]: list of contents in given path
         """
-        return PathManager.__get_path_handler(path)._ls(  # type: ignore
-            path, **kwargs
-        )
+        return PathManager.__get_path_handler(path)._ls(path, **kwargs)  # type: ignore
 
     @staticmethod
     def mkdirs(path: str, **kwargs: Any) -> None:
@@ -467,9 +463,7 @@ class PathManager:
         Args:
             path (str): A URI supported by this PathHandler
         """
-        return PathManager.__get_path_handler(path)._rm(  # type: ignore
-            path, **kwargs
-        )
+        return PathManager.__get_path_handler(path)._rm(path, **kwargs)  # type: ignore
 
     @staticmethod
     def register_handler(handler: PathHandler) -> None:

@@ -34,6 +34,6 @@ class MS1MV2(ImageDataset):
         for fid in fid_list:
             all_imgs = glob.glob(os.path.join(self.dataset_dir, fid, "*.jpg"))
             for img_path in all_imgs:
-                train_list.append([img_path, self.dataset_name + '_' + fid, '0'])
+                train_list.append([img_path, self.dataset_name + "_" + fid, "0"])
 
         return train_list

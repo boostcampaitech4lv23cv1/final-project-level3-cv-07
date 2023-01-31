@@ -11,7 +11,14 @@ from collections import defaultdict
 from fast_reid.fastreid.data.datasets import DATASET_REGISTRY
 from fast_reid.fastreid.data.datasets.bases import ImageDataset
 
-__all__ = ["NAIC20_R2", "NAIC20_R2CNV", "NAIC20_R1", "NAIC20_R1CNV", "NAIC19", "NAIC20_R2A", ]
+__all__ = [
+    "NAIC20_R2",
+    "NAIC20_R2CNV",
+    "NAIC20_R1",
+    "NAIC20_R1CNV",
+    "NAIC19",
+    "NAIC20_R2A",
+]
 
 
 @DATASET_REGISTRY.register()
@@ -23,9 +30,13 @@ class NAIC20_R2(ImageDataset):
         self.root = root
 
         self.data_path = os.path.join(self.root, self.dataset_dir, "images")
-        self.train_label = os.path.join(self.root, self.dataset_dir, "naic20r2_train_list_clean.txt")
+        self.train_label = os.path.join(
+            self.root, self.dataset_dir, "naic20r2_train_list_clean.txt"
+        )
         self.query_label = os.path.join(self.root, self.dataset_dir, "val_query.txt")
-        self.gallery_label = os.path.join(self.root, self.dataset_dir, "val_gallery.txt")
+        self.gallery_label = os.path.join(
+            self.root, self.dataset_dir, "val_gallery.txt"
+        )
 
         required_files = [self.train_label, self.query_label, self.gallery_label]
         self.check_before_run(required_files)
@@ -42,38 +53,38 @@ class NAIC20_R2(ImageDataset):
         super().__init__(train, query, gallery, **kwargs)
 
     def process_train(self, label_path):
-        with open(label_path, 'r') as f:
-            data_list = [i.strip('\n') for i in f.readlines()]
+        with open(label_path, "r") as f:
+            data_list = [i.strip("\n") for i in f.readlines()]
 
         img_paths = []
         for data_info in data_list:
             img_name, pid = data_info.split(":")
             img_path = os.path.join(self.data_path, img_name)
             pid = self.dataset_name + "_" + pid
-            camid = self.dataset_name + '_0'
+            camid = self.dataset_name + "_0"
             img_paths.append([img_path, pid, camid])
 
         return img_paths
 
     def process_test(self, query_path, gallery_path):
-        with open(query_path, 'r') as f:
-            query_list = [i.strip('\n') for i in f.readlines()]
+        with open(query_path, "r") as f:
+            query_list = [i.strip("\n") for i in f.readlines()]
 
-        with open(gallery_path, 'r') as f:
-            gallery_list = [i.strip('\n') for i in f.readlines()]
+        with open(gallery_path, "r") as f:
+            gallery_list = [i.strip("\n") for i in f.readlines()]
 
         query_paths = []
         for data in query_list:
-            img_name, pid = data.split(':')
+            img_name, pid = data.split(":")
             img_path = os.path.join(self.data_path, img_name)
-            camid = '0'
+            camid = "0"
             query_paths.append([img_path, int(pid), camid])
 
         gallery_paths = []
         for data in gallery_list:
-            img_name, pid = data.split(':')
+            img_name, pid = data.split(":")
             img_path = os.path.join(self.data_path, img_name)
-            camid = '1'
+            camid = "1"
             gallery_paths.append([img_path, int(pid), camid])
 
         return query_paths, gallery_paths
@@ -88,7 +99,8 @@ class NAIC20_R2(ImageDataset):
         train = []
         for pid, data in pid2data.items():
             # 如果 id 只有一张图片，去掉这个 id
-            if len(data) == 1: continue
+            if len(data) == 1:
+                continue
             train.extend(data)
 
         return train
@@ -96,16 +108,20 @@ class NAIC20_R2(ImageDataset):
 
 @DATASET_REGISTRY.register()
 class NAIC20_R2CNV(NAIC20_R2, ImageDataset):
-    dataset_name = 'naic20_r2cnv'
+    dataset_name = "naic20_r2cnv"
     dataset_dir = "naic/2020_NAIC/fusai/train"
 
     def __init__(self, root="datasets", rm_lt=False, **kwargs):
         self.root = root
 
         self.data_path = os.path.join(self.root, self.dataset_dir, "images_convert")
-        self.train_label = os.path.join(self.root, self.dataset_dir, "naic20r2_train_list_clean.txt")
+        self.train_label = os.path.join(
+            self.root, self.dataset_dir, "naic20r2_train_list_clean.txt"
+        )
         self.query_label = os.path.join(self.root, self.dataset_dir, "val_query.txt")
-        self.gallery_label = os.path.join(self.root, self.dataset_dir, "val_gallery.txt")
+        self.gallery_label = os.path.join(
+            self.root, self.dataset_dir, "val_gallery.txt"
+        )
 
         required_files = [self.train_label, self.query_label, self.gallery_label]
         self.check_before_run(required_files)
@@ -123,7 +139,7 @@ class NAIC20_R2CNV(NAIC20_R2, ImageDataset):
 @DATASET_REGISTRY.register()
 class NAIC20_R1(NAIC20_R2):
     dataset_name = "naic20_r1"
-    dataset_dir = 'naic/2020_NAIC/chusai/train'
+    dataset_dir = "naic/2020_NAIC/chusai/train"
 
     def __init__(self, root="datasets", rm_lt=False, **kwargs):
         self.root = root
@@ -146,7 +162,7 @@ class NAIC20_R1(NAIC20_R2):
 
 @DATASET_REGISTRY.register()
 class NAIC20_R1CNV(NAIC20_R2):
-    dataset_name = 'naic20_r1cnv'
+    dataset_name = "naic20_r1cnv"
     dataset_dir = "naic/2020_NAIC/chusai/train"
 
     def __init__(self, root="datasets", rm_lt=False, **kwargs):
@@ -173,11 +189,13 @@ class NAIC19(NAIC20_R2):
     dataset_name = "naic19"
     dataset_dir = "naic/2019_NAIC/fusai"
 
-    def __init__(self, root='datasets', rm_lt=False, **kwargs):
+    def __init__(self, root="datasets", rm_lt=False, **kwargs):
         self.root = root
 
         self.data_path = os.path.join(self.root, self.dataset_dir)
-        self.train_label = os.path.join(self.root, self.dataset_dir, 'train_list_clean.txt')
+        self.train_label = os.path.join(
+            self.root, self.dataset_dir, "train_list_clean.txt"
+        )
 
         required_files = [self.train_label]
         self.check_before_run(required_files)
@@ -192,15 +210,15 @@ class NAIC19(NAIC20_R2):
         super(NAIC20_R2, self).__init__(train, [], [], **kwargs)
 
     def process_train(self, label_path):
-        with open(label_path, 'r') as f:
-            data_list = [i.strip('\n') for i in f.readlines()]
+        with open(label_path, "r") as f:
+            data_list = [i.strip("\n") for i in f.readlines()]
 
         img_paths = []
         for data_info in data_list:
             img_name, pid = data_info.split(" ")
             img_path = os.path.join(self.data_path, img_name)
             pid = self.dataset_name + "_" + pid
-            camid = self.dataset_name + '_0'
+            camid = self.dataset_name + "_0"
             img_paths.append([img_path, pid, camid])
 
         return img_paths
@@ -209,9 +227,9 @@ class NAIC19(NAIC20_R2):
 @DATASET_REGISTRY.register()
 class NAIC20_R2A(ImageDataset):
     dataset_name = "naic20_b"
-    dataset_dir = 'naic/round2/image_A'
+    dataset_dir = "naic/round2/image_A"
 
-    def __init__(self, root='datasets', **kwargs):
+    def __init__(self, root="datasets", **kwargs):
         self.root = root
 
         self.query_path = os.path.join(self.root, self.dataset_dir, "query")

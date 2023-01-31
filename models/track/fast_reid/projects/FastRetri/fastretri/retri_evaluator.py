@@ -21,12 +21,14 @@ logger = logging.getLogger("fastreid.retri_evaluator")
 
 
 @torch.no_grad()
-def recall_at_ks(query_features: torch.Tensor,
-                 query_labels: np.ndarray,
-                 ks: List[int],
-                 gallery_features: Optional[torch.Tensor] = None,
-                 gallery_labels: Optional[torch.Tensor] = None,
-                 cosine: bool = False) -> Dict[int, float]:
+def recall_at_ks(
+    query_features: torch.Tensor,
+    query_labels: np.ndarray,
+    ks: List[int],
+    gallery_features: Optional[torch.Tensor] = None,
+    gallery_labels: Optional[torch.Tensor] = None,
+    cosine: bool = False,
+) -> Dict[int, float]:
     """
     Compute the recall between samples at each k. This function uses about 8GB of memory.
     Parameters
@@ -54,14 +56,18 @@ def recall_at_ks(query_features: torch.Tensor,
         gallery_features = query_features
         gallery_labels = query_labels
     elif gallery_features is None or gallery_labels is None:
-        raise ValueError('gallery_features and gallery_labels needs to be both None or both Tensors.')
+        raise ValueError(
+            "gallery_features and gallery_labels needs to be both None or both Tensors."
+        )
 
     if cosine:
         query_features = F.normalize(query_features, p=2, dim=1)
         gallery_features = F.normalize(gallery_features, p=2, dim=1)
 
     to_cpu_numpy = lambda x: x.cpu().numpy()
-    query_features, gallery_features = map(to_cpu_numpy, [query_features, gallery_features])
+    query_features, gallery_features = map(
+        to_cpu_numpy, [query_features, gallery_features]
+    )
 
     res = faiss.StandardGpuResources()
     flat_config = faiss.GpuIndexFlatConfig()
@@ -75,7 +81,7 @@ def recall_at_ks(query_features: torch.Tensor,
 
     recalls = {}
     for k in ks:
-        indices = closest_indices[:, offset:k + offset]
+        indices = closest_indices[:, offset : k + offset]
         recalls[k] = (query_labels[:, None] == gallery_labels[indices]).any(1).mean()
     return {k: round(v * 100, 2) for k, v in recalls.items()}
 
@@ -117,24 +123,29 @@ class RetriEvaluator(DatasetEvaluator):
 
         features = torch.cat(features, dim=0)
         # query feature, person ids and camera ids
-        query_features = features[:self._num_query]
-        query_labels = np.asarray(labels[:self._num_query])
+        query_features = features[: self._num_query]
+        query_labels = np.asarray(labels[: self._num_query])
 
         # gallery features, person ids and camera ids
-        gallery_features = features[self._num_query:]
-        gallery_pids = np.asarray(labels[self._num_query:])
+        gallery_features = features[self._num_query :]
+        gallery_pids = np.asarray(labels[self._num_query :])
 
         self._results = OrderedDict()
 
         if self._num_query == len(features):
             cmc = recall_at_ks(query_features, query_labels, self.recalls, cosine=True)
         else:
-            cmc = recall_at_ks(query_features, query_labels, self.recalls,
-                               gallery_features, gallery_pids,
-                               cosine=True)
+            cmc = recall_at_ks(
+                query_features,
+                query_labels,
+                self.recalls,
+                gallery_features,
+                gallery_pids,
+                cosine=True,
+            )
 
         for r in self.recalls:
-            self._results['Recall@{}'.format(r)] = cmc[r]
+            self._results["Recall@{}".format(r)] = cmc[r]
         self._results["metric"] = cmc[self.recalls[0]]
 
         return copy.deepcopy(self._results)

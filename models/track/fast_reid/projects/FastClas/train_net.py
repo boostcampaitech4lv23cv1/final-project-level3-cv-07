@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.engine import default_argument_parser, default_setup, launch
@@ -44,12 +44,14 @@ def main(args):
         try:
             output_dir = os.path.dirname(cfg.MODEL.WEIGHTS)
             path = os.path.join(output_dir, "idx2class.json")
-            with PathManager.open(path, 'r') as f:
+            with PathManager.open(path, "r") as f:
                 idx2class = json.load(f)
             ClasTrainer.idx2class = idx2class
         except:
             logger = logging.getLogger("fastreid.fastclas")
-            logger.info(f"Cannot find idx2class dict in {os.path.dirname(cfg.MODEL.WEIGHTS)}")
+            logger.info(
+                f"Cannot find idx2class dict in {os.path.dirname(cfg.MODEL.WEIGHTS)}"
+            )
 
         res = ClasTrainer.test(cfg, model)
         return res

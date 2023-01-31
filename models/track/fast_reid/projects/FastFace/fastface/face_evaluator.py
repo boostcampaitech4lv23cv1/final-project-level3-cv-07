@@ -31,7 +31,7 @@ def gen_plot(fpr, tpr):
     plt.title("ROC Curve", fontsize=14)
     plt.plot(fpr, tpr, linewidth=2)
     buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg')
+    plt.savefig(buf, format="jpeg")
     buf.seek(0)
     plt.close()
     return buf

@@ -33,7 +33,7 @@ class _ColorfulFormatter(logging.Formatter):
 
 @functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
 def setup_logger(
-        output=None, distributed_rank=0, *, color=True, name="fastreid", abbrev_name=None
+    output=None, distributed_rank=0, *, color=True, name="fastreid", abbrev_name=None
 ):
     """
     Args:
@@ -189,6 +189,7 @@ def log_every_n_seconds(lvl, msg, n=1, *, name=None):
     if last_logged is None or current_time - last_logged >= n:
         logging.getLogger(name or caller_module).log(lvl, msg)
         _LOG_TIMER[key] = current_time
+
 
 # def create_small_table(small_dict):
 #     """

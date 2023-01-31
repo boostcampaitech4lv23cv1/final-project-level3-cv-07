@@ -58,8 +58,12 @@ class AttrEvaluator(DatasetEvaluator):
         intersect = (pred_labels & gt_labels).astype(float)
         union = (pred_labels | gt_labels).astype(float)
         ins_acc = (intersect.sum(axis=1) / (union.sum(axis=1) + eps)).mean()
-        ins_prec = (intersect.sum(axis=1) / (pred_labels.astype(float).sum(axis=1) + eps)).mean()
-        ins_rec = (intersect.sum(axis=1) / (gt_labels.astype(float).sum(axis=1) + eps)).mean()
+        ins_prec = (
+            intersect.sum(axis=1) / (pred_labels.astype(float).sum(axis=1) + eps)
+        ).mean()
+        ins_rec = (
+            intersect.sum(axis=1) / (gt_labels.astype(float).sum(axis=1) + eps)
+        ).mean()
         ins_f1 = (2 * ins_prec * ins_rec) / (ins_prec + ins_rec + eps)
 
         term1 = correct_pos / (real_pos + eps)

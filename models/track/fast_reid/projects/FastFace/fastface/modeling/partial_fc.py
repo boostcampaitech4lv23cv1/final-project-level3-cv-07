@@ -14,7 +14,7 @@ from fast_reid.fastreid.layers import any_softmax
 from fast_reid.fastreid.modeling.losses.utils import concat_all_gather
 from fast_reid.fastreid.utils import comm
 
-logger = logging.getLogger('fastreid.partial_fc')
+logger = logging.getLogger("fastreid.partial_fc")
 
 
 class PartialFC(nn.Module):
@@ -26,13 +26,7 @@ class PartialFC(nn.Module):
     """
 
     def __init__(
-            self,
-            embedding_size,
-            num_classes,
-            sample_rate,
-            cls_type,
-            scale,
-            margin
+        self, embedding_size, num_classes, sample_rate, cls_type, scale, margin
     ):
         super().__init__()
 
@@ -43,16 +37,21 @@ class PartialFC(nn.Module):
         self.world_size = comm.get_world_size()
         self.rank = comm.get_rank()
         self.local_rank = comm.get_local_rank()
-        self.device = torch.device(f'cuda:{self.local_rank}')
+        self.device = torch.device(f"cuda:{self.local_rank}")
 
-        self.num_local: int = self.num_classes // self.world_size + int(self.rank < self.num_classes % self.world_size)
-        self.class_start: int = self.num_classes // self.world_size * self.rank + \
-                                min(self.rank, self.num_classes % self.world_size)
+        self.num_local: int = self.num_classes // self.world_size + int(
+            self.rank < self.num_classes % self.world_size
+        )
+        self.class_start: int = self.num_classes // self.world_size * self.rank + min(
+            self.rank, self.num_classes % self.world_size
+        )
         self.num_sample: int = int(self.sample_rate * self.num_local)
 
         self.cls_layer = getattr(any_softmax, cls_type)(num_classes, scale, margin)
 
-        self.weight = torch.normal(0, 0.01, (self.num_local, self.embedding_size), device=self.device)
+        self.weight = torch.normal(
+            0, 0.01, (self.num_local, self.embedding_size), device=self.device
+        )
         self.weight_mom: torch.Tensor = torch.zeros_like(self.weight)
         logger.info("softmax weight init successfully!")
         logger.info("softmax weight mom init successfully!")
@@ -68,7 +67,7 @@ class PartialFC(nn.Module):
 
     def forward(self, total_features):
         torch.cuda.current_stream().wait_stream(self.stream)
-        if self.cls_layer.__class__.__name__ == 'Linear':
+        if self.cls_layer.__class__.__name__ == "Linear":
             logits = F.linear(total_features, self.sub_weight)
         else:
             logits = F.linear(F.normalize(total_features), F.normalize(self.sub_weight))
@@ -110,7 +109,9 @@ class PartialFC(nn.Module):
             # get one-hot
             grad = logits_exp
             index = torch.where(total_targets != -1)[0]
-            one_hot = torch.zeros(size=[index.size()[0], grad.size()[1]], device=grad.device)
+            one_hot = torch.zeros(
+                size=[index.size()[0], grad.size()[1]], device=grad.device
+            )
             one_hot.scatter_(1, total_targets[index, None], 1)
 
             # calculate loss
@@ -130,7 +131,9 @@ class PartialFC(nn.Module):
         x_grad: torch.Tensor = torch.zeros_like(features)
         # feature gradient all-reduce
         if self.world_size > 1:
-            dist.reduce_scatter(x_grad, list(total_features.grad.chunk(self.world_size, dim=0)))
+            dist.reduce_scatter(
+                x_grad, list(total_features.grad.chunk(self.world_size, dim=0))
+            )
         else:
             x_grad = total_features.grad
         x_grad = x_grad * self.world_size
@@ -143,7 +146,9 @@ class PartialFC(nn.Module):
         Get sub_weights according to total targets gathered from all GPUs, due to each weights in different
         GPU contains different class centers.
         """
-        index_positive = (self.class_start <= total_targets) & (total_targets < self.class_start + self.num_local)
+        index_positive = (self.class_start <= total_targets) & (
+            total_targets < self.class_start + self.num_local
+        )
         total_targets[~index_positive] = -1
         total_targets[index_positive] -= self.class_start
         if int(self.sample_rate) != 1:
@@ -156,7 +161,9 @@ class PartialFC(nn.Module):
             else:
                 index = positive
             self.index = index
-            total_targets[index_positive] = torch.searchsorted(index, total_targets[index_positive])
+            total_targets[index_positive] = torch.searchsorted(
+                index, total_targets[index_positive]
+            )
             self.sub_weight = nn.Parameter(self.weight[index])
             self.sub_weight_mom = self.weight_mom[index]
 
@@ -173,7 +180,7 @@ class PartialFC(nn.Module):
                 total_targets = targets
             # update sub_weight
             self.sample(total_targets)
-            optimizer.state.pop(optimizer.param_groups[-1]['params'][0], None)
-            optimizer.param_groups[-1]['params'][0] = self.sub_weight
+            optimizer.state.pop(optimizer.param_groups[-1]["params"][0], None)
+            optimizer.param_groups[-1]["params"][0] = self.sub_weight
             optimizer.state[self.sub_weight]["momentum_buffer"] = self.sub_weight_mom
             return total_targets
