@@ -105,14 +105,12 @@ if __name__ == "__main__":
     input_video = (
         "/opt/ml/final-project-level3-cv-07/models/track/assets/" + opt.project + ".mp4"
     )
-    run_dir = (
-        "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs"
-    )
+    run_dir = "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs"
 
     createDirectory(run_dir)
     createDirectory(load_dir)
     createDirectory(save_dir)
-    
+
     save_vid_2_img(input_video, load_dir)
 
     s = time.time()

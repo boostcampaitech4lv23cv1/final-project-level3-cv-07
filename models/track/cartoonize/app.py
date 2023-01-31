@@ -17,13 +17,17 @@ cartoonize_dir = "models/track/cartoonize"
 async def req_inference():
     class Opt:
         project = "chim"
-    
+
     opt = Opt
-    
-    model_path ="/opt/ml/final-project-level3-cv-07/models/track/cartoonize/saved_models"
+
+    model_path = (
+        "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/saved_models"
+    )
     load_dir = f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig"
     save_dir = f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart"
-    input_video = f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
+    input_video = (
+        f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
+    )
     run_dir = "/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs"
 
     createDirectory(run_dir)
@@ -36,9 +40,9 @@ async def req_inference():
     cartoonize(load_dir, save_dir, model_path)
     e = time.time()
     print(f"Total elapsed time: {e-s}")
-    
-    
+
     return 200
+
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=30003, reload=True, access_log=False)
