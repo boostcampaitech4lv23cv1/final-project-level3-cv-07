@@ -251,7 +251,6 @@ def save_face_swapped_vid(final_lines, save_dir, fps, opt):
             - mask_generator_v2: using Manhattan distance (L1 distance) and thresholding
             - mask_generator_v3: using padding
             """
-
             mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)
             orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
             cart_face = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
@@ -448,7 +447,7 @@ def detect(opt, save_img=False):
         f"/opt/ml/final-project-level3-cv-07/models/track/assets/{opt.project}.mp4"
     )
     target_path = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpeg"
+        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
     weights, view_img, save_txt, imgsz, trace = (
         opt.weights,
@@ -627,7 +626,7 @@ def detect(opt, save_img=False):
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += ".mp4"
                         vid_writer = cv2.VideoWriter(
-                            save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
+                            save_path[:-4]+"_tracked.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h)
                         )
                     vid_writer.write(im0)
 
@@ -679,8 +678,8 @@ if __name__ == "__main__":
     
     class Opt:
         weights= f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/video.mp4"
-        target = f"jjh"
+        source = f"{file_storage}/uploaded_video/chim.mp4"
+        target = f"chim"
         cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
         img_size = 1920
         conf_thres= 0.09
@@ -694,7 +693,7 @@ if __name__ == "__main__":
         agnostic_nms= True
         augment= None
         update= None
-        project= f"mudo"
+        project= f"chim"
         name= "exp"
         exist_ok= None
         trace= None
