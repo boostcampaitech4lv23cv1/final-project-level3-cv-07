@@ -83,7 +83,7 @@ def dbscan(target_dir, tracklet_dir):
         print(f"DBSCAN time elapsed :{etime - stime}")
         print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
-    return
+    return None
 
 
 def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
@@ -160,7 +160,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
 
 
 def save_face_swapped_vid(opt, final_lines, save_dir, fps):
-    ## FIXME
+    ## FIXME (image file path)
     img = cv2.imread(
         f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
     )
@@ -296,9 +296,8 @@ def extract_feature(opt, target_path):
     return save_dir
 
 
-def detect(opt, save_dir):
+def detection_and_tracking(opt, save_dir):
     # FIXME -> get file path from Opt class
-    # source = f"{file_storage}/uploaded_video/{opt.project}.mp4"
     source = "/opt/ml/final-project-level3-cv-07/models/track/assets/resized_1000_1299_1080p.mp4"
     weights, imgsz = opt.weights, opt.img_size
     save_results = opt.save_results
@@ -413,12 +412,14 @@ def detect(opt, save_dir):
                 save_path = str(save_dir / p.name)  # img.jpg
 
                 # Save results (image with detections)
+                # FIXME
                 if opt.save_img:
                     if vid_path != save_path:  # new video
                         vid_path = save_path
                         if isinstance(vid_writer, cv2.VideoWriter):
                             vid_writer.release()  # release previous video writer
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        # FIXME
                         img = cv2.imread(
                             f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
                         )
@@ -432,6 +433,7 @@ def detect(opt, save_dir):
                     vid_writer.write(im0)
             progress_bar.update(1)
 
+    # FIXME
     if save_results:
         write_results(os.path.join(save_dir, "results.txt"), results)
 
@@ -475,6 +477,7 @@ def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
 
 
 def main(opt):
+    # FIXME
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
@@ -487,7 +490,7 @@ def main(opt):
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()
         print("\n[ Start Detection and Tracking ]")
-    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detect(
+    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detection_and_tracking(
         opt, save_dir
     )
     if opt.verbose:
