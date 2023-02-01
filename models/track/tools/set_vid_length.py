@@ -1,4 +1,5 @@
 import cv2
+from tqdm import tqdm
 
 
 def set_vid_length(source_file, save_file, num_frames):
