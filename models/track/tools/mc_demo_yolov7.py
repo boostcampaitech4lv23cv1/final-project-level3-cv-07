@@ -25,7 +25,6 @@ from yolov7.utils.general import (
     check_img_size,
     non_max_suppression,
     scale_coords,
-    strip_optimizer,
     set_logging,
     increment_path,
 )
@@ -100,12 +99,12 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
     # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
     # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
     t_ids = {}
+    # FIXME (file path)
     img = cv2.imread(
         f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
     )
-    height, width, layers = img.shape
-    size = (width, height)
-
+    height, width, _ = img.shape
+  
     createDirectory(tracklet_dir)
     tracks = list(
         set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
@@ -120,6 +119,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
             x1, y1, x2, y2, conf = value
             if conf > conf_thresh:
                 sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
+                # FIXME (file path)
                 frame_img = cv2.imread(
                     f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
                 )
@@ -160,7 +160,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
 
 
 def save_face_swapped_vid(opt, final_lines, save_dir, fps):
-    ## FIXME (image file path)
+    # FIXME (file path)
     img = cv2.imread(
         f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
     )
@@ -172,6 +172,7 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
     for line in tqdm(final_lines):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
+        # FIXME (file path)
         orig_img = cv2.imread(
             f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame_idx}.png"
         )
@@ -276,11 +277,8 @@ def parsing_results(opt, valid_ids, save_dir, num_frames):
     return total_lines
 
 
-def extract_feature(opt, target_path):
-    save_dir = Path(
-        increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
-    )  # increment run
-    (save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+def extract_feature(opt, target_path, save_dir):
+    # make dir
 
     mtcnn = MTCNN(margin=30)
     img = Image.open(target_path)
@@ -297,7 +295,7 @@ def extract_feature(opt, target_path):
 
 
 def detection_and_tracking(opt, save_dir):
-    # FIXME -> get file path from Opt class
+    # FIXME (file path)
     source = "/opt/ml/final-project-level3-cv-07/models/track/assets/resized_1000_1299_1080p.mp4"
     weights, imgsz = opt.weights, opt.img_size
     save_results = opt.save_results
@@ -412,14 +410,14 @@ def detection_and_tracking(opt, save_dir):
                 save_path = str(save_dir / p.name)  # img.jpg
 
                 # Save results (image with detections)
-                # FIXME
+                # FIXME (remove flag)
                 if opt.save_img:
                     if vid_path != save_path:  # new video
                         vid_path = save_path
                         if isinstance(vid_writer, cv2.VideoWriter):
                             vid_writer.release()  # release previous video writer
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                        # FIXME
+                        # FIXME (file path)
                         img = cv2.imread(
                             f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
                         )
@@ -433,7 +431,7 @@ def detection_and_tracking(opt, save_dir):
                     vid_writer.write(im0)
             progress_bar.update(1)
 
-    # FIXME
+    # FIXME (remove flag)
     if save_results:
         write_results(os.path.join(save_dir, "results.txt"), results)
 
@@ -477,15 +475,19 @@ def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
 
 
 def main(opt):
-    # FIXME
+    # FIXME (file path)
     target_path = (
         f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
     )
+    save_dir = Path(
+    increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
+    )  # increment run
+    (save_dir).mkdir(parents=True, exist_ok=True)
 
     if opt.verbose:
         time_1 = time.time()
         print("\n[ Start Target Feature Extraction ]")
-    save_dir = extract_feature(opt, target_path)
+    extract_feature(opt, target_path, save_dir)
     if opt.verbose:
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()
@@ -597,7 +599,7 @@ if __name__ == "__main__":
 
         # CMC
         cmc_method = "sparseOptFlow"
-        swap_all_face = False
+        swap_all_face = False 
         verbose = True
         # ReID
         with_reid = False
