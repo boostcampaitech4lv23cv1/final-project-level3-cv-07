@@ -14,12 +14,7 @@ import sys
 sys.path.append(base_info['dir'])
 
 import uvicorn
-import os
-from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-import requests
-from pydantic import BaseModel
 
 from backend.utils.general import *
 
@@ -84,9 +79,11 @@ from tracker.mc_bot_sort import BoTSORT
 @app.get("/track")
 def req_track():
     from tools.mc_demo_yolov7 import detection_and_tracking, get_valid_results
-    import json
+    from tools.utils import extract_feature
     
+    extract_feature(opt.target, opt.work_dir)
     track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(opt)
+    
     
     collection = db['track_info']
     collection.insert_many(track_infos)

@@ -13,9 +13,7 @@ from deepface import DeepFace
 from numpy import random
 from collections import defaultdict
 
-from sklearn.cluster import DBSCAN
 from PIL import Image
-from facenet_pytorch import MTCNN
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadImages
@@ -45,6 +43,7 @@ from tools.utils import (
     calc_similarity_v2,
     calc_similarity_v3,
     write_results,
+    extract_feature
 )
 from tools.mask_generator import (
     mask_generator_v0,
@@ -119,6 +118,7 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
                 model_name="VGG-Face",
                 silent=silent,
             )
+            
         except ValueError:
             print("Error: Your video has no valid face tracking. Check again.")
             sys.exit(0)
@@ -307,7 +307,7 @@ def detection_and_tracking(opt):
                                 color=colors[int(tid) % len(colors)],
                                 line_thickness=2,
                             )
-                save_path = opt.work_dir + "video.mp4"  # img.jpg
+                save_path = opt.work_dir + "/video.mp4"  # img.jpg
 
                 # Save results (image with detections)
                 # FIXME (remove flag)
@@ -323,7 +323,7 @@ def detection_and_tracking(opt):
                         )
                         h, w, _ = img.shape
                         vid_writer = cv2.VideoWriter(
-                            save_path[:-4] + "_tracked.mp4",
+                            opt.work_dir + "/tracked.mp4",
                             cv2.VideoWriter_fourcc(*"mp4v"),
                             fps,
                             (w, h),
@@ -369,13 +369,13 @@ def get_valid_results(tracker, results_temp, min_frame, conf_thresh, work_dir, u
 def main(opt):
     # FIXME (file path)
     target_path = opt.target
-    save_dir = Path(opt.work_dir)  # increment run
-    (save_dir).mkdir(parents=True, exist_ok=True)
+    save_dir = opt.work_dir  # increment run
+    # (save_dir).mkdir(parents=True, exist_ok=True)
 
     if opt.verbose:
         time_1 = time.time()
         print("\n[ Start Target Feature Extraction ]")
-    # extract_feature(opt, target_path, save_dir)
+    extract_feature(target_path, save_dir)
     if opt.verbose:
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()

@@ -37,7 +37,6 @@ def print_running_time(opt):
     if opt.verbose:
         time_1 = time.time()
         print("\n[ Start Target Feature Extraction ]")
-    requests.get("/extract_feature")
     
     if opt.verbose:
         print("\n[ Target Feature Extraction Done ]")

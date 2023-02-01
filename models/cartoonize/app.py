@@ -85,7 +85,7 @@ def req_inference():
     load_dir = f"{opt.work_dir}/image_orig"
     save_dir = f"{opt.work_dir}/image_cart"
     input_video = f"{database_info['dir']}/uploaded_video/video.mp4"
-
+    
     createDirectory(load_dir)
     createDirectory(save_dir)
 

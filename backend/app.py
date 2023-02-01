@@ -150,11 +150,8 @@ def request_inferences():
     valid_ids = {int(x): valid_ids[x] for x in valid_ids}
     
     track_info = db['track_info'].find({}, {"_id": False})
-    
     final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
-    
     save_face_swapped_vid(final_lines, opt.work_dir, fps)
-    
     
     return 200
 

@@ -1,10 +1,13 @@
 import os
 import cv2
 import sys
-
-from collections import defaultdict
 import glob
+from collections import defaultdict
+
+from PIL import Image
 from deepface import DeepFace
+from facenet_pytorch import MTCNN
+from sklearn.cluster import DBSCAN
 
 def createDirectory(dir):
     try:
@@ -151,21 +154,18 @@ def write_results(filename, results):
     with open(filename, "a", encoding="UTF-8") as f:
         f.writelines(results)
 
-def extract_feature(opt, target_path, save_dir):
+def extract_feature(target_path, work_dir):
     # make dir
 
     mtcnn = MTCNN(margin=30)
     img = Image.open(target_path)
-    img_path = str(save_dir) + "/target_detect.png"
+    img_path = work_dir + "/target_detect.png"
     img_cropped = mtcnn(img, save_path=img_path)
 
     if img_cropped is None:
         print("Error: Your target image has no valid face tracking. Check again.")
         sys.exit(0)
 
-    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
-    # img_embedding = resnet(img_cropped.unsqueeze(0))
-    return save_dir
 
 def dbscan(target_dir, tracklet_dir):
     tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
