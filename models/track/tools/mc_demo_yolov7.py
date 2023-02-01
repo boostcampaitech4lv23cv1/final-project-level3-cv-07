@@ -36,6 +36,9 @@ from yolov7.utils.torch_utils import (
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
+# sys.path.insert(0, "./yolov7")
+# sys.path.append(".")
+
 from tools.utils import (
     createDirectory,
     get_frame_num,
@@ -163,7 +166,7 @@ def calc_similarity_v3(dfs, t_ids, tracklet_dir):
 
 
 
-def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh):
+def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose):
 
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
@@ -179,10 +182,13 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
     t_ids = {}
     # FIXME (file path)
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+        f"{work_dir}/image_orig/frame_1.png"
     )
     height, width, _ = img.shape
-  
+    
+    tracklet_dir = work_dir+"/tracklet"
+    target_dir = work_dir+"/target_detect.png"
+    
     createDirectory(tracklet_dir)
     tracks = list(
         set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
@@ -199,7 +205,7 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
                 sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
                 # FIXME (file path)
                 frame_img = cv2.imread(
-                    f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame}.png"
+                    f"{work_dir}/image_orig/frame_{frame}.png"
                 )
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
@@ -208,12 +214,12 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
 
                 t_ids[i.track_id] = conf
 
-    if opt.dbscan:
+    if use_dbscan:
         dbscan(target_dir, tracklet_dir)
         return True
     else:
         try:
-            silent = not opt.verbose
+            silent = not verbose
             dfs = DeepFace.find(
                 img_path=target_dir,
                 db_path=tracklet_dir,
@@ -232,10 +238,10 @@ def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_
         ), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
 
 
-def save_face_swapped_vid(opt, final_lines, save_dir, fps):
+def save_face_swapped_vid(final_lines, work_dir, fps):
     # FIXME (file path)
     img = cv2.imread(
-        f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+        f"{work_dir}/image_orig/frame_1.png"
     )
     height, width, _ = img.shape
     size = (width, height)
@@ -247,10 +253,10 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
         frame_idx = line[0]  # Image Index starts from 1
         # FIXME (file path)
         orig_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_{frame_idx}.png"
+            f"{work_dir}/image_orig/frame_{frame_idx}.png"
         )
         cart_img = cv2.imread(
-            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_cart/frame_{frame_idx}.png"
+            f"{work_dir}/image_cart/frame_{frame_idx}.png"
         )
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
@@ -281,7 +287,7 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
         frame_array.append(face_swapped_img)
 
     out = cv2.VideoWriter(
-        os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
+        os.path.join(work_dir, "cartoonized.mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
         fps,
         size,
@@ -293,83 +299,9 @@ def save_face_swapped_vid(opt, final_lines, save_dir, fps):
     return None
 
 
-def parsing_results(opt, valid_ids, save_dir, num_frames):
-
-    with open(os.path.join(save_dir, "results.txt"), "r") as f:
-        lines = f.readlines()
-
-        parsed_lines = []
-
-        # Remove unnecessary info and casting data type (str -> int)
-        for line in lines:
-            line = line.split(",")[:-3]
-            line = list(map(int, list(map(float, line))))
-            parsed_lines.append(line)
-
-        # Remove redundant info and soted by frame > obj_id
-        parsed_lines = sorted(
-            list(map(list, set(list(map(tuple, parsed_lines))))),
-            key=lambda x: (x[0], x[1]),
-        )
-
-        # Summary info (per frame)
-        final_lines = []
-        i = 1
-        for line in parsed_lines:
-            frame, obj_id, x, y, w, h, conf = line
-
-            # save all face (for debugging)
-            if opt.swap_all_face:
-                if not final_lines or frame != final_lines[-1][0]:
-                    final_lines.append([frame, x, y, x + w, y + h])
-                else:
-                    final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
-
-            # save valid face
-            else:
-                if obj_id in valid_ids:
-                    if not final_lines or frame != final_lines[-1][0]:
-                        final_lines.append([frame, x, y, x + w, y + h])
-                    else:
-                        final_lines[-1] = final_lines[-1] + [x, y, x + w, y + h]
-
-        total_lines = []
-
-        idx = 1
-        for i in range(len(final_lines)):
-            if idx < final_lines[i][0]:
-                while idx < final_lines[i][0]:
-                    total_lines.append([idx + 1])
-                    idx += 1
-            total_lines.append(final_lines[i])
-            idx += 1
-
-        while len(total_lines) < num_frames:
-            total_lines.append([total_lines[-1][0] + 1])
-
-    return total_lines
-
-
-def extract_feature(opt, target_path, save_dir):
-    # make dir
-
-    mtcnn = MTCNN(margin=30)
-    img = Image.open(target_path)
-    img_path = str(save_dir) + "/target_detect.png"
-    img_cropped = mtcnn(img, save_path=img_path)
-
-    if img_cropped is None:
-        print("Error: Your target image has no valid face tracking. Check again.")
-        sys.exit(0)
-
-    # resnet = InceptionResnetV1(pretrained="vggface2").eval()
-    # img_embedding = resnet(img_cropped.unsqueeze(0))
-    return save_dir
-
-
-def detection_and_tracking(opt, save_dir):
+def detection_and_tracking(opt):
     # FIXME (file path)
-    source = "/opt/ml/final-project-level3-cv-07/models/track/assets/resized_1000_1299_1080p.mp4"
+    source = opt.source
     weights, imgsz = opt.weights, opt.img_size
     save_results = opt.save_results
 
@@ -462,14 +394,17 @@ def detection_and_tracking(opt, save_dir):
                         online_cls.append(t.cls)
 
                         results.append(
-                            f"{frame},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
+                            {
+                                "frame": frame, 
+                                "tid": tid, 
+                                "tl_x": tlwh[0], 
+                                "tl_y": tlwh[1],
+                                "width": tlwh[2],
+                                "height": tlwh[3],
+                                "conf": float(t.score)
+                            }
                         )
                         results_temp[tid][frame] = np.append(tlbr, t.score)
-
-                        if save_results:
-                            write_results(
-                                os.path.join(save_dir, "results.txt"), results
-                            )
 
                         if opt.save_img:  # Add bbox to image
                             label = f"{tid}, {names[int(tcls)]}"
@@ -480,8 +415,7 @@ def detection_and_tracking(opt, save_dir):
                                 color=colors[int(tid) % len(colors)],
                                 line_thickness=2,
                             )
-                p = Path(p)  # to Path
-                save_path = str(save_dir / p.name)  # img.jpg
+                save_path = opt.work_dir + "video.mp4"  # img.jpg
 
                 # Save results (image with detections)
                 # FIXME (remove flag)
@@ -493,7 +427,7 @@ def detection_and_tracking(opt, save_dir):
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         # FIXME (file path)
                         img = cv2.imread(
-                            f"/opt/ml/final-project-level3-cv-07/models/track/cartoonize/runs/{opt.project}/image_orig/frame_1.png"
+                            f"{opt.work_dir}/image_orig/frame_1.png"
                         )
                         h, w, _ = img.shape
                         vid_writer = cv2.VideoWriter(
@@ -505,88 +439,76 @@ def detection_and_tracking(opt, save_dir):
                     vid_writer.write(im0)
             progress_bar.update(1)
 
-    # FIXME (remove flag)
-    if save_results:
-        write_results(os.path.join(save_dir, "results.txt"), results)
-
- 
-    tracklet_dir = str(save_dir) + "/tracklet"
-    save_dir = str(save_dir)
-    return tracker, results_temp, tracklet_dir, save_dir, num_frames, fps
+    return results, tracker, results_temp, num_frames, fps
 
 
-def get_valid_results(opt, tracker, results_temp, tracklet_dir, save_dir):
-    min_frame = opt.min_frame
-    conf_thresh = opt.conf_thresh
+def get_valid_results(tracker, results_temp, min_frame, conf_thresh, work_dir, use_dbscan, verbose, save_results):
     targeted_ids, valid_ids = get_valid_tids(
         tracker,
         results_temp,
-        tracklet_dir,
-        save_dir + "/target_detect.png",
         min_frame,
         conf_thresh,
+        work_dir,
+        use_dbscan,
+        verbose
     )
-
-    if opt.save_results:
+    
+    if save_results:
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"),
+            os.path.join(work_dir, "valid_ids.txt"),
             "targeted tracklet ids (id : confidence)\n",
         )
         for id, (conf,sim) in targeted_ids.items():
             write_results(
-                os.path.join(save_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
+                os.path.join(work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
             )
 
         write_results(
-            os.path.join(save_dir, "valid_ids.txt"),
+            os.path.join(work_dir, "valid_ids.txt"),
             "\ncartoonized tracklet ids (id : confidence)\n",
         )
         for id, conf in valid_ids.items():
             write_results(
-                os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
+                os.path.join(work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
             )
 
-    return valid_ids, save_dir
-
+    return valid_ids
 
 def main(opt):
     # FIXME (file path)
-    target_path = (
-        f"/opt/ml/final-project-level3-cv-07/models/track/target/{opt.target}.jpg"
-    )
-    save_dir = Path(
-    increment_path("runs" / Path(opt.project) / opt.name, exist_ok=False)
-    )  # increment run
+    target_path = opt.target
+    save_dir = Path(opt.work_dir)  # increment run
     (save_dir).mkdir(parents=True, exist_ok=True)
 
     if opt.verbose:
         time_1 = time.time()
         print("\n[ Start Target Feature Extraction ]")
-    extract_feature(opt, target_path, save_dir)
+    # extract_feature(opt, target_path, save_dir)
     if opt.verbose:
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()
         print("\n[ Start Detection and Tracking ]")
-    tracker, results_temp, tracklet_dir, save_dir, num_frames, fps = detection_and_tracking(
-        opt, save_dir
+    track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(
+        opt
     )
     if opt.verbose:
         print("\n[ Target Feature Extraction Done]")
         time_3 = time.time()
         print("\n[ Start Similarity Check ]")
-    valid_ids, save_dir = get_valid_results(
-        opt, tracker, results_temp, tracklet_dir, save_dir
+    valid_ids = get_valid_results(
+        tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose, opt.save_results
     )
     if opt.verbose:
         print("\n[ Similarity Check Done ]")
         time_4 = time.time()
         print("\n[ Start Result Parsing ]")
-    final_lines = parsing_results(opt, valid_ids, save_dir, num_frames)
+        
+    final_lines = parsing_results(track_infos, valid_ids, num_frames, opt.swap_all_face)
     if opt.verbose:
         print("\n[ Result Parsing Done ]")
         time_5 = time.time()
         print("\n[ Start Swapping Video and Saving Video ]")
-    save_face_swapped_vid(opt, final_lines, save_dir, fps)
+    save_face_swapped_vid(final_lines, opt.work_dir, fps)
     if opt.verbose:
         print("\n[ Swapping Video and Saving Video Done]")
         time_6 = time.time()
@@ -630,15 +552,24 @@ def main(opt):
 
 
 if __name__ == "__main__":
-    file_storage = "../../database"
-    track_dir = "."
-    cartoonize_dir = f"cartoonize"
+    from pymongo import MongoClient
+
+    client = MongoClient()
+    db = client['cafe']
+    collection = db['env']
+
+    base_info = collection.find_one({'name': 'base'})
+    database_info = collection.find_one({'name': 'database'})
+    backend_info = collection.find_one({'name': 'backend'})
+    cartoonize_info = collection.find_one({'name': 'cartoonize'})
+    track_info = collection.find_one({'name': 'track'})
+
+
 
     class Opt:
-        weights = f"{track_dir}/pretrained/yolov7-tiny.pt"
-        source = f"{file_storage}/uploaded_video/resized_1000_1299_1080p.mp4"
-        target = f"haerin"
-        cartoon = f"{track_dir}/assets/chim_cartoonized.mp4"
+        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+        source = f"{database_info['dir']}/uploaded_video/video.mp4"
+        target = f"{database_info['dir']}/target/target.jpeg"
         img_size = 1920
         conf_thres = 0.09
         iou_thres = 0.7
@@ -649,7 +580,7 @@ if __name__ == "__main__":
         agnostic_nms = True
         augment = None
         update = None
-        project = f"Newjeans"
+        work_dir= f"{database_info['dir']}/work_dir"
         name = "exp"
         exist_ok = None
         save_results = True
@@ -690,5 +621,11 @@ if __name__ == "__main__":
         print(opt)
     # check_requirements(exclude=('pycocotools', 'thop'))
 
+    import sys
+    sys.path.append(base_info['dir'])
+    sys.path.insert(0, base_info['dir'] + "/backend")
+    
+    from backend.utils.convert import parsing_results
+    
     with torch.no_grad():
         main(opt)
