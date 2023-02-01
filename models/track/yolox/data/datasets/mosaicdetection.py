@@ -29,7 +29,12 @@ def get_mosaic_coordinate(mosaic_image, mosaic_index, xc, yc, w, h, input_h, inp
         small_coord = w - (x2 - x1), 0, w, min(y2 - y1, h)
     # index2 to bottom right part of image
     elif mosaic_index == 3:
-        x1, y1, x2, y2 = xc, yc, min(xc + w, input_w * 2), min(input_h * 2, yc + h)  # noqa
+        x1, y1, x2, y2 = (
+            xc,
+            yc,
+            min(xc + w, input_w * 2),
+            min(input_h * 2, yc + h),
+        )  # noqa
         small_coord = 0, 0, min(w, x2 - x1), min(y2 - y1, h)
     return (x1, y1, x2, y2), small_coord
 
@@ -38,9 +43,19 @@ class MosaicDetection(Dataset):
     """Detection dataset wrapper that performs mixup for normal dataset."""
 
     def __init__(
-        self, dataset, img_size, mosaic=True, preproc=None,
-        degrees=10.0, translate=0.1, scale=(0.5, 1.5), mscale=(0.5, 1.5),
-        shear=2.0, perspective=0.0, enable_mixup=True, *args
+        self,
+        dataset,
+        img_size,
+        mosaic=True,
+        preproc=None,
+        degrees=10.0,
+        translate=0.1,
+        scale=(0.5, 1.5),
+        mscale=(0.5, 1.5),
+        shear=2.0,
+        perspective=0.0,
+        enable_mixup=True,
+        *args
     ):
         """
 
@@ -85,22 +100,33 @@ class MosaicDetection(Dataset):
             xc = int(random.uniform(0.5 * input_w, 1.5 * input_w))
 
             # 3 additional image indices
-            indices = [idx] + [random.randint(0, len(self._dataset) - 1) for _ in range(3)]
+            indices = [idx] + [
+                random.randint(0, len(self._dataset) - 1) for _ in range(3)
+            ]
 
             for i_mosaic, index in enumerate(indices):
                 img, _labels, _, _ = self._dataset.pull_item(index)
                 h0, w0 = img.shape[:2]  # orig hw
-                scale = min(1. * input_h / h0, 1. * input_w / w0)
+                scale = min(1.0 * input_h / h0, 1.0 * input_w / w0)
                 img = cv2.resize(
-                    img, (int(w0 * scale), int(h0 * scale)), interpolation=cv2.INTER_LINEAR
+                    img,
+                    (int(w0 * scale), int(h0 * scale)),
+                    interpolation=cv2.INTER_LINEAR,
                 )
                 # generate output mosaic image
                 (h, w, c) = img.shape[:3]
                 if i_mosaic == 0:
-                    mosaic_img = np.full((input_h * 2, input_w * 2, c), 114, dtype=np.uint8)
+                    mosaic_img = np.full(
+                        (input_h * 2, input_w * 2, c), 114, dtype=np.uint8
+                    )
 
                 # suffix l means large image, while s means small image in mosaic aug.
-                (l_x1, l_y1, l_x2, l_y2), (s_x1, s_y1, s_x2, s_y2) = get_mosaic_coordinate(
+                (l_x1, l_y1, l_x2, l_y2), (
+                    s_x1,
+                    s_y1,
+                    s_x2,
+                    s_y2,
+                ) = get_mosaic_coordinate(
                     mosaic_img, i_mosaic, xc, yc, w, h, input_h, input_w
                 )
 
@@ -118,19 +144,19 @@ class MosaicDetection(Dataset):
 
             if len(mosaic_labels):
                 mosaic_labels = np.concatenate(mosaic_labels, 0)
-                '''
+                """
                 np.clip(mosaic_labels[:, 0], 0, 2 * input_w, out=mosaic_labels[:, 0])
                 np.clip(mosaic_labels[:, 1], 0, 2 * input_h, out=mosaic_labels[:, 1])
                 np.clip(mosaic_labels[:, 2], 0, 2 * input_w, out=mosaic_labels[:, 2])
                 np.clip(mosaic_labels[:, 3], 0, 2 * input_h, out=mosaic_labels[:, 3])
-                '''
-                
+                """
+
                 mosaic_labels = mosaic_labels[mosaic_labels[:, 0] < 2 * input_w]
                 mosaic_labels = mosaic_labels[mosaic_labels[:, 2] > 0]
                 mosaic_labels = mosaic_labels[mosaic_labels[:, 1] < 2 * input_h]
                 mosaic_labels = mosaic_labels[mosaic_labels[:, 3] > 0]
-                
-            #augment_hsv(mosaic_img)
+
+            # augment_hsv(mosaic_img)
             mosaic_img, mosaic_labels = random_perspective(
                 mosaic_img,
                 mosaic_labels,
@@ -146,9 +172,13 @@ class MosaicDetection(Dataset):
             # CopyPaste: https://arxiv.org/abs/2012.07177
             # -----------------------------------------------------------------
             if self.enable_mixup and not len(mosaic_labels) == 0:
-                mosaic_img, mosaic_labels = self.mixup(mosaic_img, mosaic_labels, self.input_dim)
-            
-            mix_img, padded_labels = self.preproc(mosaic_img, mosaic_labels, self.input_dim)
+                mosaic_img, mosaic_labels = self.mixup(
+                    mosaic_img, mosaic_labels, self.input_dim
+                )
+
+            mix_img, padded_labels = self.preproc(
+                mosaic_img, mosaic_labels, self.input_dim
+            )
             img_info = (mix_img.shape[1], mix_img.shape[0])
 
             return mix_img, padded_labels, img_info, np.array([idx])
@@ -202,7 +232,7 @@ class MosaicDetection(Dataset):
         if padded_img.shape[1] > target_w:
             x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
         padded_cropped_img = padded_img[
-            y_offset: y_offset + target_h, x_offset: x_offset + target_w
+            y_offset : y_offset + target_h, x_offset : x_offset + target_w
         ]
 
         cp_bboxes_origin_np = adjust_box_anns(
@@ -213,14 +243,14 @@ class MosaicDetection(Dataset):
                 origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
             )
         cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
-        '''
+        """
         cp_bboxes_transformed_np[:, 0::2] = np.clip(
             cp_bboxes_transformed_np[:, 0::2] - x_offset, 0, target_w
         )
         cp_bboxes_transformed_np[:, 1::2] = np.clip(
             cp_bboxes_transformed_np[:, 1::2] - y_offset, 0, target_h
         )
-        '''
+        """
         cp_bboxes_transformed_np[:, 0::2] = cp_bboxes_transformed_np[:, 0::2] - x_offset
         cp_bboxes_transformed_np[:, 1::2] = cp_bboxes_transformed_np[:, 1::2] - y_offset
         keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
