@@ -2,8 +2,6 @@ import cv2
 import os
 import numpy as np
 
-# from utils.general import createDirectory
-
 from deepface import DeepFace
 
 # mask generator v3 (using padding)

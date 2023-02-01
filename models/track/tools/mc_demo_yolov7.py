@@ -80,7 +80,6 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
     tracklet_dir = work_dir+"/tracklet"
     target_dir = work_dir+"/target_detect.png"
     
-    createDirectory(tracklet_dir)
     tracks = list(
         set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
     )

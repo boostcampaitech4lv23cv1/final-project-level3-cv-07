@@ -83,6 +83,7 @@ class Opt:
     hide_conf = (False,)
     line_thickness = 3
     save_img = True
+    
     # Tracking args
     track_high_thresh = 0.3
     track_low_thresh = 0.05
@@ -139,12 +140,15 @@ async def inference():
 
 @app.get("/req_infer")
 def request_inferences():
+    createDirectory(f"{opt.work_dir}/tracklet")
+    createDirectory(f"{opt.work_dir}/image_orig")
+    createDirectory(f"{opt.work_dir}/image_cart")
+    createDirectory(f"{opt.work_dir}/tracklet")
+    
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     cartoonized, tracked = loop.run_until_complete(inference())
     loop.close()
-    
-    createDirectory(f"{opt.work_dir}/tracklet")
     
     valid_ids, num_frames, fps = eval(tracked)
     valid_ids = {int(x): valid_ids[x] for x in valid_ids}

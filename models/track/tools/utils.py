@@ -9,14 +9,6 @@ from deepface import DeepFace
 from facenet_pytorch import MTCNN
 from sklearn.cluster import DBSCAN
 
-def createDirectory(dir):
-    try:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-    except OSError:
-        print("Error: Failed to create the directory.")
-
-
 def get_frame_num(source):
     cap = cv2.VideoCapture(source)
     frame_list = []

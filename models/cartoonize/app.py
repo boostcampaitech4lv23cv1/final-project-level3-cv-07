@@ -21,7 +21,6 @@ import requests
 from fastapi import FastAPI, Request
 
 from Cartoonize import save_vid_2_img, cartoonize
-from backend.utils.general import createDirectory
 
 class Opt:
         weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
@@ -85,9 +84,6 @@ def req_inference():
     load_dir = f"{opt.work_dir}/image_orig"
     save_dir = f"{opt.work_dir}/image_cart"
     input_video = f"{database_info['dir']}/uploaded_video/video.mp4"
-    
-    createDirectory(load_dir)
-    createDirectory(save_dir)
 
     save_vid_2_img(input_video, load_dir)
 
