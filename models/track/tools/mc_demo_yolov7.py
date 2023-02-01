@@ -52,31 +52,8 @@ from tracker.tracking_utils.timer import Timer
 
 from fast_reid.fast_reid_interfece import FastReIDInterface
 
-
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
-
-
-def createDirectory(dir):
-    try:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-    except OSError:
-        print("Error: Failed to create the directory.")
-
-
-def get_frame_num(source):
-    cap = cv2.VideoCapture(source)
-    frame_list = []
-    i = 0
-    while True:
-        ret, cur_frame = cap.read()
-        if cur_frame is None:
-            break
-        i += 1
-
-    return i
-
 
 def calculate_similarity(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
@@ -134,128 +111,6 @@ def dbscan(target_dir,tracklet_dir):
 
     return
 
-def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh, work_dir):
-    """
-    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
-    1. tracker status에 대한 설명
-    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
-    - tracker.removed_stracks : tracking이 종료된 tracker instance
-    2. TODO
-    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
-    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
-    """
-    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
-    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
-    t_ids = {}
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
-    height, width, layers = img.shape
-    size = (width, height)
-    
-    createDirectory(tracklet_dir)
-    tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
-    for i in tracks:
-        if (
-            i.tracklet_len > min_length
-        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
-            x1,y1,x2,y2,conf = value
-            if conf > conf_thresh : 
-                sx1, sy1, sx2, sy2 = bbox_scale_up(
-                    x1, y1, x2, y2, height, width, 3
-                )
-                frame_img = cv2.imread(
-                    f"{work_dir}/image_orig/frame_{frame}.png"
-                )
-                cv2.imwrite(
-                    f"{tracklet_dir}/{i.track_id}.png",
-                    np.array(
-                        frame_img[
-                            int(sy1) : int(sy2), int(sx1) : int(sx2), :
-                        ]
-                    ),
-                )
-                
-                t_ids[i.track_id]=conf   
-    # if opt.dbscan :
-    #     dbscan(target_dir,tracklet_dir)
-    #     return True
-    # else :
-    dfs = DeepFace.find(
-        img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
-    )
-
-    targeted_ids = {}
-
-    for i in range(len(dfs)):
-        id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
-        id_conf = t_ids.pop(id)
-        targeted_ids[id] = id_conf
-
-    return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
-
-
-def save_face_swapped_vid(final_lines, save_dir, fps, work_dir):
-    ## FIXME
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
-    height, width, layers = img.shape
-    size = (width, height)
-    swap_s = time.time()
-
-    frame_array = []
-    # face swap per frame
-    for line in tqdm(final_lines):
-        assert (len(line) - 1) % 4 == 0
-        frame_idx = line[0]  # Image Index starts from 1
-        orig_img = cv2.imread(
-            f"{work_dir}/image_orig/frame_{frame_idx}.png"
-        )
-        cart_img = cv2.imread(
-            f"{work_dir}/image_cart/frame_{frame_idx}.png"
-        )
-        resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
-        face_swapped_img = orig_img
-        for i in range(((len(line) - 1) // 4)):
-            x_min, y_min, x_max, y_max = (
-                line[4 * i + 1],
-                line[4 * i + 2],
-                line[4 * i + 3],
-                line[4 * i + 4],
-            )  # original bbox
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(
-                x_min, y_min, x_max, y_max, height, width, 2
-            )  # scaled bbox ('s' means scaled)
-
-            """
-            Select mask generator function
-            - mask_generator_v0: same as not using mask
-            - mask_generator_v1: using Euclidean distance (L2 distance) and thresholding
-            - mask_generator_v2: using Manhattan distance (L1 distance) and thresholding
-            - mask_generator_v3: using padding
-            """
-
-            mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)
-            orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
-            cart_face = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
-            swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
-            face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
-        frame_array.append(face_swapped_img)
-    swap_e = time.time()
-    print(f"Time Elapsed for face swap: {swap_e - swap_s}")
-
-    out = cv2.VideoWriter(
-        os.path.join(save_dir, opt.project + "_cartoonized" + ".mp4"),
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        fps,
-        size,
-    )
-    for i in tqdm(range(len(frame_array))):
-        # writing to a image array
-        out.write(frame_array[i])
-    out.release()
 
 def parsing_results(valid_ids, save_dir, num_frames):
     with open(os.path.join(save_dir, "results.txt"), "r") as f:
@@ -319,21 +174,6 @@ def parsing_results(valid_ids, save_dir, num_frames):
     return total_lines
 
 
-def write_results(filename, results):
-    with open(filename, "a", encoding="UTF-8") as f:
-        f.writelines(results)
-
-
-def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
-    h = y_max - y_min
-    w = x_max - x_min
-    x_min = int(max(0, x_min - w // scale)) 
-    y_min = int(max(0, y_min - h // scale))
-    x_max = int(min(width, x_max + w // scale)) 
-    y_max = int(min(height, y_max + h // scale))
-    return x_min, y_min, x_max, y_max
-
-
 def calc_euclidean_dist(x, y, cx, cy):
     return math.sqrt((cx - x) ** 2 + (cy - y) ** 2)
 
@@ -387,30 +227,6 @@ def mask_generator_v2(x_min, y_min, x_max, y_max, thr=0.7):
     mask /= max_dist  # normalize all dist
     mask = 1 - mask
     mask[mask >= thr] = 1
-    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
-    return mask, 1 - mask
-
-
-# mask generator v3 (using padding)
-def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
-    w = x_max - x_min
-    h = y_max - y_min
-
-    n_w = w - level * 2 * step
-    n_h = h - level * 2 * step
-
-    if n_w <= 0 or n_h <= 0:
-        mask = np.ones(shape=(h, w), dtype=np.float16)
-        mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
-        return mask, 1 - mask
-
-    mask = np.ones(shape=(n_h, n_w), dtype=np.float16)
-
-    for i in range(level):
-        const = 1 - (1 / level * (i + 1))
-        mask = np.pad(
-            mask, ((step, step), (step, step)), "constant", constant_values=const
-        )
     mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
@@ -572,7 +388,7 @@ def detect(opt, save_img=False):
                             "tl_y": tlwh[1],
                             "width": tlwh[2],
                             "height": tlwh[3],
-                            "conf": t.score
+                            "conf": float(t.score)
                         }
                     )
                     
@@ -628,129 +444,179 @@ def detect(opt, save_img=False):
 
     print(f"Done. ({time.time() - t0:.3f}s)")
 
-    tracklet_dir = str(save_dir) + "/tracklet"
-    targeted_ids, valid_ids = get_valid_tids(
-        tracker,
-        results_tlbr,
-        tracklet_dir,
-        str(save_dir) + "/target_detect.png",
-        opt.min_frame,
-        opt.conf_thresh,
-        opt.work_dir 
-    )
-
-    if save_results:
-        write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "targeted tracklet ids (id : confidence)\n"
-        )
-        for id,conf in targeted_ids.items():
-            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
-
-        write_results(
-            os.path.join(save_dir, "valid_ids.txt"), "\ncartoonized tracklet ids (id : confidence)\n"
-        )
-        for id,conf in valid_ids.items():
-            write_results(os.path.join(save_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
-
-    num_frames = get_frame_num(source)
-    final_lines = parsing_results(valid_ids, save_dir, num_frames)
-    save_face_swapped_vid(final_lines, save_dir, fps, opt)
-
     end_time_total = time.time()
     
     print(f"Total Time Elapsed : {end_time_total - start_time_total}")
-    return results
+    
+    targeted_ids, valid_ids = get_valid_tids(
+        tracker,
+        results_tlbr,
+        opt.work_dir + "/tracklet",
+        opt.work_dir + "/target_detect.png",
+        opt.min_frame,
+        opt.conf_thresh,
+        opt.work_dir
+    )
+    
+    return results, targeted_ids, valid_ids, fps
 
+def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
+    h = y_max - y_min
+    w = x_max - x_min
+    x_min = int(max(0, x_min - w // scale)) 
+    y_min = int(max(0, y_min - h // scale))
+    x_max = int(min(width, x_max + w // scale)) 
+    y_max = int(min(height, y_max + h // scale))
+    return x_min, y_min, x_max, y_max
+
+def get_valid_tids(tracker, results, tracklet_dir, target_dir, min_length, conf_thresh, work_dir):
+    """
+    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
+    1. tracker status에 대한 설명
+    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
+    - tracker.removed_stracks : tracking이 종료된 tracker instance
+    2. TODO
+    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
+    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
+    """
+    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
+    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
+    t_ids = {}
+    img = cv2.imread(
+        f"{work_dir}/image_orig/frame_1.png"
+    )
+    height, width, layers = img.shape
+    size = (width, height)
+        
+    tracks = list(set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks))
+    for i in tracks:
+        if (i.tracklet_len > min_length):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
+            frame,value = sorted(results[i.track_id].items(), key = lambda x : x[1][4])[-1]
+            x1,y1,x2,y2,conf = value
+            if conf > conf_thresh : 
+                sx1, sy1, sx2, sy2 = bbox_scale_up(
+                    x1, y1, x2, y2, height, width, 3
+                )
+                frame_img = cv2.imread(
+                    f"{work_dir}/image_orig/frame_{frame}.png"
+                )
+                cv2.imwrite(
+                    f"{tracklet_dir}/{i.track_id}.png",
+                    np.array(
+                        frame_img[
+                            int(sy1) : int(sy2), int(sx1) : int(sx2), :
+                        ]
+                    ),
+                )
+                
+                t_ids[i.track_id]=conf   
+    # if opt.dbscan :
+    #     dbscan(target_dir,tracklet_dir)
+    #     return True
+    # else :
+    dfs = DeepFace.find(
+        img_path=target_dir, db_path=tracklet_dir, enforce_detection=False, model_name= 'VGG-Face'
+    )
+
+    targeted_ids = {}
+    
+    for i in range(len(dfs)):
+        id = int(dfs.iloc[i].identity.split("/")[-1].split(".")[0])
+        id_conf = t_ids.pop(id)
+        targeted_ids[id] = id_conf
+    return dict(sorted(targeted_ids.items(),key=lambda x : x[1],reverse=True)), dict(sorted(t_ids.items(),key=lambda x : x[1],reverse=True))
 
 if __name__ == "__main__":
-    import requests    
-    req = requests.get("http://ipconfig.kr")
-    server_ip = re.search(r'IP Address : (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', req.text)[1]
+    
+    # import requests    
+    # req = requests.get("http://ipconfig.kr")
+    # server_ip = re.search(r'IP Address : (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', req.text)[1]
 
-    base = "/opt/ml/final-project-level3-cv-07"
-    database_info = {
-        "name": "database",
-        "dir": f"{base}/database"
-    }
+    # base = "/opt/ml/final-project-level3-cv-07"
+    # database_info = {
+    #     "name": "database",
+    #     "dir": f"{base}/database"
+    # }
 
-    cartoonize_info = {
-        "name": "cartoonize",
-        "dir": f"{base}/models/track/cartoonize",
-        "url": f"{server_ip}:30003/",
-    }
+    # cartoonize_info = {
+    #     "name": "cartoonize",
+    #     "dir": f"{base}/models/track/cartoonize",
+    #     "url": f"{server_ip}:30003/",
+    # }
 
-    track_info = {
-        "name": "track",
-        "dir": f"{base}.models/track",
-        "url": f"{server_ip}:30004/",
-    }
+    # track_info = {
+    #     "name": "track",
+    #     "dir": f"{base}.models/track",
+    #     "url": f"{server_ip}:30004/",
+    # }
     
     
     
-    class Opt:
-        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
-        source = f"{database_info['dir']}/uploaded_video/video.mp4"
-        target = f"{database_info['dir']}/target/target.jpeg"
-        cartoon = f"{track_info['dir']}/assets/chim_cartoonized.mp4"
-        img_size = 1920
-        conf_thres= 0.09
-        iou_thres= 0.7
-        sim_thres= 0.35
-        device= "0"
-        view_img= None
-        save_txt= None
-        nosave= None
-        classes = None
-        agnostic_nms= True
-        augment= None
-        update= None
-        work_dir= f"{database_info['dir']}/work_dir"
-        name= "exp"
-        exist_ok= None
-        trace= None
-        hide_labels_name= False
-        save_results = True
-        save_txt_tidl = None
-        kpt_label = 5
-        hide_labels = False
-        hide_conf = False,
-        line_thickness = 3
+    # class Opt:
+    #     weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+    #     source = f"{database_info['dir']}/uploaded_video/video.mp4"
+    #     target = f"{database_info['dir']}/target/target.jpeg"
+    #     cartoon = f"{track_info['dir']}/assets/chim_cartoonized.mp4"
+    #     img_size = 1920
+    #     conf_thres= 0.09
+    #     iou_thres= 0.7
+    #     sim_thres= 0.35
+    #     device= "0"
+    #     view_img= None
+    #     save_txt= None
+    #     nosave= None
+    #     classes = None
+    #     agnostic_nms= True
+    #     augment= None
+    #     update= None
+    #     work_dir= f"{database_info['dir']}/work_dir"
+    #     name= "exp"
+    #     exist_ok= None
+    #     trace= None
+    #     hide_labels_name= False
+    #     save_results = True
+    #     save_txt_tidl = None
+    #     kpt_label = 5
+    #     hide_labels = False
+    #     hide_conf = False,
+    #     line_thickness = 3
         
-        # Tracking args
-        track_high_thresh = 0.3
-        track_low_thresh = 0.05
-        new_track_thresh = 0.4
-        track_buffer = 30
-        match_thresh = 0.7
-        conf_thresh = 0.7 # added
-        aspect_ratio_thresh = 1.6
-        min_box_area = 10
-        min_frame = 5 # added
-        dbscan = True # added
-        mot20 = True
-        save_crop = None
+    #     # Tracking args
+    #     track_high_thresh = 0.3
+    #     track_low_thresh = 0.05
+    #     new_track_thresh = 0.4
+    #     track_buffer = 30
+    #     match_thresh = 0.7
+    #     conf_thresh = 0.7 # added
+    #     aspect_ratio_thresh = 1.6
+    #     min_box_area = 10
+    #     min_frame = 5 # added
+    #     dbscan = True # added
+    #     mot20 = True
+    #     save_crop = None
         
-        #CMC
-        cmc_method = "sparseOptFlow"
+    #     #CMC
+    #     cmc_method = "sparseOptFlow"
         
-        #ReID
-        with_reid = False
-        fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
-        fast_reid_weights = r"pretrained/mot17_sbs_S50.pth"
-        proximity_thresh = 0.5
-        appearance_thresh = 0.25
-        jde= False
-        ablation= False
+    #     #ReID
+    #     with_reid = False
+    #     fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
+    #     fast_reid_weights = r"pretrained/mot17_sbs_S50.pth"
+    #     proximity_thresh = 0.5
+    #     appearance_thresh = 0.25
+    #     jde= False
+    #     ablation= False
     
-    opt = Opt
+    # opt = Opt
 
-    print(opt)
-    # check_requirements(exclude=('pycocotools', 'thop'))
+    # print(opt)
+    # # check_requirements(exclude=('pycocotools', 'thop'))
 
-    with torch.no_grad():
-        if opt.update:  # update all models (to fix SourceChangeWarning)
-            for opt.weights in ["yolov7.pt"]:
-                detect(opt)
-                strip_optimizer(opt.weights)
-        else:
-            detect(opt)
+    # with torch.no_grad():
+    #     if opt.update:  # update all models (to fix SourceChangeWarning)
+    #         for opt.weights in ["yolov7.pt"]:
+    #             detect(opt)
+    #             strip_optimizer(opt.weights)
+    #     else:
+    #         detect(opt)
+    pass

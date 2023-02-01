@@ -1,7 +1,8 @@
 from pymongo import MongoClient
 
 client = MongoClient()
-db = client['cafe']
+
+db = client["cafe"]
 collection = db['env']
 
 base_info = collection.find_one({'name': 'base'})
@@ -15,13 +16,12 @@ sys.path.append(base_info['dir'])
 
 import uvicorn
 import os
-from fastapi.encoders import jsonable_encoder
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+import time
 import requests
-from pydantic import BaseModel
+from fastapi import FastAPI, Request
 
-from backend.utils.general import *
+from Cartoonize import save_vid_2_img, cartoonize
+from backend.utils.general import createDirectory
 
 class Opt:
     weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
@@ -80,36 +80,31 @@ class Opt:
 
 opt = Opt()
 
-
 # FastAPI 객체 생성
 app = FastAPI()
 
-from tracker.mc_bot_sort import BoTSORT
+# 라우터 '/'로 접근 시 {Hello: World}를 json 형태로 반환
+@app.get("/cartoonize")
+def req_inference():
+    model_path =f"{cartoonize_info['dir']}/saved_models"
+    load_dir = f"{opt.work_dir}/image_orig"
+    save_dir = f"{opt.work_dir}/image_cart"
+    input_video = f"{database_info['dir']}/uploaded_video/video.mp4"
 
-@app.get("/track")
-def req_track():
-    from tools.mc_demo_yolov7 import detect, get_valid_tids
-    import json
-    
-    track_infos, targeted_ids, valid_ids, fps = detect(opt)
-    
-    collection = db['track_info']
-    collection.insert_many(track_infos)
-    
-    if opt.save_results:
-        write_results(
-            os.path.join(opt.work_dir, "valid_ids.txt"), "targeted tracklet ids (id : confidence)\n"
-        )
-        for id,conf in targeted_ids.items():
-            write_results(os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
+    createDirectory(load_dir)
+    createDirectory(save_dir)
 
-        write_results(
-            os.path.join(opt.work_dir, "valid_ids.txt"), "\ncartoonized tracklet ids (id : confidence)\n"
-        )
-        for id,conf in valid_ids.items():
-            write_results(os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n")
+    save_vid_2_img(input_video, load_dir)
+
+    s = time.time()
+    cartoonize(load_dir, save_dir, model_path)
+    e = time.time()
+    print(f"Total elapsed time: {e-s}")
     
-    return valid_ids, fps
+    
+    # requests.get(f"{backend_info['url']}/signal/end_cartoonize")
+    
+    return 200
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=30004, reload=True, access_log=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=30003, reload=True, access_log=False)

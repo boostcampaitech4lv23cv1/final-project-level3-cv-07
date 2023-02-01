@@ -9,15 +9,6 @@ import time
 import cv2
 import argparse
 
-
-def createDirectory(dir):
-    try:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-    except OSError:
-        print("Error: Failed to create the directory.")
-
-
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
     i = 0
