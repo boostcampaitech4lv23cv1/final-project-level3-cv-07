@@ -302,7 +302,7 @@ def detection_and_tracking(opt, save_dir):
 
     # Initialize
     set_logging()
-    device = select_device(opt.device)
+    device = select_device(opt.device, batch_size=None, verbose=opt.verbose)
     half = device.type != "cpu"  # half precision only supported on CUDA
 
     # Load model
@@ -600,7 +600,7 @@ if __name__ == "__main__":
         # CMC
         cmc_method = "sparseOptFlow"
         swap_all_face = False 
-        verbose = True
+        verbose = False
         # ReID
         with_reid = False
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
