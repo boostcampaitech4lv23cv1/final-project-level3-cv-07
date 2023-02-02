@@ -1,0 +1,30 @@
+targeted tracklet ids (id : confidence)
+2 - conf : 0.89, sim : 0.00 
+
+cartoonized tracklet ids (id : confidence)
+1 : 0.91 
+4 : 0.87 
+18 : 0.79 
+20 : 0.79 
+19 : 0.78 
+12 : 0.77 
+3 : 0.76 
+36 : 0.76 
+31 : 0.76 
+26 : 0.76 
+21 : 0.75 
+targeted tracklet ids (id : confidence)
+2 - conf : 0.89, sim : 0.00 
+
+cartoonized tracklet ids (id : confidence)
+1 : 0.91 
+4 : 0.87 
+18 : 0.79 
+20 : 0.79 
+19 : 0.78 
+12 : 0.77 
+3 : 0.76 
+36 : 0.76 
+31 : 0.76 
+26 : 0.76 
+21 : 0.75 

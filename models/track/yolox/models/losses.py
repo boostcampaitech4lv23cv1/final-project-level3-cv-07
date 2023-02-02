@@ -33,7 +33,7 @@ class IOUloss(nn.Module):
         iou = (area_i) / (area_p + area_g - area_i + 1e-16)
 
         if self.loss_type == "iou":
-            loss = 1 - iou ** 2
+            loss = 1 - iou**2
         elif self.loss_type == "giou":
             c_tl = torch.min(
                 (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
@@ -53,7 +53,9 @@ class IOUloss(nn.Module):
         return loss
 
 
-def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
+def sigmoid_focal_loss(
+    inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2
+):
     """
     Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
     Args:
@@ -77,5 +79,5 @@ def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: f
     if alpha >= 0:
         alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
         loss = alpha_t * loss
-    #return loss.mean(0).sum() / num_boxes
+    # return loss.mean(0).sum() / num_boxes
     return loss.sum() / num_boxes

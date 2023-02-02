@@ -45,7 +45,7 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
             continue
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
-            image_pred[:, 5: 5 + num_classes], 1, keepdim=True
+            image_pred[:, 5 : 5 + num_classes], 1, keepdim=True
         )
 
         conf_mask = (image_pred[:, 4] * class_conf.squeeze() >= conf_thre).squeeze()
@@ -111,8 +111,8 @@ def matrix_iou(a, b):
 
 
 def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
-    #bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
-    #bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
+    # bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
+    # bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
     bbox[:, 0::2] = bbox[:, 0::2] * scale_ratio + padw
     bbox[:, 1::2] = bbox[:, 1::2] * scale_ratio + padh
     return bbox

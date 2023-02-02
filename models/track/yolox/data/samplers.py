@@ -31,7 +31,7 @@ class YoloBatchSampler(torchBatchSampler):
             self.__set_input_dim()
 
     def __set_input_dim(self):
-        """ This function randomly changes the the input dimension of the dataset. """
+        """This function randomly changes the the input dimension of the dataset."""
         if self.new_input_dim is not None:
             self.input_dim = (self.new_input_dim[0], self.new_input_dim[1])
             self.new_input_dim = None
