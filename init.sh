@@ -5,22 +5,22 @@ apt-get install g++ -y
 
 # Mongo DB
 apt-get install mongodb -y
+service mongodb start
+
+pwd = pwd
 
 # Backend
-cd backend/
+cd $pwd\backend/
 bash set_env.sh
 
 # Frontend
-cd ..
-cd frontend/
+cd $pwd\frontend/
 bash set_env.sh
 
 # Cartoonize
-cd ..
-cd models/cartoonize/
+cd $pwd\models/cartoonize/
 bash set_env.sh
 
 # Tracker
-cd ../../../
-cd models/track/
+cd $pwd\models/track/
 bash set_env.sh
