@@ -126,7 +126,7 @@ def save_face_swapped_vid(final_lines, work_dir, fps):
     print(f"Time Elapsed for face swap: {swap_e - swap_s}")
 
     out = cv2.VideoWriter(
-        os.path.join(work_dir,  "cartoonized" + ".mp4"),
+        os.path.join(work_dir, "../cartoonized_video", "cartoonized.mp4"),
         cv2.VideoWriter_fourcc(*"mp4v"),
         fps,
         size,
