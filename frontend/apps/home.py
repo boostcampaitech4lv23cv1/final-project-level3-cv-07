@@ -6,8 +6,8 @@ backend = "http://115.85.182.51:30002"
 
 def apply_model(encoded_video, encoded_image):
     with st.spinner('Wait for it...'):
-        requests.post(f"{backend}/upload_video", encoded_video)
-        requests.post(f"{backend}/upload_image", encoded_image)
+        requests.post(f"{backend}/upload/video", encoded_video)
+        requests.post(f"{backend}/upload/image", encoded_image)
         requests.get(f"{backend}/req_infer")
 
 
