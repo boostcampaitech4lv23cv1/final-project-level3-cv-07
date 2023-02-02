@@ -143,25 +143,25 @@ async def inference():
 # Client 인퍼런스 호출 시 cartoonize, track 적용 후 병합
 @app.get("/req_infer")  
 def request_inferences():
-    # # 기초 directory 생성
-    # createDirectory(f"{opt.work_dir}/tracklet")
-    # createDirectory(f"{opt.work_dir}/image_orig")
-    # createDirectory(f"{opt.work_dir}/image_cart")
+    # 기초 directory 생성
+    createDirectory(f"{opt.work_dir}/tracklet")
+    createDirectory(f"{opt.work_dir}/image_orig")
+    createDirectory(f"{opt.work_dir}/image_cart")
         
-    # # Cartoonize, Track 모델 비동기 호출 요청
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # cartoonized, tracked = loop.run_until_complete(inference())
-    # loop.close()
+    # Cartoonize, Track 모델 비동기 호출 요청
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    cartoonized, tracked = loop.run_until_complete(inference())
+    loop.close()
     
-    # # Partial Cartoonize 진행
-    # valid_ids, num_frames, fps = eval(tracked)
-    # valid_ids = {int(x): valid_ids[x] for x in valid_ids}
+    # Partial Cartoonize 진행
+    valid_ids, num_frames, fps = eval(tracked)
+    valid_ids = {int(x): valid_ids[x] for x in valid_ids}
     
-    # track_info = db['track_info'].find({}, {"_id": False})  # Tracklet 정보 수집
+    track_info = db['track_info'].find({}, {"_id": False})  # Tracklet 정보 수집
     
-    # final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
-    # save_face_swapped_vid(final_lines, opt.work_dir, fps)
+    final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
+    save_face_swapped_vid(final_lines, opt.work_dir, fps)
     
     return 200
 
