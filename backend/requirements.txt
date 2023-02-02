@@ -10,4 +10,7 @@ typing_extensions==4.4.0
 uvicorn==0.20.0
 requests
 aiohttp
+numpy
+opencv-python
 pymongo
+tqdm
