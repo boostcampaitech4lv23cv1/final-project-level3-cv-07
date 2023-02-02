@@ -74,28 +74,44 @@ opt = Opt()
 # FastAPI 객체 생성
 app = FastAPI()
 
-from tracker.mc_bot_sort import BoTSORT
-
 @app.get("/track")
 def req_track():
-    from tools.mc_demo_yolov7 import detection_and_tracking, get_valid_results
+    from tools.mc_demo_yolov7 import detection_and_tracking, get_valid_tids
     from tools.utils import extract_feature
     
+    # Extract_feature
     extract_feature(opt.target, opt.work_dir)
+    
+    # Track
     track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(opt)
     
-    
+    # Track 정보 DB에 저장
     collection = db['track_info']
     collection.insert_many(track_infos)
     
-    valid_ids = get_valid_results(tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose, opt.save_results)
+    # Target valid id 추출
+    targeted_ids, valid_ids = get_valid_tids(tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose)
+    
+    if opt.save_results:
+        write_results(
+            os.path.join(opt.work_dir, "valid_ids.txt"),
+            "targeted tracklet ids (id : confidence)\n",
+        )
+        for id, (conf,sim) in targeted_ids.items():
+            write_results(
+                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
+            )
+
+        write_results(
+            os.path.join(opt.work_dir, "valid_ids.txt"),
+            "\ncartoonized tracklet ids (id : confidence)\n",
+        )
+        for id, conf in valid_ids.items():
+            write_results(
+                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
+            )
     
     return valid_ids, num_frames, fps
-
-# @app.get("/extract_feature")
-# def extract():
-#     from tools.utils import extract_feature
-#     extract_feature(opt, opt.target, opt.work_dir)
 
 
 if __name__ == "__main__":

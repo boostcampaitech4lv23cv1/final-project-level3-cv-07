@@ -2,30 +2,15 @@ import cv2
 import os
 import numpy as np
 
-from deepface import DeepFace
+from .mask_generator import (
+    mask_generator_v0,
+    mask_generator_v1,
+    mask_generator_v2,
+    mask_generator_v3
+)
 
-# mask generator v3 (using padding)
-def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):
-    w = x_max - x_min
-    h = y_max - y_min
+# from deepface import DeepFace
 
-    n_w = w - level * 2 * step
-    n_h = h - level * 2 * step
-
-    if n_w <= 0 or n_h <= 0:
-        mask = np.ones(shape=(h, w), dtype=np.float16)
-        mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
-        return mask, 1 - mask
-
-    mask = np.ones(shape=(n_h, n_w), dtype=np.float16)
-
-    for i in range(level):
-        const = 1 - (1 / level * (i + 1))
-        mask = np.pad(
-            mask, ((step, step), (step, step)), "constant", constant_values=const
-        )
-    mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
-    return mask, 1 - mask
 
 def parsing_results(track_info, valid_ids, num_frames, swap_all_face):
     parsed_lines = []

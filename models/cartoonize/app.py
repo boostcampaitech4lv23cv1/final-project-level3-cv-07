@@ -12,15 +12,13 @@ cartoonize_info = collection.find_one({'name': 'cartoonize'})
 track_info = collection.find_one({'name': 'track'})
 
 import sys
-sys.path.append(base_info['dir'])
-
 import uvicorn
-import os
 import time
-import requests
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 
 from Cartoonize import save_vid_2_img, cartoonize
+
+sys.path.append(base_info['dir'])
 
 class Opt:
         weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
@@ -71,13 +69,11 @@ class Opt:
         appearance_thresh = 0.25
         jde = False
         ablation = False
-
 opt = Opt()
 
 # FastAPI 객체 생성
 app = FastAPI()
 
-# 라우터 '/'로 접근 시 {Hello: World}를 json 형태로 반환
 @app.get("/cartoonize")
 def req_inference():
     model_path =f"{cartoonize_info['dir']}/saved_models"

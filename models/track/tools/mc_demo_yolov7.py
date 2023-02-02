@@ -1,19 +1,14 @@
 import time
-from pathlib import Path
 import sys
 import os
 
 import cv2
 import torch
 import numpy as np
-
 from tqdm import tqdm
-from pathlib import Path
 from deepface import DeepFace
 from numpy import random
 from collections import defaultdict
-
-from PIL import Image
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.datasets import LoadImages
@@ -22,176 +17,30 @@ from yolov7.utils.general import (
     non_max_suppression,
     scale_coords,
     set_logging,
-    increment_path,
 )
 from yolov7.utils.plots import plot_one_box
 from yolov7.utils.torch_utils import (
     select_device,
 )
+from tools.utils import (
+    get_frame_num,
+    bbox_scale_up,
+    extract_feature
+)
+from tools.similarity import (
+    calc_similarity_v1,
+    calc_similarity_v2,
+    calc_similarity_v3
+)
 
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
-
-# sys.path.insert(0, "./yolov7")
-# sys.path.append(".")
-
-from tools.utils import (
-    createDirectory,
-    get_frame_num,
-    bbox_scale_up,
-    calc_similarity_v1,
-    calc_similarity_v2,
-    calc_similarity_v3,
-    write_results,
-    extract_feature
-)
-from tools.mask_generator import (
-    mask_generator_v0,
-    mask_generator_v1,
-    mask_generator_v2,
-    mask_generator_v3,
-)
-
-# import face_recognition
 
 sys.path.insert(0, "./yolov7")
 sys.path.append(".")
 
 
-def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose):
-    """
-    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
-    1. tracker status에 대한 설명
-    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
-    - tracker.removed_stracks : tracking이 종료된 tracker instance
-    2. TODO
-    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
-    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
-    """
-    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
-    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
-    t_ids = {}
-    # FIXME (file path)
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
-    height, width, _ = img.shape
-    
-    tracklet_dir = work_dir+"/tracklet"
-    target_dir = work_dir+"/target_detect.png"
-    
-    tracks = list(
-        set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
-    )
-    for i in tracks:
-        if (
-            i.tracklet_len > min_length
-        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
-            frame, value = sorted(results[i.track_id].items(), key=lambda x: x[1][4])[
-                -1
-            ]
-            x1, y1, x2, y2, conf = value
-            if conf > conf_thresh:
-                sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
-                # FIXME (file path)
-                frame_img = cv2.imread(
-                    f"{work_dir}/image_orig/frame_{frame}.png"
-                )
-                cv2.imwrite(
-                    f"{tracklet_dir}/{i.track_id}.png",
-                    np.array(frame_img[int(sy1) : int(sy2), int(sx1) : int(sx2), :]),
-                )
-
-                t_ids[i.track_id] = conf
-
-    if use_dbscan:
-        dbscan(target_dir, tracklet_dir)
-        return True
-    else:
-        try:
-            silent = not verbose
-            dfs = DeepFace.find(
-                img_path=target_dir,
-                db_path=tracklet_dir,
-                enforce_detection=False,
-                model_name="VGG-Face",
-                silent=silent,
-            )
-            
-        except ValueError:
-            print("Error: Your video has no valid face tracking. Check again.")
-            sys.exit(0)
-
-        targeted_ids, t_ids = calc_similarity_v3(dfs, t_ids, tracklet_dir)
-
-        return dict(
-            sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)
-        ), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
-
-
-def save_face_swapped_vid(final_lines, work_dir, fps):
-    # FIXME (file path)
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
-    height, width, _ = img.shape
-    size = (width, height)
-
-    frame_array = []
-    # face swap per frame
-    for line in tqdm(final_lines):
-        assert (len(line) - 1) % 4 == 0
-        frame_idx = line[0]  # Image Index starts from 1
-        # FIXME (file path)
-        orig_img = cv2.imread(
-            f"{work_dir}/image_orig/frame_{frame_idx}.png"
-        )
-        cart_img = cv2.imread(
-            f"{work_dir}/image_cart/frame_{frame_idx}.png"
-        )
-        resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
-        face_swapped_img = orig_img
-        for i in range(((len(line) - 1) // 4)):
-            x_min, y_min, x_max, y_max = (
-                line[4 * i + 1],
-                line[4 * i + 2],
-                line[4 * i + 3],
-                line[4 * i + 4],
-            )  # original bbox
-            sx_min, sy_min, sx_max, sy_max = bbox_scale_up(
-                x_min, y_min, x_max, y_max, height, width, 2
-            )  # scaled bbox ('s' means scaled)
-
-            """
-            Select mask generator function
-            - mask_generator_v0: same as not using mask
-            - mask_generator_v1: using Euclidean distance (L2 distance) and thresholding
-            - mask_generator_v2: using Manhattan distance (L1 distance) and thresholding
-            - mask_generator_v3: using padding
-            """
-
-            mask, inv_mask = mask_generator_v3(sx_min, sy_min, sx_max, sy_max)
-            orig_face = orig_img[sy_min:sy_max, sx_min:sx_max]
-            cart_face = resized_cart_img[sy_min:sy_max, sx_min:sx_max]
-            swap_face = np.multiply(cart_face, mask) + np.multiply(orig_face, inv_mask)
-            face_swapped_img[sy_min:sy_max, sx_min:sx_max] = swap_face
-        frame_array.append(face_swapped_img)
-
-    out = cv2.VideoWriter(
-        os.path.join(work_dir, "cartoonized.mp4"),
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        fps,
-        size,
-    )
-    for i in tqdm(range(len(frame_array))):
-        out.write(frame_array[i])
-    out.release()
-
-    return None
-
-
 def detection_and_tracking(opt):
-    # FIXME (file path)
     source = opt.source
     weights, imgsz = opt.weights, opt.img_size
     save_results = opt.save_results
@@ -332,40 +181,77 @@ def detection_and_tracking(opt):
 
     return results, tracker, results_temp, num_frames, fps
 
-
-def get_valid_results(tracker, results_temp, min_frame, conf_thresh, work_dir, use_dbscan, verbose, save_results):
-    targeted_ids, valid_ids = get_valid_tids(
-        tracker,
-        results_temp,
-        min_frame,
-        conf_thresh,
-        work_dir,
-        use_dbscan,
-        verbose
+def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose):
+    """
+    각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
+    1. tracker status에 대한 설명
+    - tracker.tracked_stracks : 현재 frame에서 tracking이 이어지고 있는 tracker instance
+    - tracker.removed_stracks : tracking이 종료된 tracker instance
+    2. TODO
+    - 유효한 tracker로 인정하기 위한 최소 frame은 몇으로 잡을지 결정
+    - 유효한 tracker에서 feature는 어떻게 뽑을지 결정
+    """
+    # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
+    # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
+    t_ids = {}
+    img = cv2.imread(
+        f"{work_dir}/image_orig/frame_1.png"
     )
+    height, width, _ = img.shape
     
-    if save_results:
-        write_results(
-            os.path.join(work_dir, "valid_ids.txt"),
-            "targeted tracklet ids (id : confidence)\n",
-        )
-        for id, (conf,sim) in targeted_ids.items():
-            write_results(
-                os.path.join(work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
-            )
+    tracklet_dir = work_dir+"/tracklet"
+    target_dir = work_dir+"/target_detect.png"
+    
+    tracks = list(
+        set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
+    )
+    for i in tracks:
+        if (
+            i.tracklet_len > min_length
+        ):  # 일단 5 프레임 이상 이어졌던 tracker에 대해서만 유효하다고 판단하고 feature를 뽑았습니다.
+            frame, value = sorted(results[i.track_id].items(), key=lambda x: x[1][4])[
+                -1
+            ]
+            x1, y1, x2, y2, conf = value
+            if conf > conf_thresh:
+                sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
+                # FIXME (file path)
+                frame_img = cv2.imread(
+                    f"{work_dir}/image_orig/frame_{frame}.png"
+                )
+                cv2.imwrite(
+                    f"{tracklet_dir}/{i.track_id}.png",
+                    np.array(frame_img[int(sy1) : int(sy2), int(sx1) : int(sx2), :]),
+                )
 
-        write_results(
-            os.path.join(work_dir, "valid_ids.txt"),
-            "\ncartoonized tracklet ids (id : confidence)\n",
-        )
-        for id, conf in valid_ids.items():
-            write_results(
-                os.path.join(work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
-            )
+                t_ids[i.track_id] = conf
 
-    return valid_ids
+    if use_dbscan:
+        dbscan(target_dir, tracklet_dir)
+        return True
+    else:
+        try:
+            silent = not verbose
+            dfs = DeepFace.find(
+                img_path=target_dir,
+                db_path=tracklet_dir,
+                enforce_detection=False,
+                model_name="VGG-Face",
+                silent=silent,
+            )
+            
+        except ValueError:
+            print("Error: Your video has no valid face tracking. Check again.")
+            sys.exit(0)
+
+        targeted_ids, t_ids = calc_similarity_v3(dfs, t_ids, tracklet_dir)
+
+        return dict(sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
 
 def main(opt):
+    from backend.utils.convert import save_face_swapped_vid, parsing_results
+    from backend.utils.general import write_results
+    
     # FIXME (file path)
     target_path = opt.target
     save_dir = opt.work_dir  # increment run
@@ -386,9 +272,28 @@ def main(opt):
         print("\n[ Target Feature Extraction Done]")
         time_3 = time.time()
         print("\n[ Start Similarity Check ]")
-    valid_ids = get_valid_results(
-        tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose, opt.save_results
+    targeted_ids, valid_ids = get_valid_tids(
+        tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose
     )
+    if opt.save_results:
+        write_results(
+            os.path.join(opt.work_dir, "valid_ids.txt"),
+            "targeted tracklet ids (id : confidence)\n",
+        )
+        for id, (conf,sim) in targeted_ids.items():
+            write_results(
+                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
+            )
+
+        write_results(
+            os.path.join(opt.work_dir, "valid_ids.txt"),
+            "\ncartoonized tracklet ids (id : confidence)\n",
+        )
+        for id, conf in valid_ids.items():
+            write_results(
+                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
+            )
+    
     if opt.verbose:
         print("\n[ Similarity Check Done ]")
         time_4 = time.time()
@@ -441,8 +346,9 @@ def main(opt):
         )
         print("{:-^70}".format("-"))
 
-
 if __name__ == "__main__":
+    
+    # ENV Initialize
     from pymongo import MongoClient
 
     client = MongoClient()
@@ -455,7 +361,8 @@ if __name__ == "__main__":
     cartoonize_info = collection.find_one({'name': 'cartoonize'})
     track_info = collection.find_one({'name': 'track'})
 
-
+    sys.path.append(base_info['dir'])
+    sys.path.insert(0, base_info['dir'] + "/backend")
 
     class Opt:
         weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
@@ -497,7 +404,7 @@ if __name__ == "__main__":
         # CMC
         cmc_method = "sparseOptFlow"
         swap_all_face = False 
-        verbose = False
+        verbose = True
         # ReID
         with_reid = False
         fast_reid_config = r"fast_reid/configs/MOT17/sbs_S50.yml"
@@ -506,17 +413,13 @@ if __name__ == "__main__":
         appearance_thresh = 0.25
         jde = False
         ablation = False
-
+    
     opt = Opt
+    
     if opt.verbose:
         print(opt)
     # check_requirements(exclude=('pycocotools', 'thop'))
-
-    import sys
-    sys.path.append(base_info['dir'])
-    sys.path.insert(0, base_info['dir'] + "/backend")
     
-    from backend.utils.convert import parsing_results
     
     with torch.no_grad():
         main(opt)

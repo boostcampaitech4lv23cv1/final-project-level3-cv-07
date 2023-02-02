@@ -1,13 +1,13 @@
 import os
+import time
+
 import cv2
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
+
 import network
 import guided_filter
-from tqdm import tqdm
-import time
-import cv2
-import argparse
 
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
@@ -25,7 +25,6 @@ def save_vid_2_img(vid_path, save_dir):
         cv2.imwrite(save_dir + f"/frame_{i+1}.png", frame)
         i += 1
 
-
 def resize_crop_cart(image):
     h, w, c = np.shape(image)
     if min(h, w) > 720:
@@ -38,7 +37,6 @@ def resize_crop_cart(image):
     image = image[:h, :w, :]
     return image
 
-
 def resize_crop_orig(image):
     h, w, c = np.shape(image)
     if min(h, w) > 1080:
@@ -50,7 +48,6 @@ def resize_crop_orig(image):
     h, w = (h // 8) * 8, (w // 8) * 8
     image = image[:h, :w, :]
     return image
-
 
 def cartoonize(load_folder, save_folder, model_path):
     input_photo = tf.placeholder(tf.float32, [1, None, None, 3])
@@ -83,7 +80,6 @@ def cartoonize(load_folder, save_folder, model_path):
             cv2.imwrite(save_path, output)
         except:
             print("cartoonize {} failed".format(load_path))
-
 
 if __name__ == "__main__":
     from pymongo import MongoClient

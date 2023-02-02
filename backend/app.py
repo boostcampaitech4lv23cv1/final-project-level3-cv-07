@@ -6,9 +6,8 @@ import re
 import asyncio
 import aiohttp
 from fastapi import FastAPI, Request
-import sys
-from typing import List
 
+# DB에 Environment 변수들 저장
 from pymongo import MongoClient
 
 client = MongoClient()
@@ -116,6 +115,7 @@ opt = Opt()
 # FastAPI 객체 생성
 app = FastAPI()
 
+# Client의 업로드 비디오 database/uploaded_video/video.mp4로 저장
 @app.post("upload/video")
 async def upload_video(req: Request):
     video = await req.body()
@@ -123,6 +123,7 @@ async def upload_video(req: Request):
     file.write(video)
     file.close()
     
+# Client의 업로드 이미지 database/target/target.jpeg로 저장
 @app.post("upload/image")
 async def upload_image(req: Request):
     image = await req.body()
@@ -130,7 +131,8 @@ async def upload_image(req: Request):
     file.write(image)
     file.close()
 
-async def inference():
+# 모델 비동기 호출 요청 *(Lock)
+async def inference():  
     async def task(session, url):
         async with session.get(url) as response:
             return await response.text()
@@ -138,28 +140,31 @@ async def inference():
     async with aiohttp.ClientSession() as session:
         return await asyncio.gather(task(session, f"{cartoonize_info['url']}/cartoonize"), task(session, f"{track_info['url']}/track"))
 
-@app.get("/req_infer")
+# Client 인퍼런스 호출 시 cartoonize, track 적용 후 병합
+@app.get("/req_infer")  
 def request_inferences():
+    # 기초 directory 생성
     createDirectory(f"{opt.work_dir}/tracklet")
     createDirectory(f"{opt.work_dir}/image_orig")
     createDirectory(f"{opt.work_dir}/image_cart")
     createDirectory(f"{opt.work_dir}/tracklet")
-    
+        
+    # Cartoonize, Track 모델 비동기 호출 요청
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     cartoonized, tracked = loop.run_until_complete(inference())
     loop.close()
-    
+
+    # Partial Cartoonize 진행
     valid_ids, num_frames, fps = eval(tracked)
     valid_ids = {int(x): valid_ids[x] for x in valid_ids}
     
-    track_info = db['track_info'].find({}, {"_id": False})
+    track_info = db['track_info'].find({}, {"_id": False})  # Tracklet 정보 수집
+    
     final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
     save_face_swapped_vid(final_lines, opt.work_dir, fps)
     
     return 200
-
-
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=30002, reload=True, access_log=False)
