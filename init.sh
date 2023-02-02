@@ -17,7 +17,7 @@ bash set_env.sh
 
 # Cartoonize
 cd ..
-cd models/track/cartoonize/
+cd models/cartoonize/
 bash set_env.sh
 
 # Tracker

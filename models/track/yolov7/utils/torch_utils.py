@@ -62,9 +62,9 @@ def git_describe(path=Path(__file__).parent):  # path must be a directory
         return ""  # not a git repository
 
 
-def select_device(device="", batch_size=None):
+def select_device(device="", batch_size=None, verbose=False):
     # device = 'cpu' or '0' or '0,1,2,3'
-    s = f"YOLOv5 � {git_describe() or date_modified()} torch {torch.__version__} "  # string
+    s = f"YOLOv7 torch {torch.__version__} loaded on "  # string
     cpu = device.lower() == "cpu"
     if cpu:
         os.environ[
@@ -91,10 +91,10 @@ def select_device(device="", batch_size=None):
             s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
     else:
         s += "CPU\n"
-
-    logger.info(
-        s.encode().decode("ascii", "ignore") if platform.system() == "Windows" else s
-    )  # emoji-safe
+    if verbose:
+        logger.info(
+            s.encode().decode("ascii", "ignore") if platform.system() == "Windows" else s
+        )  # emoji-safe
     return torch.device("cuda:0" if cuda else "cpu")
 
 

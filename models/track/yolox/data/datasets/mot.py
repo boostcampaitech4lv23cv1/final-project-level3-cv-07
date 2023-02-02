@@ -81,7 +81,11 @@ class MOTDataset(Dataset):
             res[ix, 4] = cls
             res[ix, 5] = obj["track_id"]
 
-        file_name = im_ann["file_name"] if "file_name" in im_ann else "{:012}".format(id_) + ".jpg"
+        file_name = (
+            im_ann["file_name"]
+            if "file_name" in im_ann
+            else "{:012}".format(id_) + ".jpg"
+        )
         img_info = (height, width, frame_id, video_id, file_name)
 
         del im_ann, annotations
@@ -96,9 +100,7 @@ class MOTDataset(Dataset):
 
         res, img_info, file_name = self.annotations[index]
         # load image and preprocess
-        img_file = os.path.join(
-            self.data_dir, self.name, file_name
-        )
+        img_file = os.path.join(self.data_dir, self.name, file_name)
         img = cv2.imread(img_file)
         assert img is not None
 
