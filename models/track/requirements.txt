@@ -31,3 +31,4 @@ deepface==0.0.75
 fastapi
 uvicorn
 facenet_pytorch
+pymongo

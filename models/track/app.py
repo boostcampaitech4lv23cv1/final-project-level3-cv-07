@@ -70,7 +70,6 @@ class Opt:
 
 opt = Opt()
 
-
 # FastAPI 객체 생성
 app = FastAPI()
 
@@ -88,7 +87,7 @@ def req_track():
     # Track 정보 DB에 저장
     collection = db['track_info']
     collection.insert_many(track_infos)
-    
+        
     # Target valid id 추출
     targeted_ids, valid_ids = get_valid_tids(tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose)
     

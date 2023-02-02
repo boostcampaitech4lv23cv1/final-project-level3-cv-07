@@ -147,14 +147,13 @@ def request_inferences():
     createDirectory(f"{opt.work_dir}/tracklet")
     createDirectory(f"{opt.work_dir}/image_orig")
     createDirectory(f"{opt.work_dir}/image_cart")
-    createDirectory(f"{opt.work_dir}/tracklet")
         
     # Cartoonize, Track 모델 비동기 호출 요청
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     cartoonized, tracked = loop.run_until_complete(inference())
     loop.close()
-
+    
     # Partial Cartoonize 진행
     valid_ids, num_frames, fps = eval(tracked)
     valid_ids = {int(x): valid_ids[x] for x in valid_ids}

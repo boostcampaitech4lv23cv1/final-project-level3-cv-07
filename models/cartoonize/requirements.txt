@@ -3,3 +3,4 @@ tqdm
 fastapi
 uvicorn
 requests
+pymongo
