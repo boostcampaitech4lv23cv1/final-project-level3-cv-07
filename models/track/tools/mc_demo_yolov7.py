@@ -178,7 +178,6 @@ def detection_and_tracking(opt):
                         )
                     vid_writer.write(im0)
             progress_bar.update(1)
-
     return results, tracker, results_temp, num_frames, fps
 
 def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose):

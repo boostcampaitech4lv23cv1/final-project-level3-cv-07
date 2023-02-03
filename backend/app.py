@@ -143,10 +143,13 @@ async def inference():
 # Client 인퍼런스 호출 시 cartoonize, track 적용 후 병합
 @app.get("/req_infer")  
 def request_inferences():
+    db["track_info"].drop()
+    remove_if_exists(opt.work_dir)
+    
     # 기초 directory 생성
-    createDirectory(f"{opt.work_dir}/tracklet")
-    createDirectory(f"{opt.work_dir}/image_orig")
-    createDirectory(f"{opt.work_dir}/image_cart")
+    create_directory(f"{opt.work_dir}/tracklet")
+    create_directory(f"{opt.work_dir}/image_orig")
+    create_directory(f"{opt.work_dir}/image_cart")
         
     # Cartoonize, Track 모델 비동기 호출 요청
     loop = asyncio.new_event_loop()
