@@ -116,7 +116,7 @@ opt = Opt()
 app = FastAPI()
 
 # Client의 업로드 비디오 database/uploaded_video/video.mp4로 저장
-@app.post("upload/video")
+@app.post("/upload/video")
 async def upload_video(req: Request):
     video = await req.body()
     file = open(f"{database_info['dir']}/uploaded_video/video.mp4", "wb")
@@ -124,7 +124,7 @@ async def upload_video(req: Request):
     file.close()
     
 # Client의 업로드 이미지 database/target/target.jpeg로 저장
-@app.post("upload/image")
+@app.post("/upload/image")
 async def upload_image(req: Request):
     image = await req.body()
     file = open(f"{database_info['dir']}/target/target.jpeg", "wb")
