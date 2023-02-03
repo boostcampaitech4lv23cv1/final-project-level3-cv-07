@@ -80,6 +80,8 @@ def cartoonize(load_folder, save_folder, model_path):
             cv2.imwrite(save_path, output)
         except:
             print("cartoonize {} failed".format(load_path))
+            
+    tf.contrib.keras.backend.clear_session()
 
 if __name__ == "__main__":
     from pymongo import MongoClient
