@@ -16,10 +16,11 @@ def nextpage(): st.session_state.page += 1
 if __name__ == "__main__":    
     if "page" not in st.session_state:
         st.session_state.page = 0
-
+    
     placeholder = st.empty()
     
     if st.session_state.page == 0:
+        
         with placeholder.container():
             uploaded_video = st.file_uploader("Choose a Video file")
             if uploaded_video is not None:
@@ -40,10 +41,19 @@ if __name__ == "__main__":
             requests.post(f"{backend}/upload/video", st.session_state.encoded_video)
             requests.post(f"{backend}/upload/image", st.session_state.encoded_image)
             requests.get(f"{backend}/req_infer")
-                
+        
+        
+        cartoon_video = open("database/cartoonized_video/cartoonized.mp4", "rb")
+        st.session_state.video_bytes = cartoon_video.read()
+        
         st.button("결과 확인", on_click=nextpage)
     
     elif st.session_state.page == 2:
-        cartoon_video = open("database/cartoonized_video/cartoonized.mp4", "rb")
-        video_bytes = cartoon_video.read()
-        st.video(video_bytes)   # 읽지만 영상 로드 안됨.
+        st.video(st.session_state.video_bytes)   # 읽지만 영상 로드 안됨.
+        
+        st.download_button(
+            label="Download Video",
+            data=st.session_state.video_bytes,
+            file_name='video.mp4',
+            mime="video/mp4",
+        )
