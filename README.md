@@ -48,11 +48,11 @@
 <table>
     <tr>
         <td align="center">
-            <a><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216925652-aa5b48f9-9225-4d1f-8f90-d252b0ecce46.png"/></a>
+            <a><img height="200px" width="500px" src="https://user-images.githubusercontent.com/59161083/216925652-aa5b48f9-9225-4d1f-8f90-d252b0ecce46.png"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216926107-e4413d9c-eee4-4722-85bc-f1bef7ceef00.png"/></a>
+            <a><img height="200px" width="500px" src="https://user-images.githubusercontent.com/59161083/216926107-e4413d9c-eee4-4722-85bc-f1bef7ceef00.png"/></a>
             <br/>
         </td>
     </tr>
@@ -63,11 +63,11 @@
 <table>
     <tr>
         <td align="center">
-            <a><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216928691-458d84a1-37be-4690-93d2-52106c94c898.png"/></a>
+            <a><img height="200px" width="500px" src="https://user-images.githubusercontent.com/59161083/216928691-458d84a1-37be-4690-93d2-52106c94c898.png"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216928817-dffec866-bafe-49f4-8c89-9e82621d7807.png"/></a>
+            <a><img height="200px" width="500px" src="https://user-images.githubusercontent.com/59161083/216928817-dffec866-bafe-49f4-8c89-9e82621d7807.png"/></a>
             <br/>
         </td>
     </tr>
@@ -86,7 +86,7 @@
 ### Model Flow
 <table>
         <td align="center">
-            <a><img height="500px" width="800px" src="https://user-images.githubusercontent.com/59161083/216927654-a4676796-80a2-4802-bdba-97449debbf39.png"/></a>
+            <a><img height="300px" width="800px" src="https://user-images.githubusercontent.com/59161083/216927654-a4676796-80a2-4802-bdba-97449debbf39.png"/></a>
             <br/>
         </td>
 </table>
