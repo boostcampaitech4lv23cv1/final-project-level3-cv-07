@@ -117,6 +117,30 @@
 
 
 ## Usage
+```(python)
+# Clone our repository
+git clone https://github.com/boostcampaitech4lv23cv1/final-project-level3-cv-07
+
+# Move to our dir
+cd final-project-level3-cv-07
+
+# Setup for each virtual environment (for frontend, backend, detection & tracking, cartoonize)
+bash init.sh
+
+# Open frontend/app.py and update backend ip address in line 12
+vim frontend/app.py
+
+"""
+fix below line
+backend = "http://115.85.182.51:30002" -> backend = {your_backend_ip_address}
+"""
+
+# Start all process required for starting demo page
+bash start.sh
+```
+
+## Demo
+
 
 ## Wrap-Up Report
 
