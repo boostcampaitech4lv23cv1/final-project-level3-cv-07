@@ -103,7 +103,7 @@
 ### Service Flow
 <table>
         <td align="center">
-            <a><img height="500px" width="1000px" src="https://user-images.githubusercontent.com/59161083/216934011-ef53c2f2-f144-4e21-a465-a65935dcd0b5.png"/></a>
+            <a><img height="300px" width="1000px" src="https://user-images.githubusercontent.com/59161083/216934011-ef53c2f2-f144-4e21-a465-a65935dcd0b5.png"/></a>
             <br/>
         </td>
 </table>
