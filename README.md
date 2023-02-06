@@ -92,14 +92,13 @@
 </table>
 
 전체적인 Model Flow는 아래와 같다.    
-```
-1. User로부터 영상과 영상의 주인공(target) 사진을 입력받는다.   
-2. 영상에 face detection & tracking, cartoonize를 적용한다.     
+
+> 1. User로부터 영상과 영상의 주인공(target) 사진을 입력받는다.   
+> 2. 영상에 face detection & tracking, cartoonize를 적용한다.     
     2-1. 영상에 대한 face detection, tracking을 통하여 모든 등장인물의 얼굴 정보를 얻는다.    
     2-2. 영상의 모든 프레임에 대한 cartoonize를 진행한다.
-3. 주인공 사진과 영상에 등장하는 인물들의 사진에 대한 feature를 뽑아낸 후, cosine similarity를 계산하여 target과 target이 아닌 얼굴들을 구분한다. 
-4. target이 아닌 얼굴들에 대한 정보(from 2-1)를 이용하여, 모든 프레임의 얼굴을 swap 한다. 
-```
+> 3. 주인공 사진과 영상에 등장하는 인물들의 사진에 대한 feature를 뽑아낸 후, cosine similarity를 계산하여 target과 target이 아닌 얼굴들을 구분한다. 
+> 4. target이 아닌 얼굴들에 대한 정보(from 2-1)를 이용하여, 모든 프레임의 얼굴을 swap 한다. 
 
 ### Service Flow
 <table>
@@ -110,13 +109,11 @@
 </table>
 
 전체적인 Service Flow는 아래와 같다.    
-```
-1. Streamlit을 통해 user와 interaction하며, 주인공 이미지와 영상을 입력받고, 결과물을 다운받을 수 있다.    
-2. Streamlit을 통해 입력받은 이미지와 영상은 local file storage에 저장되며, FastAPI를 통해 Detection & Tracking, Cartoonize 연산을 요청한다.
-3. Detection & Tracking은 PyTorch 환경에서 실행되고, Cartoonize는 Tensorflow 환경에서 실행된다. 이 과정은 병렬적으로 진행되며, Tracking 결과는 MongoDB에 저장된다. 
-4. 위의 과정이 끝난 이후, backend에서 MongoDB에 저장된 tracking 정보를 사용하여 face swapping 과정을 수행한다.
-5. Streamlit을 통해 user가 최종 결과물의 재생 및 저장이 가능하다. 
-```
+> 1. Streamlit을 통해 user와 interaction하며, 주인공 이미지와 영상을 입력받고, 결과물을 다운받을 수 있다.    
+> 2. Streamlit을 통해 입력받은 이미지와 영상은 local file storage에 저장되며, FastAPI를 통해 Detection & Tracking, Cartoonize 연산을 요청한다.
+> 3. Detection & Tracking은 PyTorch 환경에서 실행되고, Cartoonize는 Tensorflow 환경에서 실행된다. 이 과정은 병렬적으로 진행되며, Tracking 결과는 MongoDB에 저장된다. 
+> 4. 위의 과정이 끝난 이후, backend에서 MongoDB에 저장된 tracking 정보를 사용하여 face swapping 과정을 수행한다.
+> 5. Streamlit을 통해 user가 최종 결과물의 재생 및 저장이 가능하다. 
 
 
 ## Usage
