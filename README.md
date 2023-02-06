@@ -89,7 +89,6 @@
             <a><img height="500px" width="800px" src="https://user-images.githubusercontent.com/59161083/216927654-a4676796-80a2-4802-bdba-97449debbf39.png"/></a>
             <br/>
         </td>
-    </tr>
 </table>
 
 전체적인 Model Flow는 아래와 같다.    
@@ -108,7 +107,6 @@
             <a><img height="500px" width="1000px" src="https://user-images.githubusercontent.com/59161083/216934011-ef53c2f2-f144-4e21-a465-a65935dcd0b5.png"/></a>
             <br/>
         </td>
-    </tr>
 </table>
 
 전체적인 Service Flow는 아래와 같다.    
