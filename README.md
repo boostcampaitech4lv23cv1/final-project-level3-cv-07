@@ -93,14 +93,14 @@
 </table>
 
 전체적인 데이터 처리 과정은 아래와 같다.    
-
+```
 1. User로부터 영상과 영상의 주인공(target) 사진을 입력받는다.   
 2. 영상에 face detection & tracking, cartoonize를 적용한다.     
-2-1. 영상에 대한 face detection, tracking을 통하여 모든 등장인물의 얼굴 정보를 얻는다.    
-2-2. 영상의 모든 프레임에 대한 cartoonize를 진행한다.
+    2-1. 영상에 대한 face detection, tracking을 통하여 모든 등장인물의 얼굴 정보를 얻는다.    
+    2-2. 영상의 모든 프레임에 대한 cartoonize를 진행한다.
 3. 주인공 사진과 영상에 등장하는 인물들의 사진에 대한 feature를 뽑아낸 후, cosine similarity를 계산하여 target과 target이 아닌 얼굴들을 구분한다. 
 4. target이 아닌 얼굴들에 대한 정보(from 2-1)를 이용하여, 모든 프레임의 얼굴을 swap 한다. 
-
+```
 
 ## Usage
 
