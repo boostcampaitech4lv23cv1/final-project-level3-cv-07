@@ -1,7 +1,7 @@
 # CAFE: CArtoonize For Extra faces
 
 ## Member
-<table>
+<table align="center">
     <th colspan=5>블랙박스</th>
     <tr height="160px">
         <td align="center" width="150px">
