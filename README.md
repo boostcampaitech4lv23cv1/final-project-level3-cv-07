@@ -141,8 +141,11 @@ bash start.sh
 # Now, you can access demo page
 ```
 
+## Dataset
+[{사용한 데이터셋 종류} : {사용한 데이터셋 다운받을 수 있는 링크}, {어느 경로에 놓아야 하는지}]
+
 ## Demo
-[데모 영상 추가하기]
+[데모 영상(gif) 추가하기]
 
 ## More Details
 [Wrap-up 링크 추가] [PPT 자료 링크 추가] [발표 영상 추가]
@@ -153,3 +156,4 @@ bash start.sh
 - Xinrui Wang and Jinze Yu. Learning to cartoonize using
 white-box cartoon representations. In CVPR, pages 8090–
 8099, 2020.
+- [코드 참고한 repo 추가하기]
