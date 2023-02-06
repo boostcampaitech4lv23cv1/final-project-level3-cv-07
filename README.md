@@ -137,11 +137,19 @@ backend = "http://115.85.182.51:30002" -> backend = {your_backend_ip_address}
 
 # Start all process required for starting demo page
 bash start.sh
+
+# Now, you can access demo page
 ```
 
 ## Demo
+[데모 영상 추가하기]
 
-
-## Wrap-Up Report
+## More Details
+[Wrap-up 링크 추가] [PPT 자료 링크 추가] [발표 영상 추가]
 
 ## Reference
+- Wang, C.Y.; Bochkovskiy, A.; Liao, H.Y.M. YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors. arXiv 2022, arXiv:2207.02696.
+- Aharon, N.; Orfaig, R.; Bobrovsky, B.Z. BoT-SORT: Robust Associations Multi-Pedestrian Tracking. arXiv 2022, arXiv:2206.14651.
+- Xinrui Wang and Jinze Yu. Learning to cartoonize using
+white-box cartoon representations. In CVPR, pages 8090–
+8099, 2020.
