@@ -46,7 +46,6 @@
 ## 프로젝트 개요
 
 <table>
-    <th colspan=2></th>
     <tr>
         <td align="center">
             <a href="https://github.com/kimk-ki"><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216925652-aa5b48f9-9225-4d1f-8f90-d252b0ecce46.png"/></a>
@@ -62,7 +61,6 @@
 - TV 프로그램 혹은 유튜브를 보다보면, 메인 출연자가 아닌 이들의 얼굴을 모자이크 된 것을 쉽게 찾아볼 수 있다. 하지만 이러한 모자이크 기법은 얼굴의 특징을 지워버리기 때문에 인물의 얼굴 표정, 눈빛, 시선과 같은 정보를 잃게 된다. 
 
 <table>
-    <th colspan=2></th>
     <tr>
         <td align="center">
             <a href="https://github.com/kimk-ki"><img height="300px" width="500px" src="https://user-images.githubusercontent.com/59161083/216928691-458d84a1-37be-4690-93d2-52106c94c898.png"/></a>
