@@ -15,6 +15,8 @@ sys.path.append(base_info['dir'])
 
 import uvicorn
 from fastapi import FastAPI
+import torch
+
 
 from backend.utils.general import *
 
@@ -109,7 +111,7 @@ def req_track():
             write_results(
                 os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
             )
-    
+    torch.cuda.empty_cache()
     return valid_ids, num_frames, fps
 
 

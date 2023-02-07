@@ -75,7 +75,7 @@ opt = Opt()
 app = FastAPI()
 
 @app.get("/cartoonize")
-def req_inference():
+def req_inference():    
     model_path =f"{cartoonize_info['dir']}/saved_models"
     load_dir = f"{opt.work_dir}/image_orig"
     save_dir = f"{opt.work_dir}/image_cart"
@@ -87,9 +87,6 @@ def req_inference():
     cartoonize(load_dir, save_dir, model_path)
     e = time.time()
     print(f"Total elapsed time: {e-s}")
-    
-    
-    # requests.get(f"{backend_info['url']}/signal/end_cartoonize")
     
     return 200
 
