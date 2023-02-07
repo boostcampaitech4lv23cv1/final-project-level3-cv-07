@@ -230,7 +230,11 @@ Download the pre-trained weights and place them in the path below.
         </td>
     </tr>
 </table>
-영상 출처 : [추가]
+영상 출처
+
+- https://www.youtube.com/watch?v=SP-LJqVgQuw&t=163s
+- https://www.youtube.com/watch?v=GmAwsAB7nhw
+- https://www.youtube.com/watch?v=tL20swtWOqI
 
 ## Demo
 [데모 영상(gif) 추가하기]
