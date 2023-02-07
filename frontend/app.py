@@ -1,7 +1,8 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import time
-
+import asyncio
+import aiohttp
 
 st.set_page_config(page_title="Streamlit Geospatial", layout="wide")
 
@@ -10,7 +11,33 @@ st.set_page_config(page_title="Streamlit Geospatial", layout="wide")
 
 import requests
 
-backend = "http://49.50.160.138:30002"
+backend = "http://115.85.182.51:30002"
+
+async def task_sentence(message_col):
+    txt = open("database/sentences.txt", "r")
+    txt_list = txt.readlines()
+    cnt = 1
+    with message_col:
+        while(cnt <= len(txt_list)):
+            st.text(txt_list[cnt - 1])
+            await asyncio.sleep(7)
+            cnt += 1
+    txt.close()
+
+async def req_inference():
+    async def task(session, url):
+        async with session.get(url) as response:
+            return await response.text()
+
+
+    async with aiohttp.ClientSession() as session:
+        await task(session, f"{backend}/req_infer")
+
+async def multi_task(message_col):
+    task1 = asyncio.create_task(task_sentence(message_col))
+    task2 = asyncio.create_task(req_inference())
+    await task1
+    await task2
 
 if __name__ == "__main__":
     
@@ -58,24 +85,14 @@ if __name__ == "__main__":
 
     with col4:
         if st.button("Apply model"):
-            txt = open("database/sentences.txt", "r")
-            txt_list = txt.readlines()
-            cnt = 1
-            with message_col:
-                while(cnt <= len(txt_list)):
-                    st.text(txt_list[cnt - 1])
-                    time.sleep(7)
-                    cnt += 1
-
-            # 순차 Request
+            
+            # 문장 호출 및 inference 요청
+            requests.post(f"{backend}/upload/video", encoded_video)
+            requests.post(f"{backend}/upload/image", encoded_image)
             with st.spinner():
-                requests.post(f"{backend}/upload/video", encoded_video)
-                requests.post(f"{backend}/upload/image", encoded_image)
-                requests.get(f"{backend}/req_infer")
-
+                asyncio.run(multi_task(message_col))
             
             # 결과 영상 도출
-            txt.close()
             with res_empty0:
                 st.empty()
 

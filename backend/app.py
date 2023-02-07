@@ -170,7 +170,7 @@ def request_inferences():
     
     stream = ffmpeg.input(f"{database_info['dir']}/work_dir/result.mp4")
     stream = ffmpeg.output(stream, f"{database_info['dir']}/cartoonized_video/video.mp4")
-    ffmpeg.run(stream)
+    ffmpeg.run(stream, overwrite_output=True)
     
     return 200
 
