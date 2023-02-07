@@ -156,9 +156,22 @@ bash start.sh
 ```
 
 ## Dataset
-[{사용한 데이터셋 종류} : {사용한 데이터셋 다운받을 수 있는 링크}, {어느 경로에 놓아야 하는지}]
+### YOLOv7-tiny
+Trained with [WiderFace](http://shuoyang1213.me/WIDERFACE/), [[pretrained weights](https://drive.google.com/u/0/uc?id=1Mona-I4PclJr5mjX1qb8dgDeMpYyBcwM&export=download)]   
+Download the pre-trained weights and place them in the path below.
+
+`./final-project-level3-cv-07/models/track/pretrained`
+
+### White-box Cartoonization
+
+Trained with private dataset.Scenery images are collected from Shinkai Makoto, Miyazaki Hayao and Hosoda Mamoru films. Portrait images are from Kyoto animations and PA Works). [[pretrained weights](https://github.com/SystemErrorWang/White-box-Cartoonization/tree/master/test_code/saved_models)]    
+Download the pre-trained weights and place them in the path below.
+
+`./final-project-level3-cv-07/models/cartoonize/saved_models`
 
 ## Result
+영상을 gif로 변환하는 과정에서 해상도가 낮아졌지만 최대 1080p까지 대응이 가능하며, 영상 종횡비와 관계없이 사용할 수 있다.
+
 <table align="center">
     <tr>
         <td align="center">
@@ -217,6 +230,7 @@ bash start.sh
         </td>
     </tr>
 </table>
+영상 출처 : [추가]
 
 ## Demo
 [데모 영상(gif) 추가하기]
