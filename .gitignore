@@ -9,16 +9,19 @@
 *.jpg
 *.jpeg
 *.
+
 # frontend
 
 # backend
+
+# database
+database/work_dir/*
 
 # track
 models/track/pretrained/*
 models/track/assets/
 models/track/runs
 models/track/target
-exp*/
 
 # cartoonize
 models/cartoonize/test_code/save_models/*
