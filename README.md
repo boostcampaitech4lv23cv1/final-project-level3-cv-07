@@ -42,7 +42,7 @@
 - 김주엽_T4048: Model Serving
 - 이  구_T4145: Cartoonize 모델 조사, Modeling, 알고리즘 개발
 - 이태희_T4172: Object Tracking 모델 조사, Modeling, 코드 오류 분석 및 수정
-
+---
 ## Project Outline
 
 <table>
@@ -76,7 +76,7 @@
 - 위의 사진들은 '백종원의 쿠킹로그'라는 유튜브 채널에서 가져온 것으로, 일반인의 표정과 대응되는 백종원의 사진으로 대체함으로써 그들의 반응을 효과적으로 파악할 수 있도록 하였다. 
 - 하지만, 이러한 방식은 편집자가 직접 해당 프레임의 얼굴을 찾아 바꿔주어야 하기 때문에 상당한 비용(시간, 노력 등)이 발생한다.
 - 이에 우리는 기존의 모자이크를 대체하여 사람을 특정할 수 있을 정도로 얼굴을 노출시키지 않는 동시에 얼굴 표정, 시선, 눈빛과 같은 정보는 보존할 수 있는 새로운 방식, `CAFE(CArtoonize For Extra faces)`를 제안한다.
-
+---
 ## Environment
 - Ubuntu 18.04.5 LTS
 - Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
@@ -86,7 +86,7 @@
 - PyTorch 1.12.1
 - opencv-python 4.2.0.34
 
-
+---
 ## Architecture
 ### Summary
 - Detection: [YOLOv7](https://github.com/derronqi/yolov7-face) 
@@ -127,7 +127,7 @@
 > 4. 위의 과정이 끝난 이후, backend에서 MongoDB에 저장된 tracking 정보를 사용하여 face swapping 과정을 수행한다.
 > 5. Streamlit을 통해 user가 최종 결과물의 재생 및 저장이 가능하다. 
 
-
+---
 ## Usage
 ```(python)
 # Clone our repository
@@ -152,7 +152,7 @@ bash start.sh
 
 # Now, you can access demo page at "http://{your_own_ip_address}:30001"}
 ```
-
+---
 ## Dataset
 ### YOLOv7-tiny
 Trained with [WiderFace](http://shuoyang1213.me/WIDERFACE/), [[pretrained weights](https://drive.google.com/u/0/uc?id=1Mona-I4PclJr5mjX1qb8dgDeMpYyBcwM&export=download)]   
@@ -166,7 +166,7 @@ Trained with private dataset. Scenery images are collected from Shinkai Makoto, 
 Download the pre-trained weights and place them in the path below.
 
 `./final-project-level3-cv-07/models/cartoonize/saved_models`
-
+---
 ## Result
 ### Discussion
 - 첫 번째 결과의 tracking result를 보면 배경 및 의상에서도 얼굴이 인식되는 것을 확인할 수 있다. CAFE는 confidence thresholding을 통해 이러한 상황에서도 강인하게 동작한다. 
@@ -236,13 +236,13 @@ Download the pre-trained weights and place them in the path below.
 - https://www.youtube.com/watch?v=SP-LJqVgQuw&t=163s
 - https://www.youtube.com/watch?v=GmAwsAB7nhw
 - https://www.youtube.com/watch?v=tL20swtWOqI
-
+---
 ## Demo
 [데모 영상(gif) 추가하기]
-
+---
 ## More Details
 [[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation 추가]()]
-
+---
 ## Reference
 - C.-Y. Wang, A. Bochkovskiy, H.-Y. M. Liao, Yolov7: Trainable bag-
 of-freebies sets new state-of-the-art for real-time object detectors, arXiv
@@ -252,11 +252,11 @@ multi-pedestrian tracking, arXiv preprint arXiv:2206.14651.
 - X. Wang, J. Yu, Learning to cartoonize using white-box cartoon represen-
 tations, in: Proceedings of the IEEE/CVF conference on computer vision
 and pattern recognition, 2020, pp. 8090–8099.
-
+---
 ## Acknowledgement
 A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
 
-## TO DO
+## TO DO (다 하면 삭제)
 - Usage section 대로 하면 진짜 실행할 수 있는지 새 서버 할당받아서 확인해보기
 - 개발 다 끝나면 Usage section 안에 있는 line number 수정
 - Demo section에 영상 추가
@@ -265,3 +265,8 @@ A large part of the code are borrowed from [YOLOv7 with wider face dataset](http
 ## TO DO?
 - Result section에 지금 세번째 영상(유퀴즈)을 빼고, 1:1, 9:16 (세로로 긴) 비율의 영상에 대한 결과를 넣는건 어떨까 ?
 - 실패한 영상도 넣고 '이래서 reid가 필요하다!' 정도로 future work에서 언급해주는건 어떨까 ?
+---
+
+<div align=center>
+	<a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fboostcampaitech4lv23cv1%2Ffinal-project-level3-cv-07&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false"/></a>
+</div>
