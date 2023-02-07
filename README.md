@@ -43,6 +43,7 @@
 - 이  구_T4145: Cartoonize 모델 조사, Modeling, 알고리즘 개발
 - 이태희_T4172: Object Tracking 모델 조사, Modeling, 코드 오류 분석 및 수정
 ---
+
 ## Project Outline
 
 <table>
@@ -77,6 +78,7 @@
 - 하지만, 이러한 방식은 편집자가 직접 해당 프레임의 얼굴을 찾아 바꿔주어야 하기 때문에 상당한 비용(시간, 노력 등)이 발생한다.
 - 이에 우리는 기존의 모자이크를 대체하여 사람을 특정할 수 있을 정도로 얼굴을 노출시키지 않는 동시에 얼굴 표정, 시선, 눈빛과 같은 정보는 보존할 수 있는 새로운 방식, `CAFE(CArtoonize For Extra faces)`를 제안한다.
 ---
+
 ## Environment
 - Ubuntu 18.04.5 LTS
 - Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
@@ -87,6 +89,7 @@
 - opencv-python 4.2.0.34
 
 ---
+
 ## Architecture
 ### Summary
 - Detection: [YOLOv7](https://github.com/derronqi/yolov7-face) 
@@ -128,6 +131,7 @@
 > 5. Streamlit을 통해 user가 최종 결과물의 재생 및 저장이 가능하다. 
 
 ---
+
 ## Usage
 ```(python)
 # Clone our repository
@@ -152,7 +156,9 @@ bash start.sh
 
 # Now, you can access demo page at "http://{your_own_ip_address}:30001"}
 ```
+
 ---
+
 ## Dataset
 ### YOLOv7-tiny
 Trained with [WiderFace](http://shuoyang1213.me/WIDERFACE/), [[pretrained weights](https://drive.google.com/u/0/uc?id=1Mona-I4PclJr5mjX1qb8dgDeMpYyBcwM&export=download)]   
@@ -166,7 +172,9 @@ Trained with private dataset. Scenery images are collected from Shinkai Makoto, 
 Download the pre-trained weights and place them in the path below.
 
 `./final-project-level3-cv-07/models/cartoonize/saved_models`
+
 ---
+
 ## Result
 ### Discussion
 - 첫 번째 결과의 tracking result를 보면 배경 및 의상에서도 얼굴이 인식되는 것을 확인할 수 있다. CAFE는 confidence thresholding을 통해 이러한 상황에서도 강인하게 동작한다. 
@@ -236,12 +244,16 @@ Download the pre-trained weights and place them in the path below.
 - https://www.youtube.com/watch?v=SP-LJqVgQuw&t=163s
 - https://www.youtube.com/watch?v=GmAwsAB7nhw
 - https://www.youtube.com/watch?v=tL20swtWOqI
+
 ---
+
 ## Demo
 [데모 영상(gif) 추가하기]
+
 ---
 ## More Details
 [[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation 추가]()]
+
 ---
 ## Reference
 - C.-Y. Wang, A. Bochkovskiy, H.-Y. M. Liao, Yolov7: Trainable bag-
@@ -252,6 +264,7 @@ multi-pedestrian tracking, arXiv preprint arXiv:2206.14651.
 - X. Wang, J. Yu, Learning to cartoonize using white-box cartoon represen-
 tations, in: Proceedings of the IEEE/CVF conference on computer vision
 and pattern recognition, 2020, pp. 8090–8099.
+
 ---
 ## Acknowledgement
 A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
