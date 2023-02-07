@@ -77,9 +77,7 @@
 - 하지만, 이러한 방식은 편집자가 직접 해당 프레임의 얼굴을 찾아 바꿔주어야 하기 때문에 상당한 비용(시간, 노력 등)이 발생한다.
 - 이에 우리는 기존의 모자이크를 대체하여 사람을 특정할 수 있을 정도로 얼굴을 노출시키지 않는 동시에 얼굴 표정, 시선, 눈빛과 같은 정보는 보존할 수 있는 새로운 방식, `CAFE(CArtoonize For Extra faces)`를 제안한다.
 
-## 프로젝트 환경
-프로젝트 진행 환경은 다음과 같다. 
-
+## Environment
 - Ubuntu 18.04.5 LTS
 - Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
 - NVIDIA Tesla V100-SXM2-32GB (used up to 8GB at our test)
@@ -97,7 +95,7 @@
 - Backend: FastAPI
 - Frontend: Streamlit
 
-### Model Flow
+### Data Flow
 <table>
         <td align="center">
             <a><img height="300px" width="800px" src="https://user-images.githubusercontent.com/59161083/216927654-a4676796-80a2-4802-bdba-97449debbf39.png"/></a>
@@ -105,7 +103,7 @@
         </td>
 </table>
 
-전체적인 Model Flow는 아래와 같다.    
+전체적인 Data Flow는 아래와 같다.    
 
 > 1. User로부터 영상과 영상의 주인공(target) 사진을 입력받는다.   
 > 2. 영상에 face detection & tracking, cartoonize를 적용한다.     
@@ -141,7 +139,7 @@ cd final-project-level3-cv-07
 # Setup for each virtual environment (for frontend, backend, detection & tracking, cartoonize)
 bash init.sh
 
-# Open frontend/app.py and update backend ip address in line 12
+# Open frontend/app.py and update backend ip address in line {FIXME}
 vim frontend/app.py
 
 """
@@ -164,13 +162,17 @@ Download the pre-trained weights and place them in the path below.
 
 ### White-box Cartoonization
 
-Trained with private dataset.Scenery images are collected from Shinkai Makoto, Miyazaki Hayao and Hosoda Mamoru films. Portrait images are from Kyoto animations and PA Works). [[pretrained weights](https://github.com/SystemErrorWang/White-box-Cartoonization/tree/master/test_code/saved_models)]    
+Trained with private dataset. Scenery images are collected from Shinkai Makoto, Miyazaki Hayao and Hosoda Mamoru films. Portrait images are from Kyoto animations and PA Works). [[pretrained weights](https://github.com/SystemErrorWang/White-box-Cartoonization/tree/master/test_code/saved_models)]    
 Download the pre-trained weights and place them in the path below.
 
 `./final-project-level3-cv-07/models/cartoonize/saved_models`
 
 ## Result
-영상을 gif로 변환하는 과정에서 해상도가 낮아졌지만 최대 1080p까지 대응이 가능하며, 영상 종횡비와 관계없이 사용할 수 있다.
+### Summary
+- 입력된 영상의 해상도가 1080p 이하인 경우 원본 해상도를 유지한다.
+- 입력된 영상의 해상도가 1080p 이상인 경우 종횡비를 유지하며 가로, 세로 중 작은 쪽을 1080 pixel로 맞춰준다.
+- 첫 번째 결과의 tracking result를 보면 배경 및 의상에서도 얼굴이 인식되는 것을 확인할 수 있다. CAFE는 confidence thresholding을 통해 이러한 상황에서도 강인하게 동작한다. 
+- 두 번째 결과를 보면 화면 전환에 의해 동인 인물에 대한 여러개의 tracklet이 생성되지만, 우리가 제안한 two-step similarity check 과정을 통해 성공적으로 target과 extra를 구분해내는 것을 확인할 수 있다.
 
 <table align="center">
     <tr>
@@ -230,8 +232,8 @@ Download the pre-trained weights and place them in the path below.
         </td>
     </tr>
 </table>
-영상 출처
 
+### 영상 출처
 - https://www.youtube.com/watch?v=SP-LJqVgQuw&t=163s
 - https://www.youtube.com/watch?v=GmAwsAB7nhw
 - https://www.youtube.com/watch?v=tL20swtWOqI
@@ -254,3 +256,10 @@ and pattern recognition, 2020, pp. 8090–8099.
 
 ## Acknowledgement
 A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
+
+## TO DO
+- Usage section 대로 하면 진짜 실행할 수 있는지 새 서버 할당받아서 확인해보기
+- 개발 다 끝나면 Usage section 안에 있는 line number 수정
+- Demo section에 영상 추가
+- Result section에 세번째 영상을 빼고, 1:1, 9:16 비율의 영상에 대한 결과를 넣는건 어떨까?
+- Mode Details section 링크 연결
