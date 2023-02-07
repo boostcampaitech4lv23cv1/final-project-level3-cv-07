@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
             with res_col:
                 st.balloons()
-                cartoon_video = open("database/cartoonized_video/cartoonized.mp4", "rb")
+                cartoon_video = open("database/cartoonized_video/video.mp4", "rb")
                 video_bytes = cartoon_video.read()
                 st.video(video_bytes)   # 읽지만 영상 로드 안됨.
             
