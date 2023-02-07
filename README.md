@@ -239,11 +239,14 @@ Download the pre-trained weights and place them in the path below.
 [[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation 추가]()]
 
 ## Reference
-- Wang, C.Y.; Bochkovskiy, A.; Liao, H.Y.M. YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors. arXiv 2022, arXiv:2207.02696.
-- Aharon, N.; Orfaig, R.; Bobrovsky, B.Z. BoT-SORT: Robust Associations Multi-Pedestrian Tracking. arXiv 2022, arXiv:2206.14651.
-- Xinrui Wang and Jinze Yu. Learning to cartoonize using
-white-box cartoon representations. In CVPR, pages 8090–
-8099, 2020.
+- C.-Y. Wang, A. Bochkovskiy, H.-Y. M. Liao, Yolov7: Trainable bag-
+of-freebies sets new state-of-the-art for real-time object detectors, arXiv
+preprint arXiv:2207.02696.
+- N. Aharon, R. Orfaig, B.-Z. Bobrovsky, Bot-sort: Robust associations
+multi-pedestrian tracking, arXiv preprint arXiv:2206.14651.
+- X. Wang, J. Yu, Learning to cartoonize using white-box cartoon represen-
+tations, in: Proceedings of the IEEE/CVF conference on computer vision
+and pattern recognition, 2020, pp. 8090–8099.
 
 ## Acknowledgement
 A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
