@@ -5,6 +5,8 @@ import os
 import re
 import asyncio
 import aiohttp
+import ffmpeg
+
 from fastapi import FastAPI, Request
 
 # DB에 Environment 변수들 저장
@@ -165,6 +167,10 @@ def request_inferences():
     
     final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
     save_face_swapped_vid(final_lines, opt.work_dir, fps)
+    
+    stream = ffmpeg.input(f"{database_info['dir']}/work_dir/result.mp4")
+    stream = ffmpeg.output(stream, f"{database_info['dir']}/cartoonized_video/video.mp4")
+    ffmpeg.run(stream)
     
     return 200
 
