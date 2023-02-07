@@ -173,6 +173,7 @@ Download the pre-trained weights and place them in the path below.
 - 입력된 영상의 해상도가 1080p 이상인 경우 종횡비를 유지하며 가로, 세로 중 작은 쪽을 1080 pixel로 맞춰준다.
 - 첫 번째 결과의 tracking result를 보면 배경 및 의상에서도 얼굴이 인식되는 것을 확인할 수 있다. CAFE는 confidence thresholding을 통해 이러한 상황에서도 강인하게 동작한다. 
 - 두 번째 결과를 보면 화면 전환에 의해 동인 인물에 대한 여러개의 tracklet이 생성되지만, 우리가 제안한 two-step similarity check 과정을 통해 성공적으로 target과 extra를 구분해내는 것을 확인할 수 있다.
+- ~~세 번째, 네 번째 결과를 통해 다양한 종횡비를 갖는 영상에 대한 처리가 가능하다는 것을 확인할 수 있다.~~
 
 <table align="center">
     <tr>
@@ -261,5 +262,8 @@ A large part of the code are borrowed from [YOLOv7 with wider face dataset](http
 - Usage section 대로 하면 진짜 실행할 수 있는지 새 서버 할당받아서 확인해보기
 - 개발 다 끝나면 Usage section 안에 있는 line number 수정
 - Demo section에 영상 추가
-- Result section에 세번째 영상을 빼고, 1:1, 9:16 비율의 영상에 대한 결과를 넣는건 어떨까?
 - Mode Details section 링크 연결
+
+## TO DO?
+- Result section에 지금 세번째 영상(유퀴즈)을 빼고, 1:1, 9:16 (세로로 긴) 비율의 영상에 대한 결과를 넣는건 어떨까 ?
+- 실패한 영상도 넣고 '이래서 reid가 필요하다!' 정도로 future work에서 언급해주는건 어떨까 ?
