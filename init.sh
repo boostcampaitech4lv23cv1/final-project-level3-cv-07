@@ -2,6 +2,7 @@ apt-get update
 apt-get -y install libgl1-mesa-glx
 apt-get install -y libsm6 libxext6 libxrender-dev
 apt-get install g++ -y
+apt-get install ffmpeg
 
 # Mongo DB
 apt-get install mongodb -y
