@@ -14,4 +14,4 @@ numpy
 opencv-python
 pymongo
 tqdm
-ffmpeg-python
+moviepy

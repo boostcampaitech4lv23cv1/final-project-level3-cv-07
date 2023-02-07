@@ -1,12 +1,14 @@
 
-import uvicorn
-import requests
 import os
 import re
+
+import uvicorn
+import requests
 import asyncio
 import aiohttp
 import ffmpeg
 
+from moviepy import editor as mp
 from fastapi import FastAPI, Request
 
 # DB에 Environment 변수들 저장
@@ -152,7 +154,7 @@ def request_inferences():
     create_directory(f"{opt.work_dir}/tracklet")
     create_directory(f"{opt.work_dir}/image_orig")
     create_directory(f"{opt.work_dir}/image_cart")
-        
+    
     # Cartoonize, Track 모델 비동기 호출 요청
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -168,10 +170,17 @@ def request_inferences():
     final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
     save_face_swapped_vid(final_lines, opt.work_dir, fps)
     
-    stream = ffmpeg.input(f"{database_info['dir']}/work_dir/result.mp4")
-    stream = ffmpeg.output(stream, f"{database_info['dir']}/cartoonized_video/video.mp4")
-    ffmpeg.run(stream, overwrite_output=True)
+    src_videoclip = mp.VideoFileClip(f"{database_info['dir']}/uploaded_video/video.mp4")
+    dst_videoclip = mp.VideoFileClip(f"{database_info['dir']}/work_dir/result.mp4")
     
+    src_videoclip.audio.duration = dst_videoclip.duration
+    
+    dst_videoclip.audio = src_videoclip.audio
+    dst_videoclip.write_videofile(f"{database_info['dir']}/cartoonized_video/video.mp4")
+    
+    src_videoclip.close()
+    dst_videoclip.close()
+        
     return 200
 
 if __name__ == "__main__":

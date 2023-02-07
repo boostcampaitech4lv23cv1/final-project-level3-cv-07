@@ -18,8 +18,11 @@ async def task_sentence(message_col):
     txt_list = txt.readlines()
     cnt = 1
     with message_col:
+        placeholder = st.empty()
         while(cnt <= len(txt_list)):
-            st.text(txt_list[cnt - 1])
+            with placeholder:
+                st.text(txt_list[cnt - 1])
+            
             await asyncio.sleep(7)
             cnt += 1
     txt.close()
@@ -90,7 +93,7 @@ if __name__ == "__main__":
             requests.post(f"{backend}/upload/video", encoded_video)
             requests.post(f"{backend}/upload/image", encoded_image)
             with st.spinner():
-                asyncio.run(multi_task(message_col))
+                asyncio.run(multi_task(col3))
             
             # 결과 영상 도출
             with res_empty0:
