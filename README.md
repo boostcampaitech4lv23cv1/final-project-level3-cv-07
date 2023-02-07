@@ -1,6 +1,6 @@
 # CAFE: CArtoonize For Extra faces
 
-## Member
+## TEAM Member
 <table align="center">
     <th colspan=5>블랙박스</th>
     <tr height="160px">
@@ -43,7 +43,7 @@
 - 이  구_T4145: Cartoonize 모델 조사, Modeling, 알고리즘 개발
 - 이태희_T4172: Object Tracking 모델 조사, Modeling, 코드 오류 분석 및 수정
 
-## 프로젝트 개요
+## Project Outline
 
 <table>
     <tr>
@@ -77,15 +77,26 @@
 - 하지만, 이러한 방식은 편집자가 직접 해당 프레임의 얼굴을 찾아 바꿔주어야 하기 때문에 상당한 비용(시간, 노력 등)이 발생한다.
 - 이에 우리는 기존의 모자이크를 대체하여 사람을 특정할 수 있을 정도로 얼굴을 노출시키지 않는 동시에 얼굴 표정, 시선, 눈빛과 같은 정보는 보존할 수 있는 새로운 방식, `CAFE(CArtoonize For Extra faces)`를 제안한다.
 
-## Demo
-[데모 영상(gif) 추가하기]
-
 ## 프로젝트 환경
+프로젝트 진행 환경은 다음과 같다. 
+
 - Ubuntu 18.04.5 LTS
 - Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
-- NVIDIA Tesla V100-SXM2-32GB
+- NVIDIA Tesla V100-SXM2-32GB (used up to 8GB at our test)
+- CUDA 11.0
+- Tensorflow 1.12.0
+- PyTorch 1.12.1
+- opencv-python 4.2.0.34
+
 
 ## Architecture
+### Summary
+- Detection: [YOLOv7](https://github.com/derronqi/yolov7-face) 
+- Tracking: [BoT-SORT](https://github.com/NirAharon/BoT-SORT)
+- Cartoonize : [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization)
+- Backend: FastAPI
+- Frontend: Streamlit
+
 ### Model Flow
 <table>
         <td align="center">
@@ -135,21 +146,23 @@ vim frontend/app.py
 
 """
 fix below line
-backend = "http://115.85.182.51:30002" -> backend = {your_backend_ip_address}
+backend = "http://115.85.182.51:30002" -> backend = "http://{your_own_ip_address}:30002"
 """
 
 # Start all process required for starting demo page
 bash start.sh
 
-# Now, you can access demo page
+# Now, you can access demo page at "http://{your_own_ip_address}:30001"}
 ```
 
 ## Dataset
 [{사용한 데이터셋 종류} : {사용한 데이터셋 다운받을 수 있는 링크}, {어느 경로에 놓아야 하는지}]
 
+## Demo
+[데모 영상(gif) 추가하기]
 
 ## More Details
-[Wrap-up 링크 추가] [PPT 자료 링크 추가] [발표 영상 추가]
+[[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation 추가]()]
 
 ## Reference
 - Wang, C.Y.; Bochkovskiy, A.; Liao, H.Y.M. YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors. arXiv 2022, arXiv:2207.02696.
@@ -157,4 +170,6 @@ bash start.sh
 - Xinrui Wang and Jinze Yu. Learning to cartoonize using
 white-box cartoon representations. In CVPR, pages 8090–
 8099, 2020.
-- [코드 참고한 repo 추가하기]
+
+## Acknowledgement
+A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
