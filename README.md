@@ -162,15 +162,15 @@ bash start.sh
 <table align="center">
     <tr>
         <td align="center">
-            <a><img height="200px" width="130px" src="https://user-images.githubusercontent.com/59161083/217132894-5f717969-d4a3-467f-a3bb-529e10a1c0d7.jpg"/></a>
+            <a><img height="150px" width="110px" src="https://user-images.githubusercontent.com/59161083/217132894-5f717969-d4a3-467f-a3bb-529e10a1c0d7.jpg"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217134468-18233e3e-1ff4-4e00-9e53-9abf891cc91f.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217134468-18233e3e-1ff4-4e00-9e53-9abf891cc91f.gif"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217132389-aa5e89e2-49d2-46d8-b0df-111e24cd0e10.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217132389-aa5e89e2-49d2-46d8-b0df-111e24cd0e10.gif"/></a>
             <br/>
         </td>
     </tr>
@@ -178,15 +178,15 @@ bash start.sh
 <table align="center">
     <tr>
         <td align="center">
-            <a><img height="200px" width="130px" src="https://user-images.githubusercontent.com/59161083/217133395-945b7978-191e-46e3-b4fc-8d538469d778.jpg"/></a>
+            <a><img height="150px" width="110px" src="https://user-images.githubusercontent.com/59161083/217133395-945b7978-191e-46e3-b4fc-8d538469d778.jpg"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217134297-5832a155-4492-4fc9-80a1-73449ac482ab.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217134297-5832a155-4492-4fc9-80a1-73449ac482ab.gif"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217133332-bd47f2d4-c259-4549-adb5-b2dfafc320fe.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217133332-bd47f2d4-c259-4549-adb5-b2dfafc320fe.gif"/></a>
             <br/>
         </td>
     </tr>
@@ -194,15 +194,15 @@ bash start.sh
 <table align="center">
     <tr>
         <td align="center">
-            <a><img height="200px" width="130px" src="https://user-images.githubusercontent.com/59161083/217133674-38115128-adca-49aa-96f6-45cec7a04335.jpg"/></a>
+            <a><img height="150px" width="110px" src="https://user-images.githubusercontent.com/59161083/217133674-38115128-adca-49aa-96f6-45cec7a04335.jpg"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217134585-48bb55a8-cbe4-405b-a952-ee2a26f58e4e.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217134585-48bb55a8-cbe4-405b-a952-ee2a26f58e4e.gif"/></a>
             <br />
         </td>
         <td align="center">
-            <a><img height="200px" width="400px" src="https://user-images.githubusercontent.com/59161083/217134065-97e8c4c2-577e-4856-b242-9a99bd219319.gif"/></a>
+            <a><img height="150px" width="300px" src="https://user-images.githubusercontent.com/59161083/217134065-97e8c4c2-577e-4856-b242-9a99bd219319.gif"/></a>
             <br/>
         </td>
     </tr>
