@@ -12,7 +12,7 @@ st.set_page_config(page_title="Streamlit Geospatial", layout="wide")
 
 import requests
 
-backend = "http://49.50.160.138:30002"
+backend = "http://115.85.182.51:30002"
 
 infer_trigger = False
 
@@ -20,15 +20,15 @@ async def task_sentence(message_col):
     global infer_trigger
     txt = open("database/sentences_rdm.txt", "r")
     txt_list = txt.readlines()
-    idx = random.random(0, len(txt_list))
+    
     with message_col:
         placeholder = st.empty()
         while(not infer_trigger):
+            idx = random.randint(0, len(txt_list)-1)
             with placeholder:
-                st.text(txt_list[idx])
+                st.markdown(txt_list[idx])
             
             await asyncio.sleep(4)
-            cnt += 1
     txt.close()
 
 async def req_inference():
@@ -99,7 +99,7 @@ if __name__ == "__main__":
             requests.post(f"{backend}/upload/video", encoded_video)
             requests.post(f"{backend}/upload/image", encoded_image)
             with st.spinner():
-                asyncio.run(multi_task(col3))
+                asyncio.run(multi_task(message_col))
             
             # 결과 영상 도출
             with res_empty0:
