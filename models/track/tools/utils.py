@@ -22,10 +22,9 @@ def extract_feature(target_path, work_dir):
 
 def get_frame_num(source):
     cap = cv2.VideoCapture(source)
-    frame_list = []
     i = 0
     while True:
-        ret, cur_frame = cap.read()
+        _, cur_frame = cap.read()
         if cur_frame is None:
             break
         i += 1
