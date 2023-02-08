@@ -172,9 +172,10 @@ def request_inferences():
     src_videoclip = mp.VideoFileClip(f"{database_info['dir']}/uploaded_video/video.mp4")
     dst_videoclip = mp.VideoFileClip(f"{database_info['dir']}/work_dir/result.mp4")
     
-    src_videoclip.audio.duration = dst_videoclip.duration
+    if src_videoclip.audio:
+        src_videoclip.audio.duration = dst_videoclip.duration
+        dst_videoclip.audio = src_videoclip.audio
     
-    dst_videoclip.audio = src_videoclip.audio
     dst_videoclip.write_videofile(f"{database_info['dir']}/cartoonized_video/video.mp4")
     
     src_videoclip.close()
