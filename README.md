@@ -150,7 +150,7 @@ bash init.sh
 - Then, follow instruction in [Dataset section](#dataset)
 
 ### Run CAFE with Web Demo
-
+- You can run CAFE with web demo. Just follow the instruction below.
 ```(python)
 # Open frontend/app.py and update backend ip address in line 14
 vim frontend/app.py
