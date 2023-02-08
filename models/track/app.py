@@ -1,17 +1,18 @@
 from pymongo import MongoClient
 
 client = MongoClient()
-db = client['cafe']
-collection = db['env']
+db = client["cafe"]
+collection = db["env"]
 
-base_info = collection.find_one({'name': 'base'})
-database_info = collection.find_one({'name': 'database'})
-backend_info = collection.find_one({'name': 'backend'})
-cartoonize_info = collection.find_one({'name': 'cartoonize'})
-track_info = collection.find_one({'name': 'track'})
+base_info = collection.find_one({"name": "base"})
+database_info = collection.find_one({"name": "database"})
+backend_info = collection.find_one({"name": "backend"})
+cartoonize_info = collection.find_one({"name": "cartoonize"})
+track_info = collection.find_one({"name": "track"})
 
 import sys
-sys.path.append(base_info['dir'])
+
+sys.path.append(base_info["dir"])
 
 import uvicorn
 from fastapi import FastAPI
@@ -20,8 +21,9 @@ import torch
 
 from backend.utils.general import *
 
+
 class Opt:
-    weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+    weights = f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
     source = f"{database_info['dir']}/uploaded_video/video.mp4"
     target = f"{database_info['dir']}/target/target.jpeg"
     img_size = 1920
@@ -34,7 +36,7 @@ class Opt:
     agnostic_nms = True
     augment = None
     update = None
-    work_dir= f"{database_info['dir']}/work_dir"
+    work_dir = f"{database_info['dir']}/work_dir"
     name = "exp"
     exist_ok = None
     save_results = True
@@ -59,7 +61,7 @@ class Opt:
 
     # CMC
     cmc_method = "sparseOptFlow"
-    swap_all_face = False 
+    swap_all_face = False
     verbose = False
     # ReID
     with_reid = False
@@ -70,37 +72,48 @@ class Opt:
     jde = False
     ablation = False
 
+
 opt = Opt()
 
 # FastAPI 객체 생성
 app = FastAPI()
 
+
 @app.get("/track")
 def req_track():
     from tools.mc_demo_yolov7 import detection_and_tracking, get_valid_tids
     from tools.utils import extract_feature
-    
+
     # Extract_feature
     extract_feature(opt.target, opt.work_dir)
-    
+
     # Track
     track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(opt)
-    
+
     # Track 정보 DB에 저장
-    collection = db['track_info']
+    collection = db["track_info"]
     collection.insert_many(track_infos)
-        
+
     # Target valid id 추출
-    targeted_ids, valid_ids = get_valid_tids(tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose)
-    
+    targeted_ids, valid_ids = get_valid_tids(
+        tracker,
+        results_temp,
+        opt.min_frame,
+        opt.conf_thresh,
+        opt.work_dir,
+        opt.dbscan,
+        opt.verbose,
+    )
+
     if opt.save_results:
         write_results(
             os.path.join(opt.work_dir, "valid_ids.txt"),
             "targeted tracklet ids (id : confidence)\n",
         )
-        for id, (conf,sim) in targeted_ids.items():
+        for id, (conf, sim) in targeted_ids.items():
             write_results(
-                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
+                os.path.join(opt.work_dir, "valid_ids.txt"),
+                f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n",
             )
 
         write_results(

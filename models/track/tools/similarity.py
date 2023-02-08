@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from deepface import DeepFace
 
+
 def calc_similarity_v1(target_feature, tracker_feat, sim_thres):
     print("Similairties(cosine) list: ")
     print(
@@ -31,6 +32,7 @@ def calc_similarity_v1(target_feature, tracker_feat, sim_thres):
     t_ids = np.asarray(list(tracker_feat.keys()))
     valid_ids = t_ids[sim[0]]  # key에 넣어서 해당 tracker ID만을 뽑아내기
     return valid_ids
+
 
 def calc_similarity_v2(dfs, t_ids, tracklet_dir):
 
@@ -65,6 +67,7 @@ def calc_similarity_v2(dfs, t_ids, tracklet_dir):
             targeted_ids[id] = (id_conf, sim)
 
     return targeted_ids, t_ids
+
 
 def calc_similarity_v3(dfs, t_ids, tracklet_dir):
     sim_dict, sim_cnt = defaultdict(float), defaultdict(int)

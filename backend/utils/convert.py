@@ -6,7 +6,7 @@ from .mask_generator import (
     mask_generator_v0,
     mask_generator_v1,
     mask_generator_v2,
-    mask_generator_v3
+    mask_generator_v3,
 )
 
 # from deepface import DeepFace
@@ -64,22 +64,22 @@ def parsing_results(track_info, valid_ids, num_frames, swap_all_face):
 
     return total_lines
 
+
 def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     h = y_max - y_min
     w = x_max - x_min
-    x_min = int(max(0, x_min - w // scale)) 
+    x_min = int(max(0, x_min - w // scale))
     y_min = int(max(0, y_min - h // scale))
-    x_max = int(min(width, x_max + w // scale)) 
+    x_max = int(min(width, x_max + w // scale))
     y_max = int(min(height, y_max + h // scale))
     return x_min, y_min, x_max, y_max
+
 
 def save_face_swapped_vid(final_lines, work_dir, fps):
     import time
     from tqdm import tqdm
-    
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
+
+    img = cv2.imread(f"{work_dir}/image_orig/frame_1.png")
     height, width, layers = img.shape
     size = (width, height)
     swap_s = time.time()
@@ -89,12 +89,8 @@ def save_face_swapped_vid(final_lines, work_dir, fps):
     for line in tqdm(final_lines):
         assert (len(line) - 1) % 4 == 0
         frame_idx = line[0]  # Image Index starts from 1
-        orig_img = cv2.imread(
-            f"{work_dir}/image_orig/frame_{frame_idx}.png"
-        )
-        cart_img = cv2.imread(
-            f"{work_dir}/image_cart/frame_{frame_idx}.png"
-        )
+        orig_img = cv2.imread(f"{work_dir}/image_orig/frame_{frame_idx}.png")
+        cart_img = cv2.imread(f"{work_dir}/image_cart/frame_{frame_idx}.png")
         resized_cart_img = cv2.resize(cart_img, size, interpolation=cv2.INTER_LINEAR)
         face_swapped_img = orig_img
         for i in range(((len(line) - 1) // 4)):

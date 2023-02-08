@@ -9,6 +9,7 @@ from tqdm import tqdm
 import network
 import guided_filter
 
+
 def save_vid_2_img(vid_path, save_dir):
     cap = cv2.VideoCapture(vid_path)
     i = 0
@@ -25,6 +26,7 @@ def save_vid_2_img(vid_path, save_dir):
         cv2.imwrite(save_dir + f"/frame_{i+1}.png", frame)
         i += 1
 
+
 def resize_crop_cart(image):
     h, w, c = np.shape(image)
     if min(h, w) > 720:
@@ -37,6 +39,7 @@ def resize_crop_cart(image):
     image = image[:h, :w, :]
     return image
 
+
 def resize_crop_orig(image):
     h, w, c = np.shape(image)
     if min(h, w) > 1080:
@@ -48,6 +51,7 @@ def resize_crop_orig(image):
     h, w = (h // 8) * 8, (w // 8) * 8
     image = image[:h, :w, :]
     return image
+
 
 def cartoonize(load_folder, save_folder, model_path):
     input_photo = tf.placeholder(tf.float32, [1, None, None, 3])
@@ -80,8 +84,9 @@ def cartoonize(load_folder, save_folder, model_path):
             cv2.imwrite(save_path, output)
         except:
             print("cartoonize {} failed".format(load_path))
-            
+
     tf.contrib.keras.backend.clear_session()
+
 
 if __name__ == "__main__":
     from pymongo import MongoClient
@@ -89,16 +94,16 @@ if __name__ == "__main__":
     client = MongoClient()
 
     db = client["cafe"]
-    collection = db['env']
+    collection = db["env"]
 
-    base_info = collection.find_one({'name': 'base'})
-    database_info = collection.find_one({'name': 'database'})
-    backend_info = collection.find_one({'name': 'backend'})
-    cartoonize_info = collection.find_one({'name': 'cartoonize'})
-    track_info = collection.find_one({'name': 'track'})
-    
+    base_info = collection.find_one({"name": "base"})
+    database_info = collection.find_one({"name": "database"})
+    backend_info = collection.find_one({"name": "backend"})
+    cartoonize_info = collection.find_one({"name": "cartoonize"})
+    track_info = collection.find_one({"name": "track"})
+
     class Opt:
-        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+        weights = f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
         source = f"{database_info['dir']}/uploaded_video/video.mp4"
         target = f"{database_info['dir']}/target/target.jpeg"
         img_size = 1920
@@ -111,7 +116,7 @@ if __name__ == "__main__":
         agnostic_nms = True
         augment = None
         update = None
-        work_dir= f"{database_info['dir']}/work_dir"
+        work_dir = f"{database_info['dir']}/work_dir"
         name = "exp"
         exist_ok = None
         save_results = True
@@ -120,7 +125,7 @@ if __name__ == "__main__":
         hide_conf = (False,)
         line_thickness = 3
         save_img = True
-        
+
         # Tracking args
         track_high_thresh = 0.3
         track_low_thresh = 0.05
@@ -137,7 +142,7 @@ if __name__ == "__main__":
 
         # CMC
         cmc_method = "sparseOptFlow"
-        swap_all_face = False 
+        swap_all_face = False
         verbose = False
         # ReID
         with_reid = False
@@ -147,15 +152,14 @@ if __name__ == "__main__":
         appearance_thresh = 0.25
         jde = False
         ablation = False
-    
+
     opt = Opt()
-    
-    model_path =f"{cartoonize_info['dir']}/saved_models"
+
+    model_path = f"{cartoonize_info['dir']}/saved_models"
     load_dir = f"{opt.work_dir}/image_orig"
     save_dir = f"{opt.work_dir}/image_cart"
     input_video = f"{database_info['dir']}/uploaded_video/video.mp4"
-    
-    
+
     save_vid_2_img(input_video, load_dir)
 
     s = time.time()

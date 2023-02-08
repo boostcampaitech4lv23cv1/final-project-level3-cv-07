@@ -1,4 +1,3 @@
-
 import os
 import re
 
@@ -30,10 +29,7 @@ base_info = {
     "ip": server_ip,
 }
 
-database_info = {
-    "name": "database",
-    "dir": f"{base}/database"
-}
+database_info = {"name": "database", "dir": f"{base}/database"}
 
 backend_info = {
     "name": "backend",
@@ -62,8 +58,9 @@ collection.insert_one(track_info)
 from utils.convert import *
 from utils.general import *
 
+
 class Opt:
-    weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+    weights = f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
     source = f"{database_info['dir']}/uploaded_video/video.mp4"
     target = f"{database_info['dir']}/target/target.jpeg"
     img_size = 1920
@@ -76,7 +73,7 @@ class Opt:
     agnostic_nms = True
     augment = None
     update = None
-    work_dir= f"{database_info['dir']}/work_dir"
+    work_dir = f"{database_info['dir']}/work_dir"
     name = "exp"
     exist_ok = None
     save_results = True
@@ -85,7 +82,7 @@ class Opt:
     hide_conf = (False,)
     line_thickness = 3
     save_img = True
-    
+
     # Tracking args
     track_high_thresh = 0.3
     track_low_thresh = 0.05
@@ -102,7 +99,7 @@ class Opt:
 
     # CMC
     cmc_method = "sparseOptFlow"
-    swap_all_face = False 
+    swap_all_face = False
     verbose = False
     # ReID
     with_reid = False
@@ -112,6 +109,7 @@ class Opt:
     appearance_thresh = 0.25
     jde = False
     ablation = False
+
 
 opt = Opt()
 
@@ -125,7 +123,8 @@ async def upload_video(req: Request):
     file = open(f"{database_info['dir']}/uploaded_video/video.mp4", "wb")
     file.write(video)
     file.close()
-    
+
+
 # Client의 업로드 이미지 database/target/target.jpeg로 저장
 @app.post("/upload/image")
 async def upload_image(req: Request):
@@ -134,54 +133,60 @@ async def upload_image(req: Request):
     file.write(image)
     file.close()
 
+
 # 모델 비동기 호출 요청 *(Lock)
-async def inference():  
+async def inference():
     async def task(session, url):
         async with session.get(url) as response:
             return await response.text()
 
     async with aiohttp.ClientSession() as session:
-        return await asyncio.gather(task(session, f"{cartoonize_info['url']}/cartoonize"), task(session, f"{track_info['url']}/track"))
+        return await asyncio.gather(
+            task(session, f"{cartoonize_info['url']}/cartoonize"),
+            task(session, f"{track_info['url']}/track"),
+        )
+
 
 # Client 인퍼런스 호출 시 cartoonize, track 적용 후 병합
-@app.get("/req_infer")  
+@app.get("/req_infer")
 def request_inferences():
     db["track_info"].drop()
     remove_if_exists(opt.work_dir)
-    
+
     # 기초 directory 생성
     create_directory(f"{opt.work_dir}/tracklet")
     create_directory(f"{opt.work_dir}/image_orig")
     create_directory(f"{opt.work_dir}/image_cart")
-    
+
     # Cartoonize, Track 모델 비동기 호출 요청
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     cartoonized, tracked = loop.run_until_complete(inference())
     loop.close()
-    
+
     # Partial Cartoonize 진행
     valid_ids, num_frames, fps = eval(tracked)
     valid_ids = {int(x): valid_ids[x] for x in valid_ids}
-    
-    track_info = db['track_info'].find({}, {"_id": False})  # Tracklet 정보 수집
-    
+
+    track_info = db["track_info"].find({}, {"_id": False})  # Tracklet 정보 수집
+
     final_lines = parsing_results(track_info, valid_ids, num_frames, opt.swap_all_face)
     save_face_swapped_vid(final_lines, opt.work_dir, fps)
-    
+
     src_videoclip = mp.VideoFileClip(f"{database_info['dir']}/uploaded_video/video.mp4")
     dst_videoclip = mp.VideoFileClip(f"{database_info['dir']}/work_dir/result.mp4")
-    
+
     if src_videoclip.audio:
         src_videoclip.audio.duration = dst_videoclip.duration
         dst_videoclip.audio = src_videoclip.audio
-    
+
     dst_videoclip.write_videofile(f"{database_info['dir']}/cartoonized_video/video.mp4")
-    
+
     src_videoclip.close()
     dst_videoclip.close()
-        
+
     return 200
+
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=30002, reload=True, access_log=False)

@@ -22,16 +22,8 @@ from yolov7.utils.plots import plot_one_box
 from yolov7.utils.torch_utils import (
     select_device,
 )
-from tools.utils import (
-    get_frame_num,
-    bbox_scale_up,
-    extract_feature
-)
-from tools.similarity import (
-    calc_similarity_v1,
-    calc_similarity_v2,
-    calc_similarity_v3
-)
+from tools.utils import get_frame_num, bbox_scale_up, extract_feature
+from tools.similarity import calc_similarity_v1, calc_similarity_v2, calc_similarity_v3
 
 from tracker.mc_bot_sort import BoTSORT
 from fast_reid.fast_reid_interfece import FastReIDInterface
@@ -103,7 +95,6 @@ def detection_and_tracking(opt):
                 agnostic=opt.agnostic_nms,
             )
 
-
             # Process detections
             for i, det in enumerate(pred):  # detections per image
                 p, s, im0, frame = path, "", im0s, getattr(dataset, "frame", 0)
@@ -135,13 +126,13 @@ def detection_and_tracking(opt):
 
                         results.append(
                             {
-                                "frame": frame, 
-                                "tid": tid, 
-                                "tl_x": tlwh[0], 
+                                "frame": frame,
+                                "tid": tid,
+                                "tl_x": tlwh[0],
                                 "tl_y": tlwh[1],
                                 "width": tlwh[2],
                                 "height": tlwh[3],
-                                "conf": float(t.score)
+                                "conf": float(t.score),
                             }
                         )
                         results_temp[tid][frame] = np.append(tlbr, t.score)
@@ -166,9 +157,7 @@ def detection_and_tracking(opt):
                             vid_writer.release()  # release previous video writer
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         # FIXME (file path)
-                        img = cv2.imread(
-                            f"{opt.work_dir}/image_orig/frame_1.png"
-                        )
+                        img = cv2.imread(f"{opt.work_dir}/image_orig/frame_1.png")
                         h, w, _ = img.shape
                         vid_writer = cv2.VideoWriter(
                             opt.work_dir + "/tracked.mp4",
@@ -180,7 +169,10 @@ def detection_and_tracking(opt):
             progress_bar.update(1)
     return results, tracker, results_temp, num_frames, fps
 
-def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose):
+
+def get_valid_tids(
+    tracker, results, min_length, conf_thresh, work_dir, use_dbscan, verbose
+):
     """
     각각의 tracker에서 대표 feature를 뽑고 similarity 계산하기
     1. tracker status에 대한 설명
@@ -193,14 +185,12 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
     # 영상이 끝난 시점에 tracking 하고 있던 tracker들이 자동으로 removed_stracks로 status가 전환되지 않기 때문에
     # 영상이 끝난 시점에서 tracking을 하고 있었던 tracker와 과거에 tracking이 끝난 tracker들 모두를 관리 해야합니다.
     t_ids = {}
-    img = cv2.imread(
-        f"{work_dir}/image_orig/frame_1.png"
-    )
+    img = cv2.imread(f"{work_dir}/image_orig/frame_1.png")
     height, width, _ = img.shape
-    
-    tracklet_dir = work_dir+"/tracklet"
-    target_dir = work_dir+"/target_detect.png"
-    
+
+    tracklet_dir = work_dir + "/tracklet"
+    target_dir = work_dir + "/target_detect.png"
+
     tracks = list(
         set(tracker.removed_stracks + tracker.tracked_stracks + tracker.lost_stracks)
     )
@@ -215,9 +205,7 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
             if conf > conf_thresh:
                 sx1, sy1, sx2, sy2 = bbox_scale_up(x1, y1, x2, y2, height, width, 3)
                 # FIXME (file path)
-                frame_img = cv2.imread(
-                    f"{work_dir}/image_orig/frame_{frame}.png"
-                )
+                frame_img = cv2.imread(f"{work_dir}/image_orig/frame_{frame}.png")
                 cv2.imwrite(
                     f"{tracklet_dir}/{i.track_id}.png",
                     np.array(frame_img[int(sy1) : int(sy2), int(sx1) : int(sx2), :]),
@@ -238,19 +226,22 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
                 model_name="VGG-Face",
                 silent=silent,
             )
-            
+
         except ValueError:
             print("Error: Your video has no valid face tracking. Check again.")
             sys.exit(0)
 
         targeted_ids, t_ids = calc_similarity_v2(dfs, t_ids, tracklet_dir)
 
-        return dict(sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
+        return dict(
+            sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)
+        ), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
+
 
 def main(opt):
     from backend.utils.convert import save_face_swapped_vid, parsing_results
     from backend.utils.general import write_results
-    
+
     # FIXME (file path)
     target_path = opt.target
     save_dir = opt.work_dir  # increment run
@@ -264,24 +255,29 @@ def main(opt):
         print("\n[ Target Feature Extraction Done ]")
         time_2 = time.time()
         print("\n[ Start Detection and Tracking ]")
-    track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(
-        opt
-    )
+    track_infos, tracker, results_temp, num_frames, fps = detection_and_tracking(opt)
     if opt.verbose:
         print("\n[ Target Feature Extraction Done]")
         time_3 = time.time()
         print("\n[ Start Similarity Check ]")
     targeted_ids, valid_ids = get_valid_tids(
-        tracker, results_temp, opt.min_frame, opt.conf_thresh, opt.work_dir, opt.dbscan, opt.verbose
+        tracker,
+        results_temp,
+        opt.min_frame,
+        opt.conf_thresh,
+        opt.work_dir,
+        opt.dbscan,
+        opt.verbose,
     )
     if opt.save_results:
         write_results(
             os.path.join(opt.work_dir, "valid_ids.txt"),
             "targeted tracklet ids (id : confidence)\n",
         )
-        for id, (conf,sim) in targeted_ids.items():
+        for id, (conf, sim) in targeted_ids.items():
             write_results(
-                os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n"
+                os.path.join(opt.work_dir, "valid_ids.txt"),
+                f"{id} - conf : {conf:.2f}, sim : {sim:.2f} \n",
             )
 
         write_results(
@@ -292,12 +288,12 @@ def main(opt):
             write_results(
                 os.path.join(opt.work_dir, "valid_ids.txt"), f"{id} : {conf:.2f} \n"
             )
-    
+
     if opt.verbose:
         print("\n[ Similarity Check Done ]")
         time_4 = time.time()
         print("\n[ Start Result Parsing ]")
-        
+
     final_lines = parsing_results(track_infos, valid_ids, num_frames, opt.swap_all_face)
     if opt.verbose:
         print("\n[ Result Parsing Done ]")
@@ -345,26 +341,27 @@ def main(opt):
         )
         print("{:-^70}".format("-"))
 
+
 if __name__ == "__main__":
-    
+
     # ENV Initialize
     from pymongo import MongoClient
 
     client = MongoClient()
-    db = client['cafe']
-    collection = db['env']
+    db = client["cafe"]
+    collection = db["env"]
 
-    base_info = collection.find_one({'name': 'base'})
-    database_info = collection.find_one({'name': 'database'})
-    backend_info = collection.find_one({'name': 'backend'})
-    cartoonize_info = collection.find_one({'name': 'cartoonize'})
-    track_info = collection.find_one({'name': 'track'})
+    base_info = collection.find_one({"name": "base"})
+    database_info = collection.find_one({"name": "database"})
+    backend_info = collection.find_one({"name": "backend"})
+    cartoonize_info = collection.find_one({"name": "cartoonize"})
+    track_info = collection.find_one({"name": "track"})
 
-    sys.path.append(base_info['dir'])
-    sys.path.insert(0, base_info['dir'] + "/backend")
+    sys.path.append(base_info["dir"])
+    sys.path.insert(0, base_info["dir"] + "/backend")
 
     class Opt:
-        weights= f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
+        weights = f"{track_info['dir']}/pretrained/yolov7-tiny.pt"
         source = f"{database_info['dir']}/uploaded_video/video.mp4"
         target = f"{database_info['dir']}/target/target.jpeg"
         img_size = 1920
@@ -377,7 +374,7 @@ if __name__ == "__main__":
         agnostic_nms = True
         augment = None
         update = None
-        work_dir= f"{database_info['dir']}/work_dir"
+        work_dir = f"{database_info['dir']}/work_dir"
         name = "exp"
         exist_ok = None
         save_results = True
@@ -402,7 +399,7 @@ if __name__ == "__main__":
 
         # CMC
         cmc_method = "sparseOptFlow"
-        swap_all_face = False 
+        swap_all_face = False
         verbose = True
         # ReID
         with_reid = False
@@ -412,13 +409,12 @@ if __name__ == "__main__":
         appearance_thresh = 0.25
         jde = False
         ablation = False
-    
+
     opt = Opt
-    
+
     if opt.verbose:
         print(opt)
     # check_requirements(exclude=('pycocotools', 'thop'))
-    
-    
+
     with torch.no_grad():
         main(opt)

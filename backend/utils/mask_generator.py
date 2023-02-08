@@ -18,6 +18,7 @@ def mask_generator_v0(x_min, y_min, x_max, y_max):
     mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
+
 # mask generator v1 (using Euclidean distance and thresholding)
 def mask_generator_v1(x_min, y_min, x_max, y_max, thr=0.7):
     w = x_max - x_min
@@ -37,6 +38,7 @@ def mask_generator_v1(x_min, y_min, x_max, y_max, thr=0.7):
     mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
 
+
 # mask generator v2 (using Manhattan distance)
 def mask_generator_v2(x_min, y_min, x_max, y_max, thr=0.7):
     w = x_max - x_min
@@ -55,6 +57,7 @@ def mask_generator_v2(x_min, y_min, x_max, y_max, thr=0.7):
     mask[mask >= thr] = 1
     mask = np.reshape(np.repeat(mask, 3), (h, w, 3))
     return mask, 1 - mask
+
 
 # mask generator v3 (using padding)
 def mask_generator_v3(x_min, y_min, x_max, y_max, level=10, step=3):

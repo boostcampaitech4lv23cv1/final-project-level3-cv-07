@@ -7,18 +7,20 @@ from PIL import Image
 from facenet_pytorch import MTCNN
 from sklearn.cluster import DBSCAN
 
+
 def extract_feature(target_path, work_dir):
     # make dir
 
     mtcnn = MTCNN(margin=30)
     img = cv2.imread(target_path)
-    img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_path = work_dir + "/target_detect.png"
     img_cropped = mtcnn(img, save_path=img_path)
 
     if img_cropped is None:
         print("Error: Your target image has no valid face tracking. Check again.")
         sys.exit(0)
+
 
 def get_frame_num(source):
     cap = cv2.VideoCapture(source)
@@ -31,6 +33,7 @@ def get_frame_num(source):
 
     return i
 
+
 def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     h = y_max - y_min
     w = x_max - x_min
@@ -39,6 +42,7 @@ def bbox_scale_up(x_min, y_min, x_max, y_max, height, width, scale):
     x_max = int(min(width, x_max + w // scale))
     y_max = int(min(height, y_max + h // scale))
     return x_min, y_min, x_max, y_max
+
 
 def dbscan(target_dir, tracklet_dir):
     tracklet_imgs = glob.glob(tracklet_dir + "/*.png")
