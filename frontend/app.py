@@ -3,6 +3,7 @@ from streamlit_option_menu import option_menu
 import time
 import asyncio
 import aiohttp
+import random
 
 st.set_page_config(page_title="Streamlit Geospatial", layout="wide")
 
@@ -19,12 +20,12 @@ async def task_sentence(message_col):
     global infer_trigger
     txt = open("database/sentences_rdm.txt", "r")
     txt_list = txt.readlines()
-    cnt = 1
+    idx = random.random(0, len(txt_list))
     with message_col:
         placeholder = st.empty()
-        while(cnt <= len(txt_list) and not infer_trigger):
+        while(not infer_trigger):
             with placeholder:
-                st.text(txt_list[cnt - 1])
+                st.text(txt_list[idx])
             
             await asyncio.sleep(4)
             cnt += 1
