@@ -255,7 +255,6 @@ Download the pre-trained weights and place them in the path below.
         </td>
     </tr>
 </table>
-[데모 영상(gif) 추가하기]
 
 ---
 ## More Details
