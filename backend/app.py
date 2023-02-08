@@ -6,7 +6,6 @@ import uvicorn
 import requests
 import asyncio
 import aiohttp
-import ffmpeg
 
 from moviepy import editor as mp
 from fastapi import FastAPI, Request
