@@ -11,10 +11,10 @@ st.set_page_config(page_title="Streamlit Geospatial", layout="wide")
 
 import requests
 
-backend = "http://115.85.182.51:30002"
+backend = "http://49.50.160.138:30002"
 
 async def task_sentence(message_col):
-    txt = open("database/sentences.txt", "r")
+    txt = open("database/sentences_rdm.txt", "r")
     txt_list = txt.readlines()
     cnt = 1
     with message_col:
