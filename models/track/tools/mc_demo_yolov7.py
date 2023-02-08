@@ -243,7 +243,7 @@ def get_valid_tids(tracker, results, min_length, conf_thresh, work_dir, use_dbsc
             print("Error: Your video has no valid face tracking. Check again.")
             sys.exit(0)
 
-        targeted_ids, t_ids = calc_similarity_v3(dfs, t_ids, tracklet_dir)
+        targeted_ids, t_ids = calc_similarity_v2(dfs, t_ids, tracklet_dir)
 
         return dict(sorted(targeted_ids.items(), key=lambda x: x[1][0], reverse=True)), dict(sorted(t_ids.items(), key=lambda x: x[1], reverse=True))
 
