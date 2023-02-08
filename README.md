@@ -247,6 +247,14 @@ Download the pre-trained weights and place them in the path below.
 ---
 
 ## Demo
+<table align="center">
+    <tr>
+        <td align="center">
+            <a><img src="https://user-images.githubusercontent.com/59161083/217577486-2f95abb3-2599-4649-8fba-af5cb09a9f87.gif"/></a>
+            <br />
+        </td>
+    </tr>
+</table>
 [데모 영상(gif) 추가하기]
 
 ---
@@ -268,11 +276,6 @@ and pattern recognition, 2020, pp. 8090–8099.
 ## Acknowledgement
 A large part of the code are borrowed from [YOLOv7 with wider face dataset](https://github.com/derronqi/yolov7-face), [BoT-SORT](https://github.com/NirAharon/BoT-SORT), [White-box-Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization). Thanks for their excellent work and sharing.
 
-## TO DO (다 하면 삭제)
-- Demo section에 영상 추가
-- Mode Details section 링크 연결
-
----
 
 <div align=center>
 	<a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fboostcampaitech4lv23cv1%2Ffinal-project-level3-cv-07&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false"/></a>
