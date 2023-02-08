@@ -133,6 +133,9 @@
 ---
 
 ## Usage
+### Environment Setup
+- To use any form of function we provide, the following process must be followed.
+
 ```(python)
 # Clone our repository
 git clone https://github.com/boostcampaitech4lv23cv1/final-project-level3-cv-07
@@ -142,7 +145,13 @@ cd final-project-level3-cv-07
 
 # Setup for each virtual environment (for frontend, backend, detection & tracking, cartoonize)
 bash init.sh
+```
 
+- Then, follow instruction in [Dataset section](#dataset)
+
+### Run CAFE with Web Demo
+
+```(python)
 # Open frontend/app.py and update backend ip address in line 14
 vim frontend/app.py
 
@@ -157,6 +166,22 @@ bash start.sh
 # Now, you can access demo page at "http://{your_own_ip_address}:30001"}
 ```
 
+### Run CAFE without Web Demo (WIP)
+- Unfortunately, we haven't checked the file path yet. Do it yourself if you need to.
+
+- You can also run CAFE without web demo. Just run the python file in the order below.
+
+> 1. Run cartoonize function (models/cartoonize/Cartoonize.py)
+```(python)
+cd final-project-level3-cv-07/models/cartoonize
+python Cartoonize.py
+```
+> 2. Run tracking, face swapping and save result
+```(python)
+cd final-project-level3-cv-07/models/track
+python tools/mc_demo_yolov7.py
+```
+
 ---
 
 ## Dataset
@@ -169,7 +194,7 @@ Download the pre-trained weights and place them in the path below.
 ### White-box Cartoonization
 
 Trained with private dataset. Scenery images are collected from Shinkai Makoto, Miyazaki Hayao and Hosoda Mamoru films. Portrait images are from Kyoto animations and PA Works). [[pretrained weights](https://github.com/SystemErrorWang/White-box-Cartoonization/tree/master/test_code/saved_models)]    
-Download the pre-trained weights and place them in the path below.
+Download the pre-trained weights and place them in the path below. (maybe, already exist)
 
 `./final-project-level3-cv-07/models/cartoonize/saved_models`
 
