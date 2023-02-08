@@ -11,7 +11,8 @@ def extract_feature(target_path, work_dir):
     # make dir
 
     mtcnn = MTCNN(margin=30)
-    img = Image.open(target_path)
+    img = cv2.imread(target_path)
+    img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     img_path = work_dir + "/target_detect.png"
     img_cropped = mtcnn(img, save_path=img_path)
 

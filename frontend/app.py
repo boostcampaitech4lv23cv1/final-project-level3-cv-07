@@ -13,21 +13,25 @@ import requests
 
 backend = "http://115.85.182.51:30002"
 
+infer_trigger = False
+
 async def task_sentence(message_col):
+    global infer_trigger
     txt = open("database/sentences.txt", "r")
     txt_list = txt.readlines()
     cnt = 1
     with message_col:
         placeholder = st.empty()
-        while(cnt <= len(txt_list)):
+        while(cnt <= len(txt_list) and not infer_trigger):
             with placeholder:
                 st.text(txt_list[cnt - 1])
             
-            await asyncio.sleep(7)
+            await asyncio.sleep(4)
             cnt += 1
     txt.close()
 
 async def req_inference():
+    global infer_trigger
     async def task(session, url):
         async with session.get(url) as response:
             return await response.text()
@@ -35,6 +39,7 @@ async def req_inference():
 
     async with aiohttp.ClientSession() as session:
         await task(session, f"{backend}/req_infer")
+        infer_trigger = True
 
 async def multi_task(message_col):
     task1 = asyncio.create_task(task_sentence(message_col))
