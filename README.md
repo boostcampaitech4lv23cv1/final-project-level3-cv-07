@@ -176,7 +176,7 @@ bash start.sh
 cd final-project-level3-cv-07/models/cartoonize
 python Cartoonize.py
 ```
-> 2. Run tracking, face swapping and save result
+> 2. Run tracking, face swapping and save result (models/track/mc_demo_yolov7.py)
 ```(python)
 cd final-project-level3-cv-07/models/track
 python tools/mc_demo_yolov7.py
