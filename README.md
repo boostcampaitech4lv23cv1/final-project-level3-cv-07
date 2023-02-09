@@ -283,7 +283,7 @@ Download the pre-trained weights and place them in the path below. (maybe, alrea
 
 ---
 ## More Details
-[[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation 추가]()]
+[[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation](https://www.youtube.com/watch?v=m8O63jDs-Ds&ab_channel=%EA%B9%80%EC%84%B1%EC%88%98)]
 
 ---
 ## Reference
