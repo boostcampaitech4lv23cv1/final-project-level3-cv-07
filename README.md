@@ -283,7 +283,7 @@ Download the pre-trained weights and place them in the path below. (maybe, alrea
 
 ---
 ## More Details
-[[Wrap-up Report 추가]()] [[Slides 추가]()] [[Presentation](https://www.youtube.com/watch?v=m8O63jDs-Ds&ab_channel=%EA%B9%80%EC%84%B1%EC%88%98)]
+[[Wrap-up Report](https://hallowed-eris-113.notion.site/CV-07-CAFE-CArtoonize-For-Extras-faces-02c39fe351db452292dcaf718a9cac36)] [[Slides](https://dgistackr-my.sharepoint.com/:p:/g/personal/leegu24_dgist_ac_kr/EeQMSiGi_RZAqmzMUBljOPYBjOIBi1sQoqwF_Ljk265gPg?e=b7H46W)] [[Presentation](https://www.youtube.com/watch?v=m8O63jDs-Ds&ab_channel=%EA%B9%80%EC%84%B1%EC%88%98)]
 
 ---
 ## Reference
