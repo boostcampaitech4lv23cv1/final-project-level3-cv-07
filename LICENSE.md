@@ -5,5 +5,5 @@
         </td>
 </table>
 
-- Licensed under the [CC BY-NC-SA 4.0(https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+- Licensed under the CC BY-NC-SA 4.0(https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 - Commercial application is prohibited, please remain this license if you clone this repo
